@@ -73,8 +73,11 @@
             $registerObj->email = $register["email"];
             $registerObj->password = $register["password"];
 
+            $registerObj->dateRegistered = date("Y-m-d");
+
             if($registerObj->addUser()){
                 header("location: view.php");
+                exit;
             }else {
                 echo "FAILED";
             }

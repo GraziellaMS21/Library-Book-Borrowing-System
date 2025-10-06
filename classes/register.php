@@ -9,11 +9,12 @@ class Register extends Database {
     public $email = "";
     public $password = "";
     public $borrowerTypeID = "";
+    public $dateRegistered = "";
     
     protected $db;
 
     public function addUser(){
-        $sql = "INSERT INTO users(borrowerTypeID, lName, fName, middleIn, contactNo, email, password) VALUES (:borrowerTypeID, :lName, :fName, :middleIn, :contactNo, :email, :password)";
+        $sql = "INSERT INTO users(borrowerTypeID, lName, fName, middleIn, contactNo, email, password,dateRegistered) VALUES (:borrowerTypeID, :lName, :fName, :middleIn, :contactNo, :email, :password, :dateRegistered)";
 
         $query = $this->connect()->prepare($sql);
 
@@ -24,6 +25,7 @@ class Register extends Database {
         $query->bindParam(":contactNo", $this->contactNo);
         $query->bindParam(":email", $this->email);
         $query->bindParam(":password", $this->password);
+        $query->bindParam(":dateRegistered", $this->dateRegistered);
 
         return $query->execute();
     }
