@@ -4,7 +4,7 @@ class Database {
     private $host = "localhost";
     private $username = "root";
     private $password = "";
-    private $dbname = "bookshelf";
+    private $dbname = "library_book_borrowing_db";
 
     protected $conn;
 
@@ -14,3 +14,6 @@ class Database {
         return $this->conn;
     }
 }
+
+// $obj = new Database();
+// var_dump($obj->connect());   
