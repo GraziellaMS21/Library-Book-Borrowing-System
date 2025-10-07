@@ -91,69 +91,83 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register Account</title>
-    <style>
-        label {
-            display: block;
-        }
-        span, .errors{
-            color: red;
-        }
-        #emailMessage {
-            color: blue;
-            display: none; /* Hide initially */
-            font-weight: bold;
-        }
-    </style>
+    <link rel="stylesheet" href="../borrowbook/css/addUser.css"/>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>Register Account</h1>
-    <form action="" method="POST">
-        <div class="borrowerType">
-            <label for="borrowerType">Register as? <span>*</span></label>
-            <select name="borrowerTypeID" id="borrowerType" onchange="borrowerType()">
-                <option value="">--Select--</option>
-                <?php
-                    forEach($borrowerTypes as $type){
-                ?>
-                    <option value="<?= $type["id"]?>" <?= isset($register["borrowerTypeID"])  && $register["borrowerTypeID"] == $type["id"] ? "selected" : "" ?> ><?= $type["typeName"]?></option>
-                <?php
-                    }
-                ?>
-            </select>
-            <p class="errors"><?= $errors["borrowerTypeID"] ?? ""?></p>
+<body class="h-screen flex justify-center items-center">
+    <div class="color-layer"></div>
+
+    <div class="form-container flex justify-center">
+        <div class="info-section w-1/2 flex flex-col justify-center items-center">
+            <img src="../borrowbook/images/university_library_bg.png" alt="" class="image">
         </div>
-        <label for="lName">Last Name <span>*</span> : </label>
-        <input type="text" name="lName" id="lName" value="<?= $register["lName"] ?? "" ?>">
-        <p class="errors"><?= $errors["lName"] ?? "" ?></p>
-
-        <label for="fName">First Name<span>*</span> : </label>
-        <input type="text" name="fName" id="fName" value="<?= $register["fName"] ?? "" ?>">
-        <p class="errors"><?= $errors["fName"] ?? ""?></p>
         
-        <label for="middleIn">Middle Initial : </label>
-        <input type="text" name="middleIn" id="middleIn" value="<?= $register["middleIn"] ?? "" ?>">
-        <p class="errors"><?= $errors["middleIn"] ?? ""?></p>
-        
-        <label for="contactNo">Contact Number<span>*</span> : </label>
-        <input type="text" name="contactNo" id="contactNo" value="<?= $register["contactNo"] ?? "" ?>">
-        <p class="errors"><?= $errors["contactNo"] ?? ""?></p>
-
-        <label for="email">Email<span>*</span> : </label>
-        <p id = "emailMessage" >Hello</p>
-        <input type="text" name="email" id="email" value="<?= $register["email"] ?? "" ?>">
-        <p class="errors"><?= $errors["email"] ?? ""?></p>
-
-        <label for="password">Password<span>*</span> : </label>
-        <input type="text" name="password" id="password" value="<?= $register["password"] ?? "" ?>">
-        <p class="errors"><?= $errors["password"] ?? ""?></p>
-
-        <label for="conPass">Confirm Password<span>*</span> : </label>
-        <input type="text" name="conPass" id="conPass" value="<?= $register["conPass"] ?? "" ?>">
-        <p class="errors"><?= $errors["conPass"] ?? ""?></p>
-        
-        <br>
-        <input type="submit" value="Register Account">
-    </form>
+        <div class="form-section w-1/2 flex flex-col justify-center items-center">
+            <h1 class="text-3xl font-extrabold">REGISTER YOUR ACCOUNT</h1>
+                <form action="" method="POST">
+                    <div class="borrowerType">
+                        <label for="borrowerType">Register as? <span>*</span></label>
+                        <select name="borrowerTypeID" id="borrowerType" onchange="borrowerType()" class="h-12 w-full rounded-lg">
+                            <option value="">--Select--</option>
+                            <?php
+                                forEach($borrowerTypes as $type){
+                            ?>
+                                <option value="<?= $type["id"]?>" <?= isset($register["borrowerTypeID"])  && $register["borrowerTypeID"] == $type["id"] ? "selected" : "" ?> ><?= $type["typeName"]?></option>
+                            <?php
+                                }
+                            ?>
+                        </select>
+                        <p class="errors"><?= $errors["borrowerTypeID"] ?? ""?></p>
+                    </div>
+                    
+                    <div class="input">
+                        <label for="lName">Last Name <span>*</span> : </label>
+                        <input type="text" class="input-field" name="lName" id="lName" value="<?= $register["lName"] ?? "" ?>">
+                        <p class="errors"><?= $errors["lName"] ?? "" ?></p>
+                    </div>
+            
+                    <div class="input">
+                        <label for="fName">First Name<span>*</span> : </label>
+                        <input type="text" class="input-field" name="fName" id="fName" value="<?= $register["fName"] ?? "" ?>">
+                        <p class="errors"><?= $errors["fName"] ?? ""?></p>
+                    </div>
+                    
+                    <div class="input">
+                        <label for="middleIn">Middle Initial : </label>
+                        <input type="text" class="input-field" name="middleIn" id="middleIn" value="<?= $register["middleIn"] ?? "" ?>">
+                        <p class="errors"><?= $errors["middleIn"] ?? ""?></p>
+                    </div>
+                    <div class="input">
+                        <label for="contactNo">Contact Number<span>*</span> : </label>
+                        <input type="text" class="input-field" name="contactNo" id="contactNo" value="<?= $register["contactNo"] ?? "" ?>">
+                        <p class="errors"><?= $errors["contactNo"] ?? ""?></p>
+                    </div>
+            
+                    <div class="input">
+                        <label for="email">Email<span>*</span> : </label>
+                        <p id = "emailMessage" >Hello</p>
+                        <input type="text" class="input-field" name="email" id="email" value="<?= $register["email"] ?? "" ?>">
+                        <p class="errors"><?= $errors["email"] ?? ""?></p>
+                    </div>
+            
+                    <div class="input">
+                        <label for="password">Password<span>*</span> : </label>
+                        <input type="text" class="input-field" name="password" id="password" value="<?= $register["password"] ?? "" ?>">
+                        <p class="errors"><?= $errors["password"] ?? ""?></p>
+                    </div>
+            
+                    <div class="input">
+                        <label for="conPass">Confirm Password<span>*</span> : </label>
+                        <input type="text" class="input-field" name="conPass" id="conPass" value="<?= $register["conPass"] ?? "" ?>">
+                        <p class="errors"><?= $errors["conPass"] ?? ""?></p>
+                    </div>
+                    
+                    <br>
+                    <input type="submit" value="Register Account" class="font-bold cursor-pointer mb-8 border-none rounded-lg">
+                </form>
+            </div>
+        </div>
+    </div>
 </body>
 <script>
      document.addEventListener('DOMContentLoaded', function () {
