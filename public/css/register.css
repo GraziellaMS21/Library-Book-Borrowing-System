@@ -22,7 +22,7 @@ body {
 
 .form-container {
   width: 70vw;
-  min-height: 70vh;
+  max-height: 69vh;
   background-color: white;
   border-radius: 1.5rem;
   box-shadow: 10px 10px 5px rgba(0, 0, 0, 0.678);
@@ -79,7 +79,7 @@ body {
 form {
   width: 80%;
   max-height: 70vh;
-  margin-top: 1rem;
+  margin-top: 0.5rem;
   overflow-y: auto;
   scrollbar-width: auto;
   scrollbar-color: #931c19 #f5f5f5;
@@ -96,7 +96,7 @@ span {
 }
 
 .input {
-  margin: 1.5rem 1rem 0 0.5rem;
+  margin: 1rem 1rem 0 0.5rem;
 }
 
 .input-field {
@@ -142,7 +142,6 @@ input[type="submit"]:hover {
   box-shadow: 0 8px 15px rgba(147, 28, 25, 0.4);
   background: linear-gradient(#931c19, #610101);
   transition: background 0.2s ease, transform 0.2s ease-in-out;
-
 }
 
 .errors {
@@ -183,7 +182,7 @@ input[type="submit"]:hover {
 
 .terms-and-con {
   border: none;
-  font-family:Verdana, Geneva, Tahoma, sans-serif;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 .login span {
   color: blue;
@@ -204,5 +203,5 @@ input[type="submit"]:hover {
 
 .font-bold {
   list-style: none;
-  color:black;
+  color: black;
 }

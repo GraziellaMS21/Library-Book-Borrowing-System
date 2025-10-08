@@ -99,12 +99,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register Account</title>
-    <link rel="stylesheet" href="../public/css/addUser.css"/>
+    <link rel="stylesheet" href="../public/css/register.css"/>
     <link rel="stylesheet" href="../public/css/components/header_footer.css"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Licorice&display=swap" rel="stylesheet">
 </head>
-<body class="h-screen">
+<body>
     <div class="color-layer"></div>
     <?php require_once '../includes/header.php'; ?>
 
