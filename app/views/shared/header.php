@@ -2,7 +2,7 @@
 <header>
   <nav class="navbar flex justify-between items-center bg-white fixed top-0 left-0 w-full z-10">
       <div class="logo-section flex items-center gap-3">
-          <img src="../public/images/logo.png" alt="Logo" class="logo">
+          <img src="../../../public/assets/images/logo.png" alt="Logo" class="logo">
           <h2 class="title">WMSU LIBRARY</h2>
       </div>
 
