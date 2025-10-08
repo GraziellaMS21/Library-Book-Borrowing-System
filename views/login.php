@@ -1,6 +1,6 @@
 <?php
-    require_once "../classes/database.php";
-    require_once "../classes/login.php";
+    require_once "../config/database.php";
+    require_once "../classes/userLogin.php";
     $loginObj = new Login();
 
     $login = [];

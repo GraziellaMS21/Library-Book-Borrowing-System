@@ -1,6 +1,6 @@
 <?php 
-    require_once "../classes/database.php";
-    require_once "../classes/register.php";
+    require_once "../config/database.php";
+    require_once "../classes/userRegister.php";
     $registerObj = new Register();
 
     $register = [];
@@ -18,6 +18,7 @@
         $register["email"] = trim(htmlspecialchars($_POST["email"]));
         $register["password"] = trim(htmlspecialchars($_POST["password"]));
         $register["conPass"] = trim(htmlspecialchars($_POST["conPass"]));
+        $register["agreement"] = trim(htmlspecialchars($_POST["agreement"]));
 
 
          if (empty($register["borrowerTypeID"])) {
@@ -59,8 +60,15 @@
         if (empty($register["password"])) {
             $errors["password"] = "Password is required";
         }
-        if ($register["password"] !== $register["conPass"]) {
+        
+        if (empty($register["conPass"])) {
+            $errors["conPass"] = "Please Confirm Your Password";
+        } else if ($register["password"] !== $register["conPass"]) {
             $errors["conPass"] = "Passwords do not match";
+        }
+
+        if(empty($register["agreement"])){
+            $errors["agreement"] = "You must Agree to the Terms and Conditions";
         }
 
 
@@ -91,38 +99,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register Account</title>
-    <link rel="stylesheet" href="../borrowbook/css/addUser.css"/>
+    <link rel="stylesheet" href="../public/css/addUser.css"/>
+    <link rel="stylesheet" href="../public/css/components/navbar_and_footer.css"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Licorice&display=swap" rel="stylesheet">
 </head>
 <body class="h-screen">
     <div class="color-layer"></div>
-        <nav class="navbar flex justify-between items-center bg-white fixed top-0 left-0 w-full z-10">
-            <div class="logo-section flex items-center gap-3">
-                <img src="../borrowbook/images/logo.png" alt="Logo" class="logo">
-                <h2 class="title">WMSU LIBRARY</h2>
-            </div>
-
-            <ul class="nav-links flex gap-8 list-none">
-                <li><a href="#">Home</a></li>
-                <li><a href="#">About</a></li>
-                <li><a href="#">Services</a></li>
-                <li><a href="#">Contact</a></li>
-            </ul>
-
-            <div class="burger flex flex-col justify-between cursor-pointer">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </nav>
-    </header>
+    <?php require_once '../includes/header.php'; ?>
 
     <main class="flex justify-center items-center">
         <div class="form-container flex justify-center">
             <div class="info-section w-1/2 flex flex-col justify-center items-center">
                 <div class="image">
-                    <img src="../borrowbook/images/bg.png" alt="">
+                    <img src="../public/images/bg.png" alt="">
                 </div>
             </div>
             
@@ -186,6 +176,16 @@
                             <p class="errors"><?= $errors["conPass"] ?? ""?></p>
                         </div>
                         
+                        <div class="agreement pt-5">
+                            <input type="checkbox" name="agreement" id="agreement">
+                            <label for="agreement">I agree to the</label>
+                            <button type="button" data-modal-target="termsModal" data-modal-toggle="termsModal" id="openModal"class="terms-and-con text-xs text-blue-600 underline">Terms and Conditions</button>
+                            <p class="errors"><?= $errors["agreement"] ?? ""?></p>
+                        </div>
+
+                        <div class="login py-5 flex justify-center font-bold">
+                            <p>Already Have an Account? <span>Log In</span></p>
+                        </div>
                         <br>
                         <input type="submit" value="Register Account" class="font-bold cursor-pointer mb-8 border-none rounded-lg">
                     </form>
@@ -194,56 +194,7 @@
         </div>
     </main>
 
-    <footer class="footer mt-12 text-white">
-        <div class="footer-container flex flex-col md:flex-row justify-between items-center gap-4 px-8 py-6">
-            <div class="footer-left text-center md:text-left">
-                <h3 class="text-xl font-bold tracking-wide">WMSU Library System</h3>
-                <p class="line opacity-90">Home of a Wealthy Knowledge</p>
-            </div>
-
-            <div class="footer-center flex gap-6 text-sm font-semibold">
-                <a href="#">Home</a>
-                <a href="#">About</a>
-                <a href="#">Contact</a>
-            </div>
-
-            <div class="footer-right text-sm text-center md:text-right opacity-90">
-                <p>©2025 WMSU Library. All Rights Reserved.</p>
-            </div>
-        </div>
-    </footer>
-
+    <?php require_once '../includes/footer.php'; ?>
 </body>
-<script>
-  const burger = document.querySelector('.burger');
-  const navLinks = document.querySelector('.nav-links');
-
-  burger.addEventListener('click', () => {
-    burger.classList.toggle('active');
-    navLinks.classList.toggle('active');
-  });
-</script>
-<script>
-     document.addEventListener('DOMContentLoaded', function () {
-    const select = document.getElementById('borrowerType');
-    const emailMsg = document.getElementById('emailMessage');
-
-    function updateEmailMessage() {
-      const val = select.value;
-      if (val === '1' || val === '2') {
-        emailMsg.textContent = 'Use Your WMSU Email Address';
-        emailMsg.style.display = 'block';
-      } else if (val === '3') {
-        emailMsg.textContent = 'Use Your Personal Email Address';
-        emailMsg.style.display = 'block';
-      } else {
-        emailMsg.textContent = '';
-        emailMsg.style.display = 'none';
-      }
-    }
-
-    select.addEventListener('change', updateEmailMessage);
-    updateEmailMessage();
-  });
-</script>
+<script src="../public/js/register.js"></script>
 </html>
