@@ -1,12 +1,3 @@
-//buger js
-const burger = document.querySelector(".burger");
-const navLinks = document.querySelector(".nav-links");
-
-burger.addEventListener("click", () => {
-  burger.classList.toggle("active");
-  navLinks.classList.toggle("active");
-});
-
 //email message js
 document.addEventListener('DOMContentLoaded', function () {
     const select = document.getElementById('borrowerType');

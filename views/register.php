@@ -100,7 +100,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register Account</title>
     <link rel="stylesheet" href="../public/css/addUser.css"/>
-    <link rel="stylesheet" href="../public/css/components/navbar_and_footer.css"/>
+    <link rel="stylesheet" href="../public/css/components/header_footer.css"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Licorice&display=swap" rel="stylesheet">
 </head>
@@ -184,7 +184,7 @@
                         </div>
 
                         <div class="login py-5 flex justify-center font-bold">
-                            <p>Already Have an Account? <span><a href="#">Log In</a></span></p>
+                            <p>Already Have an Account? <span><a href="../views/login.php">Log In</a></span></p>
                         </div>
                         <br>
                         <input type="submit" value="Register Account" class="font-bold cursor-pointer mb-8 border-none rounded-lg">
@@ -250,4 +250,5 @@
     <?php require_once '../includes/footer.php'; ?>
 </body>
 <script src="../public/js/register.js"></script>
+<script src="../public/js/components/header_footer.js"></script>
 </html>

@@ -1,7 +1,7 @@
 <footer class="footer mt-12 text-white">
     <div class="footer-container flex flex-col md:flex-row justify-between items-center gap-4 px-8 py-6">
         <div class="footer-left text-center md:text-left">
-            <h3 class="text-xl font-bold tracking-wide">WMSU Library System</h3>
+            <h3 class="text-xl font-bold tracking-wide text-white">WMSU Library System</h3>
             <p class="line opacity-90">Home of a Wealthy Knowledge</p>
         </div>
 

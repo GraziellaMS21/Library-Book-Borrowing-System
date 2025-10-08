@@ -35,11 +35,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Log In</title>
-    <style>
-        label{display: block;}
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../public/css/components/header_footer.css"/>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Licorice&display=swap" rel="stylesheet">
 </head>
 <body>
+    <?php require_once "../includes/header.php"?>
     <h1>Log In</h1>
     <form action="" method = "POST">
         
@@ -56,5 +58,8 @@
         <br>
         <input type="submit" value="Log In">
     </form>
+    
+    <?php require_once "../includes/footer.php"?>
 </body>
+<script src="../public/js/components/header_footer.js"></script>
 </html>
