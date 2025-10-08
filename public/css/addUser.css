@@ -130,17 +130,20 @@ select:focus {
 }
 
 input[type="submit"] {
-  background: linear-gradient(90deg, #931c19, #610101);
+  background-color: #610101;
   color: white;
   padding: 0.6rem 1.2rem;
-  transition: all 0.3s ease;
   box-shadow: 0 4px 10px rgba(147, 28, 25, 0.3);
+  transition: background 0.5s ease-in-out, transform 0.2s ease-in-out;
 }
 
 input[type="submit"]:hover {
   transform: translateY(-2px);
+  background-position: right;
   box-shadow: 0 8px 15px rgba(147, 28, 25, 0.4);
-  background: linear-gradient(90deg, #610101, #931c19);
+  background: linear-gradient(#931c19, #610101);
+  transition: background 0.2s ease, transform 0.2s ease-in-out;
+
 }
 
 .errors {
@@ -186,4 +189,21 @@ input[type="submit"]:hover {
 .login span {
   color: blue;
   text-decoration: underline;
+}
+.modal-content h2 {
+  color: #931c19;
+}
+
+.numbered-list > li {
+  font-weight: 800 !important;
+  color: #931c19;
+}
+
+.numbered-list > ul {
+  list-style-type: disc;
+}
+
+.font-bold {
+  list-style: none;
+  color:black;
 }

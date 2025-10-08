@@ -1,3 +1,4 @@
+//buger js
 const burger = document.querySelector(".burger");
 const navLinks = document.querySelector(".nav-links");
 
@@ -6,6 +7,7 @@ burger.addEventListener("click", () => {
   navLinks.classList.toggle("active");
 });
 
+//email message js
 document.addEventListener('DOMContentLoaded', function () {
     const select = document.getElementById('borrowerType');
     const emailMsg = document.getElementById('emailMessage');
@@ -27,3 +29,26 @@ document.addEventListener('DOMContentLoaded', function () {
     select.addEventListener('change', updateEmailMessage);
     updateEmailMessage();
 });
+
+//modal js
+const openModal = document.getElementById("openModal");
+const closeModal = document.getElementById("closeModal");
+const closeBtn = document.getElementById("closeBtn");
+const modal = document.getElementById("termsModal");  
+openModal.addEventListener("click", ()=> {
+  modal.classList.remove('hidden');
+})
+
+closeModal.addEventListener("click", ()=> {
+  modal.classList.add('hidden');
+})
+
+closeBtn.addEventListener("click", ()=> {
+  modal.classList.add('hidden');
+})
+
+modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        modal.classList.add("hidden");
+      } 
+    });
