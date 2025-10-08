@@ -26,6 +26,7 @@ body {
   background-color: white;
   border-radius: 1.5rem;
   box-shadow: 10px 10px 5px rgba(0, 0, 0, 0.678);
+  overflow: hidden;
 }
 
 .info-section {
@@ -153,6 +154,9 @@ input[type="submit"]:hover {
 @media (max-width: 768px) {
   .form-container {
     flex-direction: column;
+    width: 90vw;
+    max-height: none;
+    height: auto;
   }
 
   .info-section {

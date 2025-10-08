@@ -11,11 +11,9 @@ class Login extends Database {
             $record = $query->fetch(PDO::FETCH_ASSOC);
 
             if ($record) {
-                // Use password_verify if passwords are hashed in DB
                 if (password_verify($password, $record["password"])) {
                     return $record;
                 } elseif ($password === $record["password"]) {
-                    // fallback if passwords are plain text
                     return $record;
                 } else {
                     return "Password is invalid.";

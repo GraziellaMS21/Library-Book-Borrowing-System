@@ -1,97 +1,12 @@
-<?php 
-    require_once(__DIR__ . "/../../config/database.php");
-    require_once(__DIR__ . "/../../classes/userRegister.php");
-    $registerObj = new Register();
+<?php
+session_start();
+$errors = $_SESSION["errors"] ?? [];
+$register = $_SESSION["old"] ?? [];
+unset($_SESSION["errors"], $_SESSION["old"]);
 
-    
-    $register = [];
-    $errors = [];
-    $borrowerTypes = $registerObj->fetchBorrowerType();
-    
-    
-
-    if($_SERVER["REQUEST_METHOD"] == "POST"){
-        $register["borrowerTypeID"] = trim(htmlspecialchars($_POST["borrowerTypeID"]));
-        $register["lName"] = trim(htmlspecialchars($_POST["lName"]));
-        $register["fName"] = trim(htmlspecialchars($_POST["fName"]));
-        $register["middleIn"] = trim(htmlspecialchars($_POST["middleIn"]));
-        $register["contactNo"] = trim(htmlspecialchars($_POST["contactNo"]));
-        $register["email"] = trim(htmlspecialchars($_POST["email"]));
-        $register["password"] = trim(htmlspecialchars($_POST["password"]));
-        $register["conPass"] = trim(htmlspecialchars($_POST["conPass"]));
-        $register["agreement"] = trim(htmlspecialchars($_POST["agreement"]));
-
-
-         if (empty($register["borrowerTypeID"])) {
-            $errors["borrowerTypeID"] = "Please Choose From the Following";
-        }
-
-
-        if (empty($register["lName"])) {
-            $errors["lName"] = "Last Name is required";
-        }
-
-        if (empty($register["fName"])) {
-            $errors["fName"] = "First Name is required";
-        }
-
-        if (empty($register["contactNo"])) {
-            $errors["contactNo"] = "Contact Number is required";
-        }elseif(!is_numeric($register["contactNo"]) || strlen($register["contactNo"])!=11){
-            $errors["contactNo"] = "Contact Number Format is Invalid";
-        }
-
-        if (empty($register["email"])) {
-            $errors["email"] = "Email is required";
-        } else if ($registerObj->isEmailExist($register["email"])){
-            $errors["email"] = "Email already exist";
-            
-        }
-        
-        if(filter_var($register["email"], FILTER_VALIDATE_EMAIL)){
-            $domain = substr(strrchr($register["email"], "@"), 1);
-
-            if(($register["borrowerTypeID"] == 1 || $register["borrowerTypeID"] == 2) && $domain !== "wmsu.edu.ph"){
-                $errors["email"] = "Please use your WMSU email address";
-            } else if (($register["borrowerTypeID"] == 3) && $domain !== "gmail.com"){
-                $errors["email"] = "Invalid Email format";
-            }
-        } else  $errors["email"] = "Invalid Email format";  
-
-        if (empty($register["password"])) {
-            $errors["password"] = "Password is required";
-        }
-        
-        if (empty($register["conPass"])) {
-            $errors["conPass"] = "Please Confirm Your Password";
-        } else if ($register["password"] !== $register["conPass"]) {
-            $errors["conPass"] = "Passwords do not match";
-        }
-
-        if(empty($register["agreement"])){
-            $errors["agreement"] = "You must Agree to the Terms and Conditions";
-        }
-
-
-        if(empty(array_filter($errors))){
-            $registerObj->borrowerTypeID = $register["borrowerTypeID"];
-            $registerObj->lName = $register["lName"];
-            $registerObj->fName = $register["fName"];
-            $registerObj->middleIn = $register["middleIn"];
-            $registerObj->contactNo = $register["contactNo"];
-            $registerObj->email = $register["email"];
-            $registerObj->password = $register["password"];
-
-            $registerObj->dateRegistered = date("Y-m-d");
-
-            if($registerObj->addUser()){
-                header("location: view.php");
-                exit;
-            }else {
-                echo "FAILED";
-            }
-        }
-    }
+require_once(__DIR__ . "/../../models/userRegister.php");
+$registerObj = new Register();
+$borrowerTypes = $registerObj->fetchBorrowerType();
 ?>
 
 <!DOCTYPE html>
@@ -100,8 +15,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register Account</title>
-    <link rel="stylesheet" href="../../assets/css/register.css"/>
-    <link rel="stylesheet" href="../../assets/css/components/header_footer.css"/>
+    <link rel="stylesheet" href="../../../public/assets/css/register.css"/>
+    <link rel="stylesheet" href="../../../public/assets/css/components/header_footer.css"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Licorice&display=swap" rel="stylesheet">
 </head>
@@ -114,13 +29,13 @@
         <div class="form-container flex justify-center">
             <div class="info-section w-1/2 flex flex-col justify-center items-center">
                 <div class="image">
-                    <img src="../../assets/images/bg.png" alt="">
+                    <img src="../../../public/assets/images/bg.png" alt="">
                 </div>
             </div>
             
             <div class="form-section w-1/2 flex flex-col justify-center items-center">
                 <h1 class="font-extrabold">REGISTER YOUR ACCOUNT</h1>
-                    <form action="" method="POST">
+                    <form action="../../../app/controllers/registerController.php" method="POST">
                         <div class="borrowerType">
                             <label for="borrowerType">Register as? <span>*</span></label>
                             <select name="borrowerTypeID" id="borrowerType" onchange="borrowerType()" class="h-12 w-full rounded-lg">
@@ -161,32 +76,32 @@
                 
                         <div class="input">
                             <label for="email">Email<span>*</span> : </label>
-                            <p id = "emailMessage" >Hello</p>
+                            <p id = "emailMessage" ></p>
                             <input type="text" class="input-field" name="email" id="email" value="<?= $register["email"] ?? "" ?>">
                             <p class="errors"><?= $errors["email"] ?? ""?></p>
                         </div>
                 
                         <div class="input">
                             <label for="password">Password<span>*</span> : </label>
-                            <input type="text" class="input-field" name="password" id="password" value="<?= $register["password"] ?? "" ?>">
+                            <input type="password" class="input-field" name="password" id="password" value="<?= $register["password"] ?? "" ?>">
                             <p class="errors"><?= $errors["password"] ?? ""?></p>
                         </div>
                 
                         <div class="input">
                             <label for="conPass">Confirm Password<span>*</span> : </label>
-                            <input type="text" class="input-field" name="conPass" id="conPass" value="<?= $register["conPass"] ?? "" ?>">
+                            <input type="password" class="input-field" name="conPass" id="conPass" value="<?= $register["conPass"] ?? "" ?>">
                             <p class="errors"><?= $errors["conPass"] ?? ""?></p>
                         </div>
                         
                         <div class="agreement pt-5">
-                            <input type="checkbox" name="agreement" id="agreement">
+                            <input type="checkbox" name="agreement" id="agreement" value="yes">
                             <label for="agreement">I agree to the</label>
                             <button type="button" data-modal-target="termsModal" data-modal-toggle="termsModal" id="openModal"class="terms-and-con text-xs text-blue-600 underline">Terms and Conditions</button>
                             <p class="errors"><?= $errors["agreement"] ?? ""?></p>
                         </div>
 
                         <div class="login py-5 flex justify-center font-bold">
-                            <p>Already Have an Account? <span><a href="../../views/borrower/login.php">Log In</a></span></p>
+                            <p>Already Have an Account? <span><a href="../../../app/views/borrower/login.php">Log In</a></span></p>
                         </div>
                         <br>
                         <input type="submit" value="Register Account" class="font-bold cursor-pointer mb-8 border-none rounded-lg">
@@ -251,6 +166,6 @@
     </div>
     <?php require_once(__DIR__ . '/../shared/footer.php'); ?>
 </body>
-<script src="../assets/js/register.js"></script>
-<script src="../assets/js/components/header_footer.js"></script>
+<script src="../../../public/assets/js/register.js"></script>
+<script src="../../../public/assets/js/components/header_footer.js"></script>
 </html>

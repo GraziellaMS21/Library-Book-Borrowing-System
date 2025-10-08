@@ -1,15 +1,12 @@
 <?php 
-    require_once(__DIR__ . "/../../config/database.php");
-    require_once(__DIR__ . "/../../classes/userRegister.php");
+    session_start();
+    require_once(__DIR__ . "/../models/userRegister.php");
     $registerObj = new Register();
 
-    
     $register = [];
     $errors = [];
     $borrowerTypes = $registerObj->fetchBorrowerType();
     
-    
-
     if($_SERVER["REQUEST_METHOD"] == "POST"){
         $register["borrowerTypeID"] = trim(htmlspecialchars($_POST["borrowerTypeID"]));
         $register["lName"] = trim(htmlspecialchars($_POST["lName"]));
@@ -19,7 +16,8 @@
         $register["email"] = trim(htmlspecialchars($_POST["email"]));
         $register["password"] = trim(htmlspecialchars($_POST["password"]));
         $register["conPass"] = trim(htmlspecialchars($_POST["conPass"]));
-        $register["agreement"] = trim(htmlspecialchars($_POST["agreement"]));
+        $register["agreement"] = isset($_POST["agreement"]) ? trim(htmlspecialchars($_POST["agreement"])) : "";
+
 
 
          if (empty($register["borrowerTypeID"])) {
@@ -85,11 +83,15 @@
             $registerObj->dateRegistered = date("Y-m-d");
 
             if($registerObj->addUser()){
-                header("location: view.php");
+                 header("Location: ../../app/views/librarian/dashboard.php");
                 exit;
             }else {
                 echo "FAILED";
             }
         }
+        $_SESSION["errors"] = $errors;
+        $_SESSION["old"] = $register;
+        header("Location: ../../app/views/borrower/register.php");
+        exit;
     }
 ?>

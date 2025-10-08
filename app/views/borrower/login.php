@@ -36,7 +36,7 @@ unset($_SESSION["errors"]);
             
             <div class="form-section w-1/2 flex flex-col justify-center items-center">
                 <h1 class="font-extrabold">LOG IN</h1>
-                <form action="../../controllers/loginController.php" method="POST">
+                <form action="../../../app/controllers/loginController.php" method="POST">
                     <p class="errors" name="invalid"><?= $errors["invalid"] ?? "" ?></p>
             
                     <div class="input">
@@ -53,7 +53,7 @@ unset($_SESSION["errors"]);
                     <br>
                     <input type="submit" value="Log In" class="font-bold cursor-pointer mb-8 border-none rounded-lg">
 
-                    <div class="register py-5 flex justify-center font-bold">
+                    <div class="register py-5 text-center flex justify-center font-bold">
                         <p>Don't Have an Account Yet? 
                             <span><a href="../../../app/views/borrower/register.php">Register Account</a></span>
                         </p>
