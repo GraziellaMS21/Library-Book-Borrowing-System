@@ -1,8 +1,8 @@
 <?php
   session_start();
   if (!isset($_SESSION["user_id"])) {
-      header("Location: ../../app/views/borrower/login.php");
-      exit;
+    header("Location: ../../app/views/borrower/login.php");
+    exit;
   }
 ?>
 
