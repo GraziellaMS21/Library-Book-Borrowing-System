@@ -5,33 +5,51 @@ class Register extends Database {
     public $lName = "";
     public $fName = "";
     public $middleIn = "";
-    public $contactNo = "";
+    public $contact_no = "";
+    public $college = "";
+    public $department = "";
+    public $position = "";
     public $email = "";
     public $password = "";
-    public $borrowerTypeID = "";
-    public $dateRegistered = "";
+    public $userTypeID = "";
+    public $date_registered = "";
+    public $role = "";
     
     protected $db;
 
-    public function addUser(){
-        $sql = "INSERT INTO users(borrowerTypeID, lName, fName, middleIn, contactNo, email, password,dateRegistered) VALUES (:borrowerTypeID, :lName, :fName, :middleIn, :contactNo, :email, :password, :dateRegistered)";
+    public function addUser($position = '') {
+        $role = (strtolower($position) == 'librarian') ? 'Admin' : 'Borrower';
+
+        $sql = "INSERT INTO users (
+                    lName, fName, middleIn, college, department, position,
+                    contact_no, email, password, role, userTypeID, date_registered
+                ) VALUES (
+                    :lName, :fName, :middleIn, :college, :department, :position,
+                    :contact_no, :email, :password, :role, :userTypeID, :date_registered
+                )";
 
         $query = $this->connect()->prepare($sql);
 
-        $query->bindParam(":borrowerTypeID", $this->borrowerTypeID);
         $query->bindParam(":lName", $this->lName);
         $query->bindParam(":fName", $this->fName);
         $query->bindParam(":middleIn", $this->middleIn);
-        $query->bindParam(":contactNo", $this->contactNo);
+        $query->bindParam(":college", $this->college);
+        $query->bindParam(":department", $this->department);
+        $query->bindParam(":position", $this->position);
+        $query->bindParam(":contact_no", $this->contact_no);
         $query->bindParam(":email", $this->email);
         $query->bindParam(":password", $this->password);
-        $query->bindParam(":dateRegistered", $this->dateRegistered);
+        $query->bindParam(":role", $role);
+        $query->bindParam(":userTypeID", $this->userTypeID);
+        $query->bindParam(":date_registered", $this->date_registered);
 
         return $query->execute();
     }
 
-    public function fetchBorrowerType() {
-        $sql = "SELECT * FROM borrowerType";
+
+
+    public function fetchUserType() {
+        $sql = "SELECT * FROM user_type";
         $query = $this->connect()->prepare($sql);
 
         if($query->execute()){

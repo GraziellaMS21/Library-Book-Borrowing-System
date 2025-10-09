@@ -6,7 +6,7 @@ unset($_SESSION["errors"], $_SESSION["old"]);
 
 require_once(__DIR__ . "/../../models/userRegister.php");
 $registerObj = new Register();
-$borrowerTypes = $registerObj->fetchBorrowerType();
+$userTypes = $registerObj->fetchUserType();
 ?>
 
 <!DOCTYPE html>
@@ -38,17 +38,17 @@ $borrowerTypes = $registerObj->fetchBorrowerType();
                     <form action="../../../app/controllers/registerController.php" method="POST">
                         <div class="borrowerType">
                             <label for="borrowerType">Register as? <span>*</span></label>
-                            <select name="borrowerTypeID" id="borrowerType" onchange="borrowerType()" class="h-12 w-full rounded-lg">
+                            <select name="userTypeID" id="borrowerType" onchange="borrowerType()" class="h-12 w-full rounded-lg">
                                 <option value="">--Select--</option>
                                 <?php
-                                    forEach($borrowerTypes as $type){
+                                    forEach($userTypes as $type){
                                 ?>
-                                    <option value="<?= $type["id"]?>" <?= isset($register["borrowerTypeID"])  && $register["borrowerTypeID"] == $type["id"] ? "selected" : "" ?> ><?= $type["typeName"]?></option>
+                                    <option value="<?= $type["userTypeID"]?>" <?= isset($register["userTypeID"])  && $register["userTypeID"] == $type["userTypeID"] ? "selected" : "" ?> ><?= $type["type_name"]?></option>
                                 <?php
                                     }
                                 ?>
                             </select>
-                            <p class="errors"><?= $errors["borrowerTypeID"] ?? ""?></p>
+                            <p class="errors"><?= $errors["userTypeID"] ?? ""?></p>
                         </div>
                         
                         <div class="input">
@@ -68,10 +68,25 @@ $borrowerTypes = $registerObj->fetchBorrowerType();
                             <input type="text" class="input-field" name="middleIn" id="middleIn" value="<?= $register["middleIn"] ?? "" ?>">
                             <p class="errors"><?= $errors["middleIn"] ?? ""?></p>
                         </div>
+                        <div class="input hidden" id="college" >
+                            <label for="college">College: </label>
+                            <input type="text" class="input-field" name="college"value="<?= $register["college"] ?? "" ?>">
+                            <p class="errors"><?= $errors["college"] ?? ""?></p>
+                        </div>
+                        <div class="input hidden" id="department" >
+                            <label for="department">Department : </label>
+                            <input type="text" class="input-field" name="department" value="<?= $register["department"] ?? "" ?>">
+                            <p class="errors"><?= $errors["department"] ?? ""?></p>
+                        </div>
+                        <div class="input hidden" id="position" >
+                            <label for="position">Position : </label>
+                            <input type="text" class="input-field" name="position"value="<?= $register["position"] ?? "" ?>">
+                            <p class="errors"><?= $errors["position"] ?? ""?></p>
+                        </div>
                         <div class="input">
-                            <label for="contactNo">Contact Number<span>*</span> : </label>
-                            <input type="text" class="input-field" name="contactNo" id="contactNo" value="<?= $register["contactNo"] ?? "" ?>">
-                            <p class="errors"><?= $errors["contactNo"] ?? ""?></p>
+                            <label for="contact_no">Contact Number<span>*</span> : </label>
+                            <input type="text" class="input-field" name="contact_no" id="contact_no" value="<?= $register["contact_no"] ?? "" ?>">
+                            <p class="errors"><?= $errors["contact_no"] ?? ""?></p>
                         </div>
                 
                         <div class="input">

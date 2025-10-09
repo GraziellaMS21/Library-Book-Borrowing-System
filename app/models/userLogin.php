@@ -3,12 +3,12 @@ require_once(__DIR__ . "/../../config/database.php");
 
 class Login extends Database {
     public function logIn($email, $password) {
-        $sql = "SELECT userID, lName, fName, email, password, borrowerTypeID FROM users WHERE email = :email";
+        $sql = "SELECT userID, lName, fName, email, password, userTypeID FROM users WHERE email = :email";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":email", $email);
 
         if ($query->execute()) {
-            $record = $query->fetch(PDO::FETCH_ASSOC);
+            $record = $query->fetch();
 
             if ($record) {
                 if (password_verify($password, $record["password"])) {

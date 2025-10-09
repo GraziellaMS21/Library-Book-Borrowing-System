@@ -1,13 +1,12 @@
 <?php
-session_start();
+    session_start();
+    if (isset($_SESSION["user_id"])) {
+        header("Location: ../../app/views/borrower/catalogue.php");
+        exit;
+    }   
 
-if (isset($_SESSION["user_id"])) {
-    header("Location: ../../views/borrower/catalogue.php");
-    exit;
-}
-
-$errors = $_SESSION["errors"] ?? [];
-unset($_SESSION["errors"]);
+    $errors = $_SESSION["errors"] ?? [];
+    unset($_SESSION["errors"]);
 ?>
 
 <!DOCTYPE html>

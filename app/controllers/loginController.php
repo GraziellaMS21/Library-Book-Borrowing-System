@@ -1,31 +1,38 @@
 <?php
-    session_start();
+    session_start(); 
     require_once(__DIR__ . '/../models/userLogin.php');
 
     $loginObj = new Login();
+
+    $login = [];
     $errors = [];
 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        $email = trim(htmlspecialchars($_POST["email"] ?? ""));
-        $password = trim(htmlspecialchars($_POST["password"] ?? ""));
+        $login["email"] = trim(htmlspecialchars($_POST["email"] ?? ""));
+        $login["password"] = trim(htmlspecialchars($_POST["password"] ?? ""));
 
-        if (empty($email)) $errors["email"] = "Please input your email address.";
-        if (empty($password)) $errors["password"] = "Please input your password.";
+        if (empty($login["email"])) {
+            $errors["email"] = "Please input your email address.";
+        }
 
-        if (empty($errors)) {
-            $result = $loginObj->logIn($email, $password);
+        if (empty($login["password"])) {
+            $errors["password"] = "Please input your password.";
+        }
+
+        if (empty(array_filter($errors))) {
+            $result = $loginObj->logIn($login["email"], $login["password"]);
 
             if (is_array($result)) {
                 $_SESSION["user_id"] = $result["userID"];
                 $_SESSION["email"] = $result["email"];
                 $_SESSION["lName"] = $result["lName"];
                 $_SESSION["fName"] = $result["fName"];
-                $_SESSION["borrowerTypeID"] = $result["borrowerTypeID"];
+                $_SESSION["userTypeID"] = $result["userTypeID"];
 
-                if ($result["borrowerTypeID"] == 2) {
+                if ($result["userTypeID"] == 2) {
                     header("Location: ../../app/views/librarian/dashboard.php");
                     exit;
-                } elseif ($result["borrowerTypeID"] == 1) {
+                } elseif ($result["userTypeID"] == 1) {
                     header("Location: ../../app/views/borrower/catalogue.php");
                     exit;
                 } else {
@@ -36,8 +43,10 @@
             }
         }
 
-        $_SESSION["errors"] = $errors;
-        header("Location: ../../app/views/borrower/login.php");
-        exit;
+        if (!empty($errors)) {
+            $_SESSION["errors"] = $errors;
+            header("Location: ../../app/views/borrower/login.php");
+            exit;
+        }
     }
 ?>

@@ -2,6 +2,25 @@
 document.addEventListener('DOMContentLoaded', function () {
     const select = document.getElementById('borrowerType');
     const emailMsg = document.getElementById('emailMessage');
+    const college = document.getElementById('college');
+    const department = document.getElementById('department');
+    const position = document.getElementById('position');
+
+    function showCollege() {
+      const val = select.value;
+      if (val === '1'){
+        college.classList.remove('hidden');
+        department.classList.add('hidden');
+      }else if (val === '2') {
+        college.classList.remove('hidden');
+        department.classList.remove('hidden');
+        position.classList.remove('hidden');
+      }else if (val === '3') {
+        college.classList.add('hidden');
+        department.classList.add('hidden');
+        position.classList.add('hidden');
+      }
+    }
 
     function updateEmailMessage() {
       const val = select.value;
@@ -18,7 +37,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     select.addEventListener('change', updateEmailMessage);
+    select.addEventListener('change', showCollege);
     updateEmailMessage();
+    showCollege();
 });
 
 //modal js
