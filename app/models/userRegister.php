@@ -1,7 +1,8 @@
 <?php
-    require_once(__DIR__ . "/../../config/database.php");
+require_once(__DIR__ . "/../../config/database.php");
 
-class Register extends Database {
+class Register extends Database
+{
     public $lName = "";
     public $fName = "";
     public $middleIn = "";
@@ -14,10 +15,11 @@ class Register extends Database {
     public $userTypeID = "";
     public $date_registered = "";
     public $role = "";
-    
+
     protected $db;
 
-    public function addUser($position = '') {
+    public function addUser($position = '')
+    {
         $role = (strpos(strtolower($position), 'librarian') !== false) ? 'Admin' : 'Borrower';
 
 
@@ -49,40 +51,45 @@ class Register extends Database {
 
 
 
-    public function fetchUserType() {
+    public function fetchUserType()
+    {
         $sql = "SELECT * FROM user_type";
         $query = $this->connect()->prepare($sql);
 
-        if($query->execute()){
+        if ($query->execute()) {
             return $query->fetchAll();
-        } else return null;
+        } else
+            return null;
     }
-    public function viewShelf() {
+    public function viewShelf()
+    {
         $sql = "SELECT * FROM shelf";
-            
+
         // $query = $this->db->connect()->prepare($sql);
         $query = $this->connect()->prepare($sql);
-        
-        if($query->execute()){
+
+        if ($query->execute()) {
             return $query->fetchAll();
-        }else{
+        } else {
             return null;
         }
     }
 
-    public function isEmailExist($email) {
+    public function isEmailExist($email)
+    {
         $sql = "SELECT COUNT(userID) as total_users FROM users WHERE email = :email ";
         $query = $this->connect()->prepare($sql);
         $result = NULL;
 
         $query->bindParam(":email", $email);
-        if($query->execute()){
+        if ($query->execute()) {
             $record = $query->fetch();
         }
 
-        if($record["total_users"] > 0){
+        if ($record["total_users"] > 0) {
             return true;
-        } else return false;
+        } else
+            return false;
     }
 }
 

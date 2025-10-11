@@ -1,0 +1,166 @@
+body {
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+nav {
+  background-color: rgb(235, 233, 216);
+  height: 6rem;
+  width: 100%;
+  padding: 1rem 2rem;
+  box-shadow: 4px 4px 10px rgba(204, 0, 0, 0.4);
+  border-bottom: 0.4rem solid #931c19;
+  transition: background 0.3s ease;
+  z-index: 10;
+  position: fixed;
+}
+
+aside {
+  background: linear-gradient(#bd322f, #931c19, #610101);
+}
+
+.sidebar-top {
+  height: 6rem;
+  border-bottom: 0.4rem solid #931c19;
+  transition: background 0.3s ease;
+  z-index: 10;
+}
+
+.sidebar-main {
+  height: auto;
+}
+
+.links {
+  padding: 1rem 0 1rem 2rem;
+}
+
+.links:hover {
+  background: linear-gradient(#931b19b4, #610101b4);
+}
+
+main {
+  background-color: rgb(235, 233, 216);
+  min-height: 100vh;
+}
+
+.container {
+  margin-top: 6rem;
+}
+
+.info {
+  height: 7rem;
+  border-radius: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.section {
+  padding: 2rem;
+}
+
+.manage {
+  padding: 0.5rem;
+  background-color: white;
+}
+
+/* --- Base tab style --- */
+#manageBooksBtn {
+  background-color: #931c19;
+  color: white;
+}
+
+#manageCategoriesBtn {
+  background-color: white;
+  color: #333;
+}
+#manageBooksBtn,
+#manageCategoriesBtn {
+  border-bottom: 5px solid #8b8b8b;
+  border-right: 5px solid #8b8b8b;
+  border-bottom-right-radius: 2rem;
+  border-bottom-left-radius: 0.5rem;
+  border-left: 0;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  box-shadow: 3px 3px 2px rgba(49, 49, 49, 0.1);
+}
+
+#manageBooksBtn:hover,
+#manageCategoriesBtn:hover {
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.5) inset;
+}
+
+.btn-group {
+  border-bottom: 1px solid #ccc;
+}
+
+label {
+    display: block;
+}
+
+span {
+  color: red;
+}
+
+.input {
+  margin: 1rem 1rem 0 0.5rem;
+}
+
+.input-field {
+  border: 1px solid #d1d5db;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #931c19;
+  box-shadow: 0 0 0 4px rgba(147, 28, 25, 0.2);
+}
+
+.categoryID,
+.book_condition {
+  margin: 0.75rem 1.5rem 0.75rem 0.5rem;
+}
+
+select {
+  height: 3rem;
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid #931c19;
+  transition: ease;
+}
+
+select:focus {
+  outline: none;
+  border-color: #610101;
+  box-shadow: 0 0 0 4px rgba(97, 1, 1, 0.2);
+}
+
+input[type="submit"] {
+  background-color: #610101;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  box-shadow: 0 4px 10px rgba(147, 28, 25, 0.3);
+  transition: background 0.5s ease-in-out, transform 0.2s ease-in-out;
+}
+
+input[type="submit"]:hover {
+  transform: translateY(-2px);
+  background-position: right;
+  box-shadow: 0 8px 15px rgba(147, 28, 25, 0.4);
+  background: linear-gradient(#931c19, #610101);
+  transition: background 0.2s ease, transform 0.2s ease-in-out;
+}
+
+.errors {
+  color: #dc2626;
+  font-size: 0.8rem;
+  margin-top: 0.2rem;
+}

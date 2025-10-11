@@ -1,8 +1,10 @@
 <?php
 require_once(__DIR__ . "/../../config/database.php");
 
-class Login extends Database {
-    public function logIn($email, $password) {
+class Login extends Database
+{
+    public function logIn($email, $password)
+    {
         $sql = "SELECT userID, lName, fName, email, password, userTypeID FROM users WHERE email = :email";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":email", $email);
