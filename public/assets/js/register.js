@@ -5,21 +5,29 @@ document.addEventListener('DOMContentLoaded', function () {
     const college = document.getElementById('college');
     const department = document.getElementById('department');
     const position = document.getElementById('position');
+    const collegeLabel = document.getElementById('collegeLabel');
+    const positionLabel = document.querySelector('positionLabel');
 
-    function showCollege() {
-      const val = select.value;
-      if (val === '1'){
-        college.classList.remove('hidden');
-        department.classList.add('hidden');
-      }else if (val === '2') {
-        college.classList.remove('hidden');
-        department.classList.remove('hidden');
-        position.classList.remove('hidden');
-      }else if (val === '3') {
-        college.classList.add('hidden');
-        department.classList.add('hidden');
-        position.classList.add('hidden');
-      }
+    function updateFields() {
+      const val = select.value
+
+      college.classList.add('hidden');
+      department.classList.add('hidden');
+      position.classList.add('hidden');
+
+
+      collegeLabel.innerHTML = 'College:';
+      positionLabel.innerHTML = 'Position:';
+
+        if (selectedValue === 'student') {
+            college.classList.remove('hidden');
+            collegeLabel.innerHTML = 'College<span>*</span>:';
+        } else if (selectedValue === 'staff') {
+            college.classList.remove('hidden');
+            department.classList.remove('hidden');
+            position.classList.remove('hidden');
+            positionLabel.innerHTML = 'Position<span>*</span>:';
+        }
     }
 
     function updateEmailMessage() {
@@ -36,10 +44,10 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    select.addEventListener('change', updateEmailMessage);
-    select.addEventListener('change', showCollege);
     updateEmailMessage();
-    showCollege();
+    updateFields();
+    select.addEventListener('change', updateEmailMessage);
+    select.addEventListener('change', updateFields);
 });
 
 //modal js

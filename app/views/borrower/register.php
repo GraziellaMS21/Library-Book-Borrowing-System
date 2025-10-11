@@ -38,7 +38,7 @@ $userTypes = $registerObj->fetchUserType();
                     <form action="../../../app/controllers/registerController.php" method="POST">
                         <div class="borrowerType">
                             <label for="borrowerType">Register as? <span>*</span></label>
-                            <select name="userTypeID" id="borrowerType" onchange="borrowerType()" class="h-12 w-full rounded-lg">
+                            <select name="userTypeID" id="borrowerType" class="h-12 w-full rounded-lg">
                                 <option value="">--Select--</option>
                                 <?php
                                     forEach($userTypes as $type){
@@ -69,17 +69,17 @@ $userTypes = $registerObj->fetchUserType();
                             <p class="errors"><?= $errors["middleIn"] ?? ""?></p>
                         </div>
                         <div class="input hidden" id="college" >
-                            <label for="college">College: </label>
+                            <label for="college" id="collegeLabel">College: </label>
                             <input type="text" class="input-field" name="college"value="<?= $register["college"] ?? "" ?>">
                             <p class="errors"><?= $errors["college"] ?? ""?></p>
                         </div>
                         <div class="input hidden" id="department" >
-                            <label for="department">Department : </label>
+                            <label for="department">Department: </label>
                             <input type="text" class="input-field" name="department" value="<?= $register["department"] ?? "" ?>">
                             <p class="errors"><?= $errors["department"] ?? ""?></p>
                         </div>
                         <div class="input hidden" id="position" >
-                            <label for="position">Position : </label>
+                            <label for="position" id="positionLabel">Position: </label>
                             <input type="text" class="input-field" name="position"value="<?= $register["position"] ?? "" ?>">
                             <p class="errors"><?= $errors["position"] ?? ""?></p>
                         </div>

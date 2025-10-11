@@ -18,7 +18,8 @@ class Register extends Database {
     protected $db;
 
     public function addUser($position = '') {
-        $role = (strtolower($position) == 'librarian') ? 'Admin' : 'Borrower';
+        $role = (strpos(strtolower($position), 'librarian') !== false) ? 'Admin' : 'Borrower';
+
 
         $sql = "INSERT INTO users (
                     lName, fName, middleIn, college, department, position,
