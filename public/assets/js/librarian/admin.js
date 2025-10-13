@@ -34,3 +34,41 @@ document.addEventListener("DOMContentLoaded", function () {
     manageBooksBtn.style.color = "#000";
   };
 });
+
+
+  //modal js
+  const openModal = document.getElementById("openModal");
+  const closeModal = document.getElementById("closeModal");
+  const closeBtn = document.getElementById("closeBtn");
+  const modal = document.getElementById("termsModal");  
+
+  document.querySelectorAll(".openModal").forEach(button => {
+  button.addEventListener("click", () => {
+    const id = button.dataset.id;
+    fetch(`../../../app/controllers/getBookDetails.php?id=${id}`)
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("bookDetails").innerHTML = html;
+        document.getElementById("termsModal").classList.remove("hidden");
+      });
+  });
+});
+
+
+  openModal.addEventListener("click", ()=> {
+    modal.classList.remove('hidden');
+  })
+
+  closeModal.addEventListener("click", ()=> {
+    modal.classList.add('hidden');
+  })
+
+  closeBtn.addEventListener("click", ()=> {
+    modal.classList.add('hidden');
+  })
+
+  modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          modal.classList.add("hidden");
+        } 
+      });

@@ -36,7 +36,7 @@ class Book extends Database
 
     public function viewBook()
     {
-        $sql = "SELECT book_title, author, c.category_name, publication_name, publication_year, ISBN, book_copies, book_condition, status, date_added FROM books b JOIN category c ON b.categoryID = c.categoryID";
+        $sql = "SELECT bookID, book_title, author, c.category_name, publication_name, publication_year, ISBN, book_copies, book_condition, status, date_added FROM books b JOIN category c ON b.categoryID = c.categoryID";
         $query = $this->connect()->prepare($sql);
 
         if ($query->execute()) {
@@ -55,5 +55,62 @@ class Book extends Database
             return null;
     }
 
+    public function fetchBook($bookID)
+    {
+        $sql = "SELECT books.*, category.category_name FROM books JOIN category ON books.categoryID = category.categoryID WHERE bookID = :bookID";
+        $stmt = $this->connect()->prepare($sql);
+        $stmt->bindParam(':bookID', $bookID);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+
+    public function isTitleExist($book_title)
+    {
+        $sql = "SELECT COUNT(bookID) as total_books FROM books WHERE book_title = :book_title AND bookID <> :bookID";
+        $query = $this->connect()->prepare($sql);
+        $result = NULL;
+
+        $query->bindParam(":book_title", $book_title);
+        $query->bindParam(":bookID", $bookID);
+        if ($query->execute()) {
+            $record = $query->fetch();
+        }
+
+        if ($record["total_books"] > 0) {
+            return true;
+        } else
+            return false;
+    }
+
+    public function editBook($pid)
+    {
+        $sql = "UPDATE books SET book_title = :book_title,  author = :author,  categoryID = :categoryID, publication_name = :publication_name,  publication_year = :publication_year,  ISBN = :ISBN, book_copies = :book_copies, book_condition = :book_condition WHERE bookID = :bookID";
+
+        $query = $this->connect()->prepare($sql);
+
+        $query->bindParam(":book_title", $this->book_title);
+        $query->bindParam(":author", $this->author);
+        $query->bindParam(":categoryID", $this->categoryID);
+        $query->bindParam(":publication_name", $this->publication_name);
+        $query->bindParam(":publication_year", $this->publication_year);
+        $query->bindParam(":ISBN", $this->ISBN);
+        $query->bindParam(":book_copies", $this->book_copies);
+        $query->bindParam(":book_condition", $this->book_condition);
+        $query->bindParam(":bookID", $pid);
+
+        return $query->execute();
+    }
+
+    public function deleteBook($pid)
+    {
+        $sql = "DELETE FROM books WHERE bookID = :id";
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(":id", $pid);
+        return $query->execute();
+    }
 
 }
+
+// $obj = new Book();
+// print_r($obj->fetchBook(14));

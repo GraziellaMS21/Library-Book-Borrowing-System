@@ -2,11 +2,19 @@
 session_start();
 $errors = $_SESSION["errors"] ?? [];
 $book = $_SESSION["old"] ?? [];
-unset($_SESSION["errors"], $_SESSION["old"]);
+unset($_SESSION["errors"]);
 
 require_once(__DIR__ . "/../../models/manageBook.php");
 $bookObj = new Book();
 $category = $bookObj->fetchCategory();
+// var_dump($book);
+// echo "Session ID: " . session_id();
+
+if (isset($_GET['id'])) {
+    $bookID = $_GET['id'];
+    $book = $bookObj->fetchBook($bookID);
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -17,7 +25,7 @@ $category = $bookObj->fetchCategory();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Librarian Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/librarian/addBook.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/librarian/manage_book.css" />
 </head>
 
 <body class="w-screen flex">
@@ -32,10 +40,12 @@ $category = $bookObj->fetchCategory();
                 </div>
 
                 <div class="section manage_books h-full">
-                    <div class="addBook">
-                        <button><a href="../../../app/views/librarian/addBook.php"">Add Book</a></button>
+                    <div class="addBook rounded-xl p-4 bg-red-800 inline-block text-white my-2">
+                        <button><a href="../../../app/views/librarian/booksSection.php"">Return</a></button>
                     </div>
-                    <form action=" ../../../app/controllers/addBookController.php" method="POST">
+                    <form action=" ../../../app/controllers/editBookController.php?id=<?= $book['bookID'] ?>"
+                                method="POST">
+
                                 <div class="input">
                                     <label for="book_title">Book Title<span>*</span> : </label>
                                     <input type="text" class="input-field" name="book_title" id="book_title"
@@ -53,9 +63,12 @@ $category = $bookObj->fetchCategory();
                                 <div class="categoryID">
                                     <label for="categoryID">Category<span>*</span> : </label>
                                     <select name="categoryID" id="categoryID">
+                                        <option value="">---Select Option---</option>
                                         <?php foreach ($category as $cat) {
                                             ?>
-                                            <option value="<?= $cat["categoryID"] ?>"><?= $cat["category_name"] ?></option>
+                                            <option value="<?= $cat['categoryID'] ?>" <?= isset($book['categoryID']) && $cat['categoryID'] == $book['categoryID'] ? 'selected' : '' ?>>
+                                                <?= $cat['category_name'] ?>
+                                            </option>
                                             <?php
                                         }
                                         ?>
@@ -102,7 +115,7 @@ $category = $bookObj->fetchCategory();
                                     </select>
                                 </div>
                                 <br>
-                                <input type="submit" value="Register Account"
+                                <input type="submit" value="Save Changes"
                                     class="font-bold cursor-pointer mb-8 border-none rounded-lg">
                                 </form>
                     </div>

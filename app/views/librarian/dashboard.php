@@ -15,7 +15,7 @@ if (!isset($_SESSION["user_id"])) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Librarian Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="../../../public/assets/css/librarian/dashboard.css" />
+  <link rel="stylesheet" href="../../../public/assets/css/librarian/admin.css" />
 </head>
 
 <body class="w-screen flex">
@@ -41,16 +41,13 @@ if (!isset($_SESSION["user_id"])) {
     </div>
   </main>
   </div>
-
-
   </div>
 
-  <form action="../../controllers/logout.php" method="POST">
-
-    
-  <button type="submit" class="bg-red-600 text-white px-4 py-24 rounded-md hover:bg-red-700">
-    Logout
-  </button>
+  <!-- <form action="../../controllers/logout.php" method="POST">
+    <button type="submit" class="bg-red-600 text-white px-4 py-24 rounded-md hover:bg-red-700">
+      Logout
+    </button>
+  </form> -->
 </body>
 
 </html>
