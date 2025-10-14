@@ -101,6 +101,7 @@ main {
 table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 1rem;
 }
 
 table,
@@ -116,17 +117,17 @@ label {
   margin-top: 1.5rem;
 }
 
-table {
-  background-color: white;
+th {
+  background-color: #940c0c;
+  color:white;
 }
 
 tr:nth-child(even){
-  background-color: #931b19a6;
-  color: white;
+  background-color: #ffd1d1a6;
 }
 
 tr:nth-child(odd){
-  background-color: #ebe4c0a6;
+  background-color: #faf6e4a6;
 }
 
 .action {

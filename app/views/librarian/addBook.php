@@ -2,11 +2,16 @@
 session_start();
 $errors = $_SESSION["errors"] ?? [];
 $book = $_SESSION["old"] ?? [];
-unset($_SESSION["errors"], $_SESSION["old"]);
+unset($_SESSION["errors"]);
 
 require_once(__DIR__ . "/../../models/manageBook.php");
 $bookObj = new Book();
 $category = $bookObj->fetchCategory();
+
+if (isset($_GET['id'])) {
+    $bookID = $_GET['id'];
+    $book = $bookObj->fetchBook($bookID);
+}
 ?>
 
 <!DOCTYPE html>
@@ -35,7 +40,7 @@ $category = $bookObj->fetchCategory();
                     <div class="addBook rounded-xl p-4 bg-red-800 inline-block text-white my-2">
                         <button><a href="../../../app/views/librarian/booksSection.php"">Return</a></button>
                     </div>
-                    <form action=" ../../../app/controllers/addCategoryController.php" method="POST">
+                    <form action=" ../../../app/controllers/addBookController.php?id=<?= $book['bookID'] ?? "" ?>" method="POST">
                                 <div class="input">
                                     <label for="book_title">Book Title<span>*</span> : </label>
                                     <input type="text" class="input-field" name="book_title" id="book_title"
@@ -110,10 +115,6 @@ $category = $bookObj->fetchCategory();
                                     class="font-bold cursor-pointer mb-8 border-none rounded-lg">
                                 </form>
                     </div>
-
-                    <div class="section manage_categories grid grid-cols-2 md:grid-cols-4 gap-4">
-
-                    </div>
                 </div>
             </div>
     </main>
@@ -127,6 +128,6 @@ $category = $bookObj->fetchCategory();
     Logout
   </button> -->
 </body>
-<script src="../../../public/assets/js/librarian/dashboard.js"></script>
+<script src="../../../public/assets/js/librarian/admin.js"></script>
 
 </html>

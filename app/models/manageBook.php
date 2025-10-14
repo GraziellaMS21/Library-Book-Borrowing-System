@@ -34,16 +34,51 @@ class Book extends Database
         return $query->execute();
     }
 
-    public function viewBook()
+    public function viewBook($search = "", $category = "")
     {
-        $sql = "SELECT bookID, book_title, author, c.category_name, publication_name, publication_year, ISBN, book_copies, book_condition, status, date_added FROM books b JOIN category c ON b.categoryID = c.categoryID";
+        if ($search != "" && $category != "") {
+            $sql = "SELECT b.*, c.category_name
+                FROM books b 
+                JOIN category c ON b.categoryID = c.categoryID
+                WHERE b.book_title LIKE CONCAT('%', :search, '%') 
+                  AND c.categoryID = :category
+                ORDER BY b.book_title ASC";
+        } else if ($search != "") {
+            $sql = "SELECT b.*, c.category_name
+                FROM books b 
+                JOIN category c ON b.categoryID = c.categoryID
+                WHERE b.book_title LIKE CONCAT('%', :search, '%')
+                ORDER BY b.book_title ASC";
+        } else if ($category != "") {
+            $sql = "SELECT b.*, c.category_name
+                FROM books b 
+                JOIN category c ON b.categoryID = c.categoryID
+                WHERE c.categoryID = :category
+                ORDER BY b.book_title ASC";
+        } else {
+            // Default: show all books
+            $sql = "SELECT b.*, c.category_name
+                FROM books b 
+                JOIN category c ON b.categoryID = c.categoryID
+                ORDER BY b.book_title ASC";
+        }
+
         $query = $this->connect()->prepare($sql);
+
+        if ($search != "") {
+            $query->bindParam(":search", $search);
+        }
+        if ($category != "") {
+            $query->bindParam(":category", $category);
+        }
 
         if ($query->execute()) {
             return $query->fetchAll();
-        } else
+        } else {
             return null;
+        }
     }
+
 
     public function fetchCategory()
     {
@@ -58,18 +93,18 @@ class Book extends Database
     public function fetchBook($bookID)
     {
         $sql = "SELECT books.*, category.category_name FROM books JOIN category ON books.categoryID = category.categoryID WHERE bookID = :bookID";
-        $stmt = $this->connect()->prepare($sql);
-        $stmt->bindParam(':bookID', $bookID);
-        $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(':bookID', $bookID);
+        $query->execute();
+        return $query->fetch();
     }
 
 
-    public function isTitleExist($book_title)
+    public function isTitleExist($book_title, $bookID)
     {
         $sql = "SELECT COUNT(bookID) as total_books FROM books WHERE book_title = :book_title AND bookID <> :bookID";
         $query = $this->connect()->prepare($sql);
-        $result = NULL;
+        $record = NULL;
 
         $query->bindParam(":book_title", $book_title);
         $query->bindParam(":bookID", $bookID);

@@ -1,12 +1,12 @@
 <?php
-require_once(__DIR__ . "/../models/manageBook.php");
+require_once(__DIR__ . "/../models/manageCategory.php");
 
-$bookObj = new Book();
+$categoryObj = new Category();
 
 if (isset($_GET['id'])) {
-    $bookID = $_GET['id'];
+    $categoryID = $_GET['id'];
 
-    if ($bookObj->deleteBook($bookID)) {
+    if ($categoryObj->deleteCategory($categoryID)) {
         header("Location: ../../app/views/librarian/booksSection.php");
         exit;
     } else {

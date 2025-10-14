@@ -2,7 +2,7 @@
     session_start(); 
     require_once(__DIR__ . '/../models/userLogin.php');
 
-    $loginObj = new Login();
+    $loginObj = new Login($email, $password);   
 
     $login = [];
     $errors = [];
@@ -32,7 +32,7 @@
                 if ($result["userTypeID"] == 2) {
                     header("Location: ../../app/views/librarian/dashboard.php");
                     exit;
-                } elseif ($result["userTypeID"] == 1) {
+                } elseif ($result["userTypeID"] == 1  || $result["userTypeID"] == 3) {
                     header("Location: ../../app/views/borrower/catalogue.php");
                     exit;
                 } else {

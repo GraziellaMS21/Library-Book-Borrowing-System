@@ -61,19 +61,6 @@ class Register extends Database
         } else
             return null;
     }
-    public function viewShelf()
-    {
-        $sql = "SELECT * FROM shelf";
-
-        // $query = $this->db->connect()->prepare($sql);
-        $query = $this->connect()->prepare($sql);
-
-        if ($query->execute()) {
-            return $query->fetchAll();
-        } else {
-            return null;
-        }
-    }
 
     public function isEmailExist($email)
     {

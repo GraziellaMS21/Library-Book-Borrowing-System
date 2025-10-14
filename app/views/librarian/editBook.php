@@ -7,8 +7,6 @@ unset($_SESSION["errors"]);
 require_once(__DIR__ . "/../../models/manageBook.php");
 $bookObj = new Book();
 $category = $bookObj->fetchCategory();
-// var_dump($book);
-// echo "Session ID: " . session_id();
 
 if (isset($_GET['id'])) {
     $bookID = $_GET['id'];

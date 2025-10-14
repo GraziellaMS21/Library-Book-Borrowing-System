@@ -6,18 +6,18 @@
         <ul>
             <li class="links"><a href="../../../app/views/librarian/dashboard.php" id="dashboardBtn">Dashboard</a></li>
             <li class="links"><a href="../../../app/views/librarian/booksSection.php" id="booksBtn">Books</a></li>
-            <li class="links"><a href="../../../app/views/librarian/brrowersSection.php" id="borrowersBtn">Borrowers</a>
+            <li class="links"><a href="../../../app/views/librarian/usersSection.php" id="borrowersBtn">Users</a>
             </li>
             <li class="links"><a href="../../../app/views/librarian/detailsSection.php" id="detailsBtn">Borrowing
                     Details</a></li>
-            <li class="links"><a href="../../../app/views/librarian/reportsSection.php" id="reportsBtn">Reports</a></li>
+            <li class="links">
+                <a href="../../controllers/logout.php">Logout</a>
+            </li>
         </ul>
     </div>
 </aside>
 
-<!-- Main links -->
 <div class="flex flex-col w-10/12">
-    <!-- Navbar -->
     <nav>
         <h1 class="text-xl font-semibold">Dashboard</h1>
     </nav>
