@@ -7,7 +7,6 @@ unset($_SESSION["errors"], $_SESSION["old"]);
 require_once(__DIR__ . "/../../models/manageDetails.php");
 $detailsObj = new Details();
 
-// Fetch detail data by ID
 if (isset($_GET['id'])) {
     $detailID = $_GET['id'];
     $detail = $detailsObj->fetchDetail($detailID);
@@ -30,7 +29,7 @@ if (isset($_GET['id'])) {
 <body class="w-screen flex">
     <?php require_once(__DIR__ . '/../shared/dashboardHeader.php'); ?>
 
-    <main class="flex-1 p-6">
+    <main class="flex-1">
         <div class="container mx-auto">
             <div class="booksSection" id="bookSection">
                 <div class="btn-group mb-4">
@@ -38,7 +37,7 @@ if (isset($_GET['id'])) {
                     <button type="button" class="manage w-1/6" id="manageCategoriesBtn">Manage Penalties</button>
                 </div>
 
-                <div class="section manage_categories bg-white rounded-lg shadow-md p-6">
+                <div class="section manage_categories p-6">
                     <div class="mb-4">
                         <a href="../../../app/views/librarian/detailsSection.php"
                             class="bg-red-800 text-white px-4 py-2 rounded-lg hover:bg-red-700">

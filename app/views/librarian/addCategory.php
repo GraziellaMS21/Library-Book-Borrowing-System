@@ -33,11 +33,17 @@ $categoryObj = new Category();
                 </div>
 
                 <div class="section manage_categories h-full">
-                    <div class="addCat flex items-center gap-3">
+                    <div class="mb-4">
+                        <a href="../../../app/views/librarian/booksSection.php"
+                            class="bg-red-800 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                            ← Back
+                        </a>
+                    </div>
+                    <div class="addCat flex items-center gap-3 w-full">
                         <form action="../../../app/controllers/addCategoryController.php" method="POST">
-                            <div class="addDiv flex items-center gap-3" id="addDiv">
+                            <div class="addDiv flex items-center w-full" id="addDiv">
                                 <input type="text" name="category_name" id="category_name"
-                                    class="border border-red-800 rounded-lg p-2" placeholder="Enter category name"
+                                    class="border border-red-800 rounded-lg p-2 m-2" placeholder="Enter category name"
                                     value="<?= $category["category_name"] ?? "" ?>">
                                 <p class="errors"><?= $errors["category_name"] ?? "" ?></p>
                                 <br>

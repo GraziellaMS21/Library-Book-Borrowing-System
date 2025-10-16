@@ -21,7 +21,8 @@ $bookObj = new Book();
 $search = isset($_GET['search']) ? trim($_GET['search']) : "";
 $categoryID = isset($_GET['category']) ? trim($_GET['category']) : "";
 
-$books = $bookObj->viewBook($search, $categoryID);
+// $books = $bookObj->viewBook($search, $categoryID);
+$books = $bookObj->timeChangeView();
 ?>
 
 
@@ -72,7 +73,7 @@ $books = $bookObj->viewBook($search, $categoryID);
                                 <th>Author</th>
                                 <th>Category</th>
                                 <th>No. of Copies</th>
-                                <th>Condition</th>
+                                <th>Date Added</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -85,9 +86,9 @@ $books = $bookObj->viewBook($search, $categoryID);
                                     <td><?= $no++ ?></td>
                                     <td><?= $book["book_title"] ?></td>
                                     <td><?= $book["author"] ?></td>
-                                    <td><?= $book["category_name"] ?></td>
+                                    <td><?= $book["categoryID"] ?></td>
                                     <td><?= $book["book_copies"] ?></td>
-                                    <td><?= $book["book_condition"] ?></td>
+                                    <td><?= $book["date_added"] ?></td>
                                     <td><?= $book["status"] ?></td>
                                     <td class="action text-center">
                                         <a class="editBtn"

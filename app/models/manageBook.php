@@ -63,6 +63,7 @@ class Book extends Database
                 ORDER BY b.book_title ASC";
         }
 
+
         $query = $this->connect()->prepare($sql);
 
         if ($search != "") {
@@ -77,6 +78,22 @@ class Book extends Database
         } else {
             return null;
         }
+    }
+
+    public function timeChangeView()
+    {
+        // Get current date in Y-m-d format
+        $currentDate = date("Y-m-d");
+
+        // Prepare SQL query to fetch books added today or in the future
+        $sql = "SELECT * FROM books WHERE date_added <= :currentDate ORDER BY date_added ASC";
+
+
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(':currentDate', $currentDate);
+        $query->execute();
+
+        return $query->fetchAll();
     }
 
 

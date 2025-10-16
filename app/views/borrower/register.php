@@ -216,5 +216,58 @@ $userTypes = $registerObj->fetchUserType();
 </body>
 <script src="../../../public/assets/js/borrower/register.js"></script>
 <script src="../../../public/assets/js/components/header_footer.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const select = document.getElementById('borrowerType');
+    const emailMsg = document.getElementById('emailMessage');
+    const college = document.getElementById('college');
+    const department = document.getElementById('department');
+    const position = document.getElementById('position');
+    const collegeLabel = document.getElementById('collegeLabel');
+    const positionLabel = document.getElementById('positionLabel');
+
+    function updateFields() {
+        const val = select.value;
+
+        // Hide all by default
+        college.classList.add('hidden');
+        department.classList.add('hidden');
+        position.classList.add('hidden');
+
+        collegeLabel.innerHTML = 'College:';
+        positionLabel.innerHTML = 'Position:';
+
+        if (val === '1') { // Student
+            college.classList.remove('hidden');
+            collegeLabel.innerHTML = 'College<span>*</span>:';
+        } else if (val === '2') { // Staff
+            college.classList.remove('hidden');
+            department.classList.remove('hidden');
+            position.classList.remove('hidden');
+            positionLabel.innerHTML = 'Position<span>*</span>:';
+        }
+    }
+
+    function updateEmailMessage() {
+        const val = select.value;
+        if (val === '1' || val === '2') {
+            emailMsg.textContent = 'Use Your WMSU Email Address';
+            emailMsg.style.display = 'block';
+        } else if (val === '3') {
+            emailMsg.textContent = 'Use Your Personal Email Address';
+            emailMsg.style.display = 'block';
+        } else {
+            emailMsg.textContent = '';
+            emailMsg.style.display = 'none';
+        }
+    }
+
+    select.addEventListener('change', updateEmailMessage);
+    select.addEventListener('change', updateFields);
+
+    updateEmailMessage();
+    updateFields();
+});
+</script>
 
 </html>

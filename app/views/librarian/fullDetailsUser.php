@@ -42,7 +42,9 @@ $userTypes = $userObj->fetchUserTypes();
             <div class="booksSection" id="bookSection">
                 <div class="section manage_books h-full">
                     <div class="addBook rounded-xl p-4 bg-red-800 inline-block text-white my-2">
-                        <button><a href="../../../app/views/librarian/usersSection.php"">Return</a></button>
+                        <button><a href="../../../app/views/librarian/usersSection.php"class="bg-red-800 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                            ← Back
+                        </a></button>
                     </div>
                     <div class=" user-details">
                                 <p><strong>Last Name:</strong> <?= htmlspecialchars($user['lName']) ?></p>

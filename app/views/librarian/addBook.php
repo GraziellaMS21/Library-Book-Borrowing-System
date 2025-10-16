@@ -38,7 +38,9 @@ if (isset($_GET['id'])) {
 
                 <div class="section manage_books h-full">
                     <div class="addBook rounded-xl p-4 bg-red-800 inline-block text-white my-2">
-                        <button><a href="../../../app/views/librarian/booksSection.php"">Return</a></button>
+                        <button><a href="../../../app/views/librarian/booksSection.php"class="bg-red-800 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                            ← Back
+                        </a></button>
                     </div>
                     <form action=" ../../../app/controllers/addBookController.php?id=<?= $book['bookID'] ?? "" ?>" method="POST">
                                 <div class="input">
@@ -69,6 +71,7 @@ if (isset($_GET['id'])) {
                                         }
                                         ?>
                                     </select>
+                                    <p class="errors"><?= $errors["categoryID"] ?? "" ?></p>
                                 </div>
 
                                 <div class="input">
@@ -109,6 +112,7 @@ if (isset($_GET['id'])) {
 
                                         <option value="Lost" <?= isset($book["book_condition"]) && $book["book_condition"] == "Lost" ? "selected" : "" ?>>Lost</option>
                                     </select>
+                                    <p class="errors"><?= $errors["book_condition"] ?? "" ?></p>
                                 </div>
                                 <br>
                                 <input type="submit" value="Add Book"

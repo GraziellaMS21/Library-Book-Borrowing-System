@@ -39,7 +39,9 @@ if (isset($_GET['id'])) {
 
                 <div class="section manage_books h-full">
                     <div class="addBook rounded-xl p-4 bg-red-800 inline-block text-white my-2">
-                        <button><a href="../../../app/views/librarian/booksSection.php"">Return</a></button>
+                        <button><a href="../../../app/views/librarian/booksSection.php" class="bg-red-800 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                            ← Back
+                        </a></button>
                     </div>
                     <form action=" ../../../app/controllers/editBookController.php?id=<?= $book['bookID'] ?>"
                                 method="POST">

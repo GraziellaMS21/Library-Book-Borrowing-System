@@ -47,7 +47,9 @@ $category = $bookObj->fetchCategory();
 
                 <div class="section manage_books h-full">
                     <div class="addBook rounded-xl p-4 bg-red-800 inline-block text-white my-2">
-                        <button><a href="../../../app/views/librarian/booksSection.php"">Return</a></button>
+                        <button><a href="../../../app/views/librarian/booksSection.php"class="bg-red-800 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                            ← Back
+                        </a></button>
                     </div>
                     <div class=" book-details">
                                 <p><strong>Title:</strong> <?= htmlspecialchars($book['book_title']) ?></p>

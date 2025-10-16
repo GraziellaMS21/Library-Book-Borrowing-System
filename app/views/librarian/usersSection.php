@@ -15,7 +15,8 @@ unset($_SESSION["old"], $_SESSION["errors"]);
 $search = isset($_GET['search']) ? trim($_GET['search']) : "";
 $userTypeID = isset($_GET['userType']) ? trim($_GET['userType']) : "";
 
-$users = $userObj->viewUser($search, $userTypeID);
+// $users = $userObj->viewUser($search, $userTypeID);
+$users = $userObj->timeChangeView();
 ?>
 
 
@@ -59,7 +60,7 @@ $users = $userObj->viewUser($search, $userTypeID);
                             <th>Email</th>
                             <th>Contact No.</th>
                             <th>User Type</th>
-                            <th>Role</th>
+                            <th>Date Registered</th>
                             <th>Actions</th>
                         </tr>
 
@@ -73,8 +74,8 @@ $users = $userObj->viewUser($search, $userTypeID);
                                 <td><?= ($user["fName"]) ?></td>
                                 <td><?= ($user["email"]) ?></td>
                                 <td><?= ($user["contact_no"]) ?></td>
-                                <td><?= ($user["type_name"]) ?></td>
-                                <td><?= ($user["role"]) ?></td>
+                                <td><?= ($user["userTypeID"]) ?></td>
+                                <td><?= ($user["date_registered"]) ?></td>
                                 <td class="action text-center">
                                     <a class="editBtn"
                                         href="../../../app/views/librarian/editUser.php?id=<?= $user['userID'] ?>">Edit</a>

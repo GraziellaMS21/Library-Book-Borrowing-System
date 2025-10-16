@@ -150,7 +150,7 @@ $details = $detailsObj->viewDetails($search);
                 </div>
 
                 <!-- Penalties Table -->
-                <div class="section manage_categories h-full mt-10">
+                <div class="section manage_categories h-full">
                     <div class="addCat flex items-center gap-3">
                         <a id="addCatBtn" class="rounded-xl p-4 bg-red-800 text-white"
                             href="../../../app/views/librarian/addPenalty.php">

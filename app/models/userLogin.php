@@ -5,9 +5,13 @@ class Login extends Database
 {
     public function logIn($email, $password)
     {
-        $sql = "SELECT userID, lName, fName, email, password, userTypeID FROM users WHERE email = :email";
+        $currentDate = date("Y-m-d");
+
+        $sql = "SELECT userID, lName, fName, email, password, userTypeID FROM users WHERE email = :email AND date_registered <= :currentDate";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":email", $email);
+        $query->bindParam(":email", $email);
+        $query->bindParam(":currentDate", $currentDate);
 
         if ($query->execute()) {
             $record = $query->fetch();

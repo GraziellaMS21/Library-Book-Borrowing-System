@@ -58,6 +58,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $bookObj->ISBN = $book["ISBN"];
         $bookObj->book_copies = $book["book_copies"];
         $bookObj->book_condition = $book["book_condition"];
+        $bookObj->date_added = date("Y-m-d");
 
         if ($bookObj->addBook()) {
             header("Location: ../../app/views/librarian/booksSection.php");
