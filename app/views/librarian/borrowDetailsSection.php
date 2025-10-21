@@ -78,7 +78,7 @@ $condition_options = ['Good', 'Fair', 'Damaged', 'Lost'];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Librarian Dashboard - Borrow Details</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/librarian/admin.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/librarian/adminFinal.css" />
     </style>
 </head>
 
@@ -389,54 +389,6 @@ $condition_options = ['Good', 'Fair', 'Damaged', 'Lost'];
 
 
 </body>
-<script src="../../../public/assets/js/librarian/admin.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const addBorrowDetailModal = document.getElementById('addBorrowDetailModal');
-        const openAddBorrowDetailBtn = document.getElementById('openAddBorrowDetailModalBtn');
-        const closeBtns = document.querySelectorAll('.close');
-
-        // Function to open a modal
-        const openModal = (modal) => {
-            modal.style.display = 'flex';
-            modal.classList.add('open');
-        };
-
-        // Function to close a modal
-        const closeModal = (modal) => {
-            modal.style.display = 'none';
-            modal.classList.remove('open');
-
-            // Immediately reset form when manually closed
-            const form = modal.querySelector('form');
-            if (form) {
-                form.reset();
-            }
-        };
-
-        openAddBorrowDetailBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.querySelector('#addBorrowDetailModal form').reset();
-            document.querySelectorAll('#addBorrowDetailModal .errors').forEach(p => p.textContent = '');
-
-            openModal(addBorrowDetailModal);
-        });
-
-        // Close Modal when clicking closeButtons
-        closeBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const modalId = btn.getAttribute('data-modal');
-                closeModal(document.getElementById(modalId));
-            });
-        });
-
-        // Close Modal when clicking outside
-        window.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal')) {
-                closeModal(e.target);
-            }
-        });
-    });
-</script>
+<script src="../../../public/assets/js/admin.js"></script>
 
 </html>

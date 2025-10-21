@@ -37,6 +37,7 @@ $userTypes = $registerObj->fetchUserType();
 
             <div class="form-section w-1/2 flex flex-col justify-center items-center">
                 <h1 class="font-extrabold">REGISTER YOUR ACCOUNT</h1>
+
                 <form action="../../../app/controllers/registerController.php" method="POST" enctype="multipart/form-data">
                     <div class="borrowerType">
                         <label for="borrowerType">Register as? <span>*</span></label>
@@ -216,6 +217,6 @@ $userTypes = $registerObj->fetchUserType();
     </div>
     <?php require_once(__DIR__ . '/../shared/footer.php'); ?>
 </body>
-<script src="../../../public/assets/js/components/header_footer.js"></script>
+<script src="../../../public/assets/js/header_footer.js"></script>
 
 </html>

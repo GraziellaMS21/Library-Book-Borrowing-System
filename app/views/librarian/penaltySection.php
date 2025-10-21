@@ -76,7 +76,7 @@ $penalty_statuses = ['Unresolved', 'Resolved'];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Librarian Dashboard - Manage Penalties</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/librarian/admin.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/librarian/adminFinal.css" />
 </head>
 
 <body class="h-screen w-screen flex">
@@ -292,54 +292,6 @@ $penalty_statuses = ['Unresolved', 'Resolved'];
 
 
 </body>
-<script src="../../../public/assets/js/librarian/admin.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const addPenaltyModal = document.getElementById('addPenaltyModal');
-        const openAddPenaltyBtn = document.getElementById('openAddPenaltyModalBtn');
-        const closeBtns = document.querySelectorAll('.close');
-
-        // Function to open a modal
-        const openModal = (modal) => {
-            modal.style.display = 'flex';
-            modal.classList.add('open');
-        };
-
-        // Function to close a modal
-        const closeModal = (modal) => {
-            modal.style.display = 'none';
-            modal.classList.remove('open');
-            //clear error
-            const form = modal.querySelector('form');
-            if (form) {
-                form.reset();
-            }
-        };
-
-        // Open Modal using addBtn
-        openAddPenaltyBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.querySelector('#addPenaltyModal form').reset();
-            document.querySelectorAll('#addPenaltyModal .errors').forEach(p => p.textContent = '');
-
-            openModal(addPenaltyModal);
-        });
-
-        // Close Modal when clicking close Buttons
-        closeBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const modalId = btn.getAttribute('data-modal');
-                closeModal(document.getElementById(modalId));
-            });
-        });
-
-        // Close Modal when clicking outside
-        window.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal')) {
-                closeModal(e.target);
-            }
-        });
-    });
-</script>
+<script src="../../../public/assets/js/admin.js"></script>
 
 </html>

@@ -15,7 +15,7 @@ $errors = $_SESSION["errors"] ?? [];
 unset($_SESSION["old"], $_SESSION["errors"]);
 
 $current_modal = $_GET['modal'] ?? '';
-$current_id = (int) ($_GET['id'] ?? 0);
+$book_id = (int) ($_GET['id'] ?? 0);
 $open_modal = '';
 
 if ($current_modal === 'add') {
@@ -34,10 +34,10 @@ if ($open_modal == 'editBookModal' || $open_modal == 'viewDetailsModal' || $open
     if ($open_modal == 'editBookModal' && !empty($old)) {
         $modal_book = $old;
     } else {
-        $modal_book = $bookObj->fetchBook(bookID: $current_id) ?: [];
+        $modal_book = $bookObj->fetchBook(bookID: $book_id) ?: [];
     }
     if ($open_modal != 'viewDetailsModal') {
-        $modal_book['bookID'] = $current_id;
+        $modal_book['bookID'] = $book_id;
     }
 } elseif ($open_modal == 'addBookModal') {
     $modal_book = $old;
@@ -61,7 +61,7 @@ $books = $bookObj->viewBook($search, $categoryID);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Librarian Dashboard</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/librarian/admin.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/librarian/adminFinal.css" />
 </head>
 
 <body class="h-screen w-screen flex">
@@ -76,7 +76,7 @@ $books = $bookObj->viewBook($search, $categoryID);
                 </div>
 
                 <form method="GET" class="search">
-                    <input type="text" name="search" placeholder="Search book title..." value="<?= ($search) ?>">
+                    <input type="text" name="search" placeholder="Search book title..." value="<?= $search ?>">
                     <select name="category" id="category">
                         <option value="">All Categories</option>
                         <?php foreach ($category as $cat): ?>
@@ -91,6 +91,7 @@ $books = $bookObj->viewBook($search, $categoryID);
                     <table>
                         <tr>
                             <th>No</th>
+                            <th>Book Cover</th>
                             <th>Book Title</th>
                             <th>Author</th>
                             <th>Category</th>
@@ -103,9 +104,18 @@ $books = $bookObj->viewBook($search, $categoryID);
                         <?php
                         $no = 1;
                         foreach ($books as $book) {
+                            $book_cover_url = !empty($book["book_cover_dir"]) ? "../../../" . $book["book_cover_dir"] : null;
                             ?>
                             <tr>
                                 <td><?= $no++ ?></td>
+                                <td class="text-center"> <?php if ($book_cover_url) { ?>
+                                        <img src="<?= $book_cover_url ?>" alt="Cover"
+                                            class="w-16 h-16 object-cover rounded mx-auto border border-gray-300"
+                                            title="<?= $book["book_cover_name"] ?? 'Book Cover' ?>">
+                                    <?php } else { ?>
+                                        <span class="text-gray-500 text-xs">N/A</span>
+                                    <?php } ?>
+                                </td>
                                 <td><?= $book["book_title"] ?></td>
                                 <td><?= $book["author"] ?></td>
                                 <td><?= $book["category_name"] ?></td>
@@ -133,20 +143,27 @@ $books = $bookObj->viewBook($search, $categoryID);
 
     <div id="addBookModal" class="modal <?= $open_modal == 'addBookModal' ? 'open' : '' ?>">
         <div class="modal-content">
-            <span class="close" data-modal="addBookModal">&times;</span>
+            <span class="close close-times" data-modal="addBookModal">&times;</span>
             <h2>Add New Book</h2>
-            <form action="../../../app/controllers/bookController.php?action=add" method="POST">
+            <form action="../../../app/controllers/bookController.php?action=add" method="POST"
+                enctype="multipart/form-data">
+
+                <div class="input" id="book_cover">
+                    <label for="book_cover">Upload Book Cover<span>*</span> : </label>
+                    <input type="file" name="book_cover" id="book_cover" accept="image/*">
+                    <p class="errors"><?= $errors["book_cover"] ?? "" ?></p>
+                </div>
                 <div class="input">
                     <label for="book_title">Book Title<span>*</span> : </label>
                     <input type="text" class="input-field" name="book_title" id="book_title"
-                        value="<?= ($modal_book["book_title"] ?? "") ?>">
+                        value="<?= $modal_book["book_title"] ?? "" ?>">
                     <p class="errors"><?= $errors["book_title"] ?? "" ?></p>
                 </div>
 
                 <div class="input">
                     <label for="author">Author<span>*</span> : </label>
                     <input type="text" class="input-field" name="author" id="author"
-                        value="<?= ($modal_book["author"] ?? "") ?>">
+                        value="<?= $modal_book["author"] ?? "" ?>">
                     <p class="errors"><?= $errors["author"] ?? "" ?></p>
                 </div>
 
@@ -217,11 +234,23 @@ $books = $bookObj->viewBook($search, $categoryID);
 
     <div id="editBookModal" class="modal <?= $open_modal == 'editBookModal' ? 'open' : '' ?>">
         <div class="modal-content">
-            <span class="close" data-modal="editBookModal">&times;</span>
+            <span class="close close-times" data-modal="editBookModal">&times;</span>
             <h2>Edit Book</h2>
-            <form id="editBookForm"
-                action="../../../app/controllers/bookController.php?action=edit&id=<?= $current_id ?>" method="POST">
-                <input type="hidden" name="bookID" value="<?= $current_id ?>">
+            <form id="editBookForm" action="../../../app/controllers/bookController.php?action=edit&id=<?= $book_id ?>"
+                method="POST" enctype="multipart/form-data"> <input type="hidden" name="bookID" value="<?= $book_id ?>">
+                <input type="hidden" name="existing_book_cover_name"
+                    value="<?= $modal_book["book_cover_name"] ?? "" ?>">
+                <input type="hidden" name="existing_book_cover_dir" value="<?= $modal_book["book_cover_dir"] ?? "" ?>">
+
+                <div class="input col-span-2"> <label for="new_book_cover">Upload New Book Cover: </label>
+                    <input type="file" class="input-field" name="new_book_cover" id="edit_new_book_cover"
+                        accept="image/*">
+                    <p class="text-xs text-gray-500 mt-1">Current File:
+                        <?= $modal_book["book_cover_name"] ?? "None" ?>
+                    </p>
+                    <p class="errors text-red-500 text-sm"><?= $errors["new_book_cover"] ?? "" ?></p>
+                </div>
+
                 <div class="input">
                     <label for="book_title">Book Title<span>*</span> : </label>
                     <input type="text" class="input-field" name="book_title" id="edit_book_title"
@@ -317,37 +346,49 @@ $books = $bookObj->viewBook($search, $categoryID);
 
     <div id="viewDetailsModal" class="modal <?= $open_modal == 'viewDetailsModal' ? 'open' : '' ?>">
         <div class="modal-content">
-            <span class="close" data-modal="viewDetailsModal">&times;</span>
             <h2 class="text-2xl font-bold mb-4">Full Book Details</h2>
             <div class="book-details grid grid-cols-2 gap-y-2 gap-x-4 text-sm">
-                <p class="col-span-2">Title: <?= $modal_book['book_title'] ?? 'N/A' ?></p>
 
-                <p>Author: <?= $modal_book['author'] ?? 'N/A' ?></p>
-                <p>Category: <?= $modal_book['category_name'] ?? 'N/A' ?></p>
+                <div class="col-span-2 mb-4 justify-items-center">
+                    <p class="font-semibold mb-2">Book Cover:</p>
+                    <?php
+                    $modal_book_cover_url = !empty($modal_book['book_cover_dir']) ? "../../../" . $modal_book['book_cover_dir'] : null;
 
-                <p>Publication: <?= $modal_book['publication_name'] ?? 'N/A' ?></p>
-                <p>Pub. Year: <?= $modal_book['publication_year'] ?? 'N/A' ?></p>
+                    if ($modal_book_cover_url) { ?>
+                        <img src="<?= $modal_book_cover_url ?>" alt="Book Cover Image"
+                            class="max-w-xs max-h-60 border rounded shadow-md object-cover">
+                    <?php } else { ?>
+                        <p class="text-gray-500">No Book Cover Uploaded</p>
+                    <?php } ?>
+                </div>
+                <p class="col-span-2"><strong>Title:</strong> <?= $modal_book['book_title'] ?? 'N/A' ?></p>
 
-                <p>ISBN: <?= $modal_book['ISBN'] ?? 'N/A' ?></p>
-                <p>Copies: <?= $modal_book['book_copies'] ?? 'N/A' ?></p>
+                <p><strong>Author:</strong> <?= $modal_book['author'] ?? 'N/A' ?></p>
+                <p><strong>Category:</strong> <?= $modal_book['category_name'] ?? 'N/A' ?></p>
 
-                <p>Condition: <?= $modal_book['book_condition'] ?? 'N/A' ?></p>
-                <p>Date Added: <?= $modal_book['date_added'] ?? 'N/A' ?></p>
+                <p><strong>Publication:</strong> <?= $modal_book['publication_name'] ?? 'N/A' ?></p>
+                <p><strong>Pub. Year:</strong> <?= $modal_book['publication_year'] ?? 'N/A' ?></p>
 
-                <p>Status: <span class="font-semibold"><?= $modal_book['status'] ?? 'N/A' ?></span></p>
+                <p><strong>ISBN:</strong> <?= $modal_book['ISBN'] ?? 'N/A' ?></p>
+                <p><strong>Copies:</strong> <?= $modal_book['book_copies'] ?? 'N/A' ?></p>
+
+                <p><strong>Condition:</strong> <?= $modal_book['book_condition'] ?? 'N/A' ?></p>
+                <p><strong>Date Added:</strong> <?= $modal_book['date_added'] ?? 'N/A' ?></p>
+
+                <p><strong>Status:</strong> <span class="font-semibold"><?= $modal_book['status'] ?? 'N/A' ?></span></p>
+
 
             </div>
             <div class="mt-6 text-right">
                 <button type="button"
-                    class="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400"
-                    onclick="document.getElementById('viewDetailsModal').style.display='none';">Close</button>
+                    class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400"
+                    data-modal="viewDetailsModal">Close</button>
             </div>
         </div>
     </div>
 
     <div id="deleteConfirmModal" class="modal delete-modal <?= $open_modal == 'deleteConfirmModal' ? 'open' : '' ?>">
         <div class="modal-content max-w-sm">
-            <span class="close" data-modal="deleteConfirmModal">&times;</span>
             <h2 class="text-xl font-bold mb-4 text-red-700">Confirm Deletion</h2>
             <p class="mb-6 text-gray-700">
                 Are you sure you want to delete the book:
@@ -355,12 +396,11 @@ $books = $bookObj->viewBook($search, $categoryID);
                 This action cannot be undone.
             </p>
             <div class="flex justify-end space-x-4">
-                <button type="button"
-                    class="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400"
-                    onclick="document.getElementById('deleteConfirmModal').style.display='none';">
+                <button type="button" data-modal="deleteConfirmModal"
+                    class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">
                     Cancel
                 </button>
-                <a href="../../../app/controllers/bookController.php?action=delete&id=<?= $modal_book['bookID'] ?? $delete_book_id ?>"
+                <a href="../../../app/controllers/bookController.php?action=delete&id=<?= $modal_book['bookID'] ?>"
                     class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 cursor-pointer">
                     Confirm Delete
                 </a>
@@ -370,49 +410,6 @@ $books = $bookObj->viewBook($search, $categoryID);
 
 
 </body>
-<script src="../../../public/assets/js/librarian/admin.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const addBookModal = document.getElementById('addBookModal');
-        const openAddBookBtn = document.getElementById('openAddBookModalBtn');
-        const closeBtns = document.querySelectorAll('.close');
-
-        // Function to open a modal
-        const openModal = (modal) => {
-            modal.style.display = 'flex';
-            modal.classList.add('open');
-        };
-
-        // Function to close a modal
-        const closeModal = (modal) => {
-            modal.style.display = 'none';
-            modal.classList.remove('open');
-            // Immediately reset form when manually closed
-            if (modal.id === 'addBookModal') {
-                const form = modal.querySelector('form');
-                if (form) {
-                    form.reset();
-                }
-                //clear error
-                document.querySelectorAll('#addBookModal .errors').forEach(p => p.textContent = '');
-            }
-        };
-        // Close Modal using closeBtn
-        closeBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const modalId = btn.getAttribute('data-modal');
-                closeModal(document.getElementById(modalId));
-
-            });
-        });
-
-        //Close Modal when clicking outside
-        window.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal')) {
-                closeModal(e.target);
-            }
-        });
-    });
-</script>
+<script src="../../../public/assets/js/admin.js"></script>
 
 </html>

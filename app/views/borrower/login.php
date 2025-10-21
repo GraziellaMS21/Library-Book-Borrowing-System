@@ -66,6 +66,6 @@ unset($_SESSION["errors"]);
 
     <?php require_once(__DIR__ . '/../shared/footer.php'); ?>
 </body>
-<script src="../../../public/assets/js/components/header_footer.js"></script>
+<script src="../../../public/assets/js/header_footer.js"></script>
 
 </html>

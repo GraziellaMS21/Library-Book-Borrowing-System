@@ -10,7 +10,7 @@ $errors = $_SESSION["errors"] ?? [];
 unset($_SESSION["errors"]);
 
 require_once(__DIR__ . "/../../models/manageDetails.php");
-$details = new Details();
+$details = new BorrowDetails();
 
 $bookID = $_GET["bookID"] ?? null;
 $userID = $_SESSION["user_id"];

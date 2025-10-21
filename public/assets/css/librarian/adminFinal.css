@@ -194,7 +194,18 @@ tbody tr:hover {
   border-radius: 0.3rem;
   color: white;
   text-decoration: none;
-  font-weight: 500;
+  margin: 0 0.3rem;
+  border: none;
+  transition: all 0.2s ease;
+  display: inline-block;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.actionBtn {
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.3rem;
+  color: white;
+  text-decoration: none;
   margin: 0 0.3rem;
   border: none;
   transition: all 0.2s ease;
@@ -217,7 +228,8 @@ tbody tr:hover {
 
 .editBtn:hover,
 .deleteBtn:hover,
-.viewBtn:hover {
+.viewBtn:hover,
+.actionBtn:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   opacity: 0.9;
@@ -340,23 +352,6 @@ input[type="submit"]:hover {
   animation: fadeIn 0.3s ease;
 }
 
-.modal-content .close {
-  position: absolute;
-  top: 0.75rem;
-  right: 1.25rem;
-  color: #aaa;
-  font-size: 2rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.modal-content .close:hover,
-.modal-content .close:focus {
-  color: #931c19;
-  text-decoration: none;
-}
-
 /* Modal Heading Style */
 .modal-content h2 {
   color: #931c19;
@@ -398,31 +393,43 @@ input[type="submit"]:hover {
   margin-top: 1.5rem;
 }
 
+.modal-content .close-times {
+  position: absolute;
+  top: 0.75rem;
+  right: 1.25rem;
+  color: #aaa;
+  font-size: 2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
 .delete-modal {
   width: 100vw;
 }
 
-.close {
-  color: #aaa;
-  float: right;
-  font-size: 28px;
-  font-weight: bold;
-}
-
-.close:hover,
-.close:focus {
-  color: black;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-/* MEDIA QUERIES for responsiveness */
 @media (max-width: 600px) {
-  /* Stack all inputs on smaller screens */
   .modal-content .input,
   .modal-content .categoryID,
   .modal-content .book_condition {
     flex: 1 1 100%;
     min-width: auto;
   }
+}
+
+.tab-btn {
+  padding: 0.5rem 1rem;
+  border-bottom: 3px solid transparent;
+  font-weight: 600;
+  color: #4a5568;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  border-bottom-color: #991b1b;
+  color: #991b1b;
+}
+
+.tab-btn:hover {
+  color: #991b1b;
 }

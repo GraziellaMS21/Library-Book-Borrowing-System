@@ -7,10 +7,7 @@ $register = [];
 $errors = [];
 $userTypes = $registerObj->fetchUserType();
 
-// FIX 6: Enclosed all data collection within the POST block
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    
-    // FIX 7: Collected form data (non-file)
     $register["userTypeID"] = trim(htmlspecialchars($_POST["userTypeID"] ?? ''));
     $register["lName"] = trim(htmlspecialchars($_POST["lName"] ?? ''));
     $register["fName"] = trim(htmlspecialchars($_POST["fName"] ?? ''));
@@ -23,18 +20,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $register["conPass"] = trim(htmlspecialchars($_POST["conPass"] ?? ''));
     $register["agreement"] = isset($_POST["agreement"]) ? trim(htmlspecialchars($_POST["agreement"])) : "";
 
-    // FIX 8: Handled file input correctly
     $register["imageID_name"] = $_FILES["imageID"]["name"] ?? '';
     $upload_dir = __DIR__ . "/../../public/uploads/id_images/";
-    
-    // FIX 9: Correctly defined image directory using proper path concatenation
+
     $register["imageID_dir"] = $upload_dir . basename($register["imageID_name"]);
 
-    
+
     if (empty($register["userTypeID"])) {
         $errors["userTypeID"] = "Please Choose From the Following";
     }
-
 
     if (empty($register["lName"])) {
         $errors["lName"] = "Last Name is required";
@@ -81,8 +75,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (empty($register["agreement"])) {
         $errors["agreement"] = "You must Agree to the Terms and Conditions";
     }
-    
-    // FIX 10: Added file upload validation
+
     if (empty($register["imageID_name"]) || $_FILES["imageID"]["error"] == UPLOAD_ERR_NO_FILE) {
         $errors["imageID"] = "Upload ID Image is required";
     } elseif ($_FILES["imageID"]["error"] !== UPLOAD_ERR_OK) {
@@ -91,49 +84,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 
     if (empty(array_filter($errors))) {
-        
+
         if (move_uploaded_file($_FILES["imageID"]["tmp_name"], $register["imageID_dir"])) {
-            
+
             $registerObj->userTypeID = $register["userTypeID"];
             $registerObj->lName = $register["lName"];
             $registerObj->fName = $register["fName"];
-            
+
             $registerObj->middleIn = empty($register["middleIn"]) ? NULL : $register["middleIn"];
             $registerObj->id_number = $register["id_number"];
-            
-            // FIX 11: Correctly set college_department from $register array
+
             $registerObj->college_department = empty($register["college_department"]) ? NULL : $register["college_department"];
-            
+
             $registerObj->imageID_name = $register["imageID_name"];
-            // FIX 12: Use the relative path for DB storage
             $registerObj->imageID_dir = "public/uploads/id_images/" . basename($register["imageID_name"]);
-            
+
             $registerObj->contact_no = $register["contact_no"];
             $registerObj->email = $register["email"];
             $registerObj->password = $register["password"];
             $registerObj->date_registered = date("Y-m-d");
 
             if ($registerObj->addUser()) {
-                header("Location: ../../app/views/borrower/register.php?success=1");
+                header("Location: ../../app/views/borrower/register.php?success=pending");
                 exit;
             } else {
-                // DB insert failed: clean up the uploaded file
                 if (file_exists($register["imageID_dir"])) {
                     unlink($register["imageID_dir"]);
                 }
-                // FIX 13: Change echo "FAILED" to redirection
                 $_SESSION["errors"] = ["general" => "Registration failed due to a database error."];
                 $_SESSION["old"] = $register;
                 header("Location: ../../app/views/borrower/register.php");
                 exit;
             }
         } else {
-            // File move failed
             $errors["imageID"] = "Failed to save the uploaded image.";
         }
     }
-    
-    // Fallback if there are errors (or file move failed above)
+
     $_SESSION["errors"] = $errors;
     $_SESSION["old"] = $register;
     header("Location: ../../app/views/borrower/register.php");

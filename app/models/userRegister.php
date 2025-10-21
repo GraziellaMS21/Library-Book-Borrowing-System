@@ -16,14 +16,15 @@ class Register extends Database
     public $userTypeID = "";
     public $date_registered = "";
     public $role = "";
+    public $user_status = "Pending"; // Status remains 'Pending' initially
 
     protected $db;
 
     public function addUser()
     {
-        // FIX 3: Corrected SQL query to match the number of columns and placeholders
-        // and matched the placeholder names (imageID_name/dir) to the class properties.
-        $sql = "INSERT INTO users (lName, fName, middleIn, id_number, college_department, imageID_name, imageID_dir, contact_no, email, password, role, userTypeID, date_registered) VALUES (:lName, :fName, :middleIn, :id_number, :college_department, :imageID_name, :imageID_dir, :contact_no, :email, :password, :role, :userTypeID, :date_registered)";
+        // SQL remains the same, as we're just updating the value of $this->user_status
+        $sql = "INSERT INTO users (lName, fName, middleIn, id_number, college_department, imageID_name, imageID_dir, contact_no, email, password, role, userTypeID, date_registered, user_status) 
+                VALUES (:lName, :fName, :middleIn, :id_number, :college_department, :imageID_name, :imageID_dir, :contact_no, :email, :password, :role, :userTypeID, :date_registered, :user_status)";
 
         $query = $this->connect()->prepare($sql);
 
@@ -32,21 +33,23 @@ class Register extends Database
         $query->bindParam(":middleIn", $this->middleIn);
         $query->bindParam(":id_number", $this->id_number);
         $query->bindParam(":college_department", $this->college_department);
-        // FIX 4: Corrected binding for image properties
         $query->bindParam(":imageID_name", $this->imageID_name);
         $query->bindParam(":imageID_dir", $this->imageID_dir);
         $query->bindParam(":contact_no", $this->contact_no);
         $query->bindParam(":email", $this->email);
         $query->bindParam(":password", $this->password);
-        // FIX 5: Defined default role before binding
-        $role = 'Borrower'; 
+
+        $role = 'Borrower';
+        // Ensure default status is 'Pending'
+        $this->user_status = "Pending";
+
         $query->bindParam(":role", $role);
         $query->bindParam(":userTypeID", $this->userTypeID);
         $query->bindParam(":date_registered", $this->date_registered);
+        $query->bindParam(":user_status", $this->user_status);
 
         return $query->execute();
     }
-
 
 
     public function fetchUserType()
@@ -77,6 +80,3 @@ class Register extends Database
             return false;
     }
 }
-
-// $obj = new Register();
-// $obj->fetchBorrowerType();
