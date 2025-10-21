@@ -23,7 +23,7 @@ if (isset($_GET['id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Borrowing Detail</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
     <link rel="stylesheet" href="../../../public/assets/css/librarian/manage_category.css" />
 </head>
 

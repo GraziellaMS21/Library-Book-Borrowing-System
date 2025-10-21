@@ -56,7 +56,6 @@ class Book extends Database
                 WHERE c.categoryID = :category
                 ORDER BY b.book_title ASC";
         } else {
-            // Default: show all books
             $sql = "SELECT b.*, c.category_name
                 FROM books b 
                 JOIN category c ON b.categoryID = c.categoryID
@@ -100,14 +99,20 @@ class Book extends Database
     }
 
 
-    public function isTitleExist($book_title, $bookID)
+    public function isTitleExist($book_title, $bookID = "")
     {
-        $sql = "SELECT COUNT(bookID) as total_books FROM books WHERE book_title = :book_title AND bookID <> :bookID";
+        if ($bookID) {
+            $sql = "SELECT COUNT(bookID) as total_books FROM books  WHERE book_title = :book_title AND bookID <> :bookID";
+        } else {
+            $sql = "SELECT COUNT(bookID) as total_books FROM books WHERE book_title = :book_title";
+        }
         $query = $this->connect()->prepare($sql);
         $record = NULL;
 
         $query->bindParam(":book_title", $book_title);
-        $query->bindParam(":bookID", $bookID);
+        if ($bookID) {
+            $query->bindParam(":bookID", $bookID);
+        }
         if ($query->execute()) {
             $record = $query->fetch();
         }

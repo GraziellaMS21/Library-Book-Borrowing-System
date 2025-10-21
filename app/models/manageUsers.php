@@ -7,9 +7,12 @@ class User extends Database
     public $fName = "";
     public $middleIn = "";
     public $contact_no = "";
-    public $college = "";
-    public $department = "";
-    public $position = "";
+    public $college_department = ""; // Combined property
+    // REMOVED: public $college = "";
+    // REMOVED: public $department = "";
+    // REMOVED: public $position = "";
+    public $imageID_name = ""; // Image filename
+    public $imageID_dir = ""; // Image path/directory
     public $email = "";
     public $password = "";
     public $userTypeID = "";
@@ -20,6 +23,7 @@ class User extends Database
 
     public function viewUser($search = "", $userType = "")
     {
+        // SQL queries updated to select image fields
         if ($search != "" && $userType != "") {
             $sql = "SELECT u.*, ut.type_name
                     FROM users u
@@ -68,32 +72,40 @@ class User extends Database
 
     public function fetchUser($userID)
     {
-        $sql = "SELECT u.*, ut.type_name 
-                FROM users u
-                JOIN user_type ut ON u.userTypeID = ut.userTypeID
-                WHERE u.userID = :userID";
+        $sql = "SELECT u.*, ut.type_name FROM users u JOIN user_type ut ON u.userTypeID = ut.userTypeID WHERE u.userID = :userID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(':userID', $userID);
         $query->execute();
         return $query->fetch();
     }
+
+    // fetchUserTypes remains the same
     public function fetchUserTypes()
     {
         $sql = "SELECT * FROM user_type";
         $query = $this->connect()->prepare($sql);
-        if ($query->execute()) {
-            return $query->fetchAll();
-        } else {
-            return null;
-        }
+        $query->execute();
+        return $query->fetchAll();
     }
-
-    public function isEmailExist($email, $userID)
+    public function isEmailExist($email, $userID = "")
     {
-        $sql = "SELECT COUNT(userID) as total_users FROM users WHERE email = :email AND userID <> :userID";
+        if ($userID) {
+            $sql = "SELECT COUNT(userID) as total_users 
+                    FROM users 
+                    WHERE email = :email AND userID <> :userID";
+        } else {
+            $sql = "SELECT COUNT(userID) as total_users 
+                    FROM users 
+                    WHERE email = :email";
+        }
+
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":email", $email);
-        $query->bindParam(":userID", $userID);
+
+        if ($userID) {
+            $query->bindParam(":userID", $userID);
+        }
+
         $query->execute();
         $record = $query->fetch();
 
@@ -102,11 +114,12 @@ class User extends Database
 
     public function editUser($userID)
     {
-        $sql = "UPDATE users 
-                SET lName = :lName, fName = :fName, middleIn = :middleIn, 
-                    contact_no = :contact_no, college = :college, department = :department,
-                    position = :position, email = :email, userTypeID = :userTypeID,
-                    role = :role
+        // UPDATED SQL: combine college/department, remove position, add image fields
+        $sql = "UPDATE users SET 
+                    lName = :lName, fName = :fName, middleIn = :middleIn, 
+                    contact_no = :contact_no, college_department = :college_department, 
+                    email = :email, userTypeID = :userTypeID, role = :role,
+                    imageID_name = :imageID_name, imageID_dir = :imageID_dir
                 WHERE userID = :userID";
 
         $query = $this->connect()->prepare($sql);
@@ -114,9 +127,11 @@ class User extends Database
         $query->bindParam(":fName", $this->fName);
         $query->bindParam(":middleIn", $this->middleIn);
         $query->bindParam(":contact_no", $this->contact_no);
-        $query->bindParam(":college", $this->college);
-        $query->bindParam(":department", $this->department);
-        $query->bindParam(":position", $this->position);
+        $query->bindParam(":college_department", $this->college_department);
+        // REMOVED: $query->bindParam(":department", $this->department);
+        // REMOVED: $query->bindParam(":position", $this->position);
+        $query->bindParam(":imageID_name", $this->imageID_name);
+        $query->bindParam(":imageID_dir", $this->imageID_dir);
         $query->bindParam(":email", $this->email);
         $query->bindParam(":userTypeID", $this->userTypeID);
         $query->bindParam(":role", $this->role);
@@ -124,6 +139,8 @@ class User extends Database
 
         return $query->execute();
     }
+
+    // deleteUser remains the same
     public function deleteUser($userID)
     {
         $sql = "DELETE FROM users WHERE userID = :userID";

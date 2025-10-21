@@ -15,7 +15,7 @@ $categoryObj = new Category();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Librarian Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
     <link rel="stylesheet" href="../../../public/assets/css/librarian/manage_category.css" />
 </head>
 
@@ -34,7 +34,7 @@ $categoryObj = new Category();
 
                 <div class="section manage_categories h-full">
                     <div class="addCat flex items-center gap-3">
-                        <form action="../../../app/controllers/addCategoryController.php" method="POST">
+                        <form action="../../../app/controllers/addCategoryController.php?action=add" method="POST">
                             <div class="addDiv flex items-center gap-3" id="addDiv">
                                 <input type="text" name="category_name" id="category_name"
                                     class="border border-red-800 rounded-lg p-2" placeholder="Enter category name"
@@ -82,7 +82,7 @@ $categoryObj = new Category();
     </div>
 
 
-    
+
 </body>
 <script src="../../../public/assets/js/librarian/admin2.js"></script>
 

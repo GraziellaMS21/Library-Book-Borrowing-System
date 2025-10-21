@@ -37,7 +37,7 @@ $userTypes = $registerObj->fetchUserType();
 
             <div class="form-section w-1/2 flex flex-col justify-center items-center">
                 <h1 class="font-extrabold">REGISTER YOUR ACCOUNT</h1>
-                <form action="../../../app/controllers/registerController.php" method="POST">
+                <form action="../../../app/controllers/registerController.php" method="POST" enctype="multipart/form-data">
                     <div class="borrowerType">
                         <label for="borrowerType">Register as? <span>*</span></label>
                         <select name="userTypeID" id="borrowerType" class="h-12 w-full rounded-lg">
@@ -46,7 +46,8 @@ $userTypes = $registerObj->fetchUserType();
                             foreach ($userTypes as $type) {
                                 ?>
                                 <option value="<?= $type["userTypeID"] ?>" <?= isset($register["userTypeID"]) && $register["userTypeID"] == $type["userTypeID"] ? "selected" : "" ?>>
-                                    <?= $type["type_name"] ?></option>
+                                    <?= $type["type_name"] ?>
+                                </option>
                                 <?php
                             }
                             ?>
@@ -74,22 +75,22 @@ $userTypes = $registerObj->fetchUserType();
                             value="<?= $register["middleIn"] ?? "" ?>">
                         <p class="errors"><?= $errors["middleIn"] ?? "" ?></p>
                     </div>
-                    <div class="input hidden" id="college">
-                        <label for="college" id="collegeLabel">College: </label>
-                        <input type="text" class="input-field" name="college" value="<?= $register["college"] ?? "" ?>">
-                        <p class="errors"><?= $errors["college"] ?? "" ?></p>
+                    <div class="input" id="id_number">
+                        <label for="id_number" id="id_numberLabel">ID Number<span>*</span> : </label>
+                        <input type="text" class="input-field" name="id_number"
+                            value="<?= $register["id_number"] ?? "" ?>">
+                        <p class="errors"><?= $errors["id_number"] ?? "" ?></p>
                     </div>
-                    <div class="input hidden" id="department">
-                        <label for="department">Department: </label>
-                        <input type="text" class="input-field" name="department"
-                            value="<?= $register["department"] ?? "" ?>">
-                        <p class="errors"><?= $errors["department"] ?? "" ?></p>
+                    <div class="input" id="college">
+                        <label for="college_department" id="collegeLabel">College/Department<span>*</span> : </label>
+                        <input type="text" class="input-field" name="college_department"
+                            value="<?= $register["college_department"] ?? "" ?>">
+                        <p class="errors"><?= $errors["college_department"] ?? "" ?></p>
                     </div>
-                    <div class="input hidden" id="position">
-                        <label for="position" id="positionLabel">Position: </label>
-                        <input type="text" class="input-field" name="position"
-                            value="<?= $register["position"] ?? "" ?>">
-                        <p class="errors"><?= $errors["position"] ?? "" ?></p>
+                    <div class="input" id="imageID">
+                        <label for="imageID">Upload ID Image<span>*</span> : </label>
+                        <input type="file" name="imageID" id="imageID" accept="image/*">
+                        <p class="errors"><?= $errors["imageID"] ?? "" ?></p>
                     </div>
                     <div class="input">
                         <label for="contact_no">Contact Number<span>*</span> : </label>
@@ -121,7 +122,8 @@ $userTypes = $registerObj->fetchUserType();
                     </div>
 
                     <div class="agreement pt-5">
-                        <input type="checkbox" name="agreement" id="agreement" value="yes">
+                        <input type="checkbox" name="agreement" id="agreement" value="yes"
+                         <?= isset($register["agreement"]) ? "checked" : "" ?>>
                         <label for="agreement">I agree to the</label>
                         <button type="button" data-modal-target="termsModal" data-modal-toggle="termsModal"
                             id="openModal" class="terms-and-con text-xs text-blue-600 underline">Terms and
@@ -214,7 +216,6 @@ $userTypes = $registerObj->fetchUserType();
     </div>
     <?php require_once(__DIR__ . '/../shared/footer.php'); ?>
 </body>
-<script src="../../../public/assets/js/borrower/register.js"></script>
 <script src="../../../public/assets/js/components/header_footer.js"></script>
 
 </html>

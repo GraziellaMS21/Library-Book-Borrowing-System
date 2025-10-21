@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  showBooksNCat(manageCatSection);
+  showBooksNCat(manageBook);
 
   manageBooksBtn.onclick = () => {
     showBooksNCat(manageBook);

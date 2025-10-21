@@ -21,7 +21,7 @@ if (isset($_GET['id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Librarian Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
     <link rel="stylesheet" href="../../../public/assets/css/librarian/manage_category.css" />
 </head>
 
@@ -40,11 +40,11 @@ if (isset($_GET['id'])) {
 
                 <div class=" section manage_categories h-full">
                     <div class="addBook rounded-xl p-4 bg-red-800 inline-block text-white my-2">
-                    <button><a href="../../../app/views/librarian/booksSection.php"">Return</a></button>
+                        <button><a href="../../../app/views/librarian/booksSection.php"">Return</a></button>
                     </div>
-                            <div class="addCat flex items-center gap-3">
+                            <div class=" addCat flex items-center gap-3">
                                 <form
-                                    action=" ../../../app/controllers/editCategoryController.php?id=<?= $category['categoryID'] ?>"
+                                    action=" ../../../app/controllers/editCategoryController.php?action=edit&id=<?= $category['categoryID'] ?>"
                                     method="POST">
                                     <div class="addDiv flex items-center gap-3" id="addDiv">
                                         <input type="text" name="category_name" id="category_name"
@@ -56,7 +56,7 @@ if (isset($_GET['id'])) {
                                         <input type="submit" value="Add" class="rounded-xl p-2 bg-red-800 text-white">
                                     </div>
                                 </form>
-                            </div>
+                    </div>
                 </div>
             </div>
     </main>

@@ -16,7 +16,7 @@ class Category extends Database
 
     public function viewCategory()
     {
-        $sql = "SELECT * FROM category";
+        $sql = "SELECT * FROM category ORDER BY category_name ASC";
         $query = $this->connect()->prepare($sql);
 
         if ($query->execute()) {
@@ -34,20 +34,27 @@ class Category extends Database
         return $query->fetch();
     }
 
-    public function isCategoryExist($category_name, $categoryID)
+    public function isCategoryExist($category_name, $categoryID = "")
     {
-        $sql = "SELECT COUNT(*) as total_categories FROM category WHERE category_name = :category_name AND categoryID <> :categoryID";
-        $query = $this->connect()->prepare($sql);
+        if ($categoryID) {
+            $sql = "SELECT COUNT(*) as total_categories FROM category WHERE category_name = :category_name AND categoryID <> :categoryID";
+        } else {
+            $sql = "SELECT COUNT(*) as total_categories FROM category WHERE category_name = :category_name";
+        }
 
+        $query = $this->connect()->prepare($sql);
         $record = NULL;
         $query->bindParam(":category_name", $category_name);
-        $query->bindParam(":categoryID", $categoryID);
+
+        if ($categoryID) {
+            $query->bindParam(":categoryID", $categoryID);
+        }
 
         if ($query->execute()) {
             $record = $query->fetch();
         }
 
-        if ($record["total_categories"] > 0) {
+        if ($record && $record["total_categories"] > 0) {
             return true;
         } else
             return false;

@@ -6,10 +6,14 @@
         <ul>
             <li class="links"><a href="../../../app/views/librarian/dashboard.php" id="dashboardBtn">Dashboard</a></li>
             <li class="links"><a href="../../../app/views/librarian/booksSection.php" id="booksBtn">Books</a></li>
+            <li class="links"><a href="../../../app/views/librarian/categorySection.php" id="categoryBtn">Book
+                    Categories</a></li>
             <li class="links"><a href="../../../app/views/librarian/usersSection.php" id="borrowersBtn">Users</a>
             </li>
-            <li class="links"><a href="../../../app/views/librarian/detailsSection.php" id="detailsBtn">Borrowing
+            <li class="links"><a href="../../../app/views/librarian/borrowDetailsSection.php" id="detailsBtn">Borrowing
                     Details</a></li>
+            <li class="links"><a href="../../../app/views/librarian/penaltySection.php" id="penaltyBtn">Penalties</a>
+            </li>
             <li class="links">
                 <a href="../../controllers/logout.php">Logout</a>
             </li>

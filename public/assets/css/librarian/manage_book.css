@@ -41,7 +41,7 @@ aside {
 
 main {
   background-color: rgb(235, 233, 216);
-  min-height: 100vh;
+  min-height: 100%;
 }
 
 .container {
@@ -67,13 +67,13 @@ main {
 
 /* --- Base tab style --- */
 #manageBooksBtn {
-  background-color: #931c19;
-  color: white;
+  background-color: white;
+  color: #333;
 }
 
 #manageCategoriesBtn {
-  background-color: white;
-  color: #333;
+  background-color: #931c19;
+  color: white;
 }
 #manageBooksBtn,
 #manageCategoriesBtn {
@@ -96,6 +96,63 @@ main {
 
 .btn-group {
   border-bottom: 1px solid #ccc;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table,
+th,
+td {
+  padding: 0.2rem;
+  border: 1px solid black;
+}
+
+label {
+  font-weight: bold;
+  color: #610101;
+  margin-top: 1.5rem;
+}
+
+table {
+  background-color: white;
+}
+
+tr:nth-child(even){
+  background-color: #931b19a6;
+  color: white;
+}
+
+tr:nth-child(odd){
+  background-color: #ebe4c0a6;
+}
+
+.action {
+  width: 20rem;
+}
+
+.editBtn {
+  padding: 0 1rem;
+  background-color: rgb(87, 202, 87);
+  border-radius: 4rem;
+  border: 2px solid rgb(44, 44, 44);
+}
+
+.deleteBtn {
+  padding: 0 1rem;
+  background-color: rgb(230, 41, 41);
+  border-radius: 4rem;
+  border: 2px solid rgb(44, 44, 44);
+  
+}
+
+.viewBtn {
+  padding: 0 1rem;
+  background-color: rgb(189, 166, 36);
+  border-radius: 4rem;
+  border: 2px solid rgb(44, 44, 44);
 }
 
 label {

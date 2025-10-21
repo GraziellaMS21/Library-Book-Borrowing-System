@@ -1,0 +1,376 @@
+/* ====== BASE STYLES ====== */
+body {
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  font-family: "Poppins", sans-serif;
+  background-color: rgb(235, 233, 216);
+  color: #333;
+}
+
+/* ====== NAVBAR ====== */
+nav {
+  background-color: rgb(235, 233, 216);
+  height: 6rem;
+  width: 100%;
+  padding: 1rem 2rem;
+  box-shadow: 0 4px 12px rgba(147, 28, 25, 0.3);
+  border-bottom: 0.4rem solid #931c19;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  z-index: 10;
+  position: fixed;
+}
+
+nav:hover {
+  box-shadow: 0 6px 16px rgba(147, 28, 25, 0.45);
+}
+
+/* ====== SIDEBAR ====== */
+aside {
+  background: linear-gradient(#bd322f, #931c19, #610101);
+  min-height: 50%;
+}
+
+.sidebar-top {
+  height: 6rem;
+  border-bottom: 0.4rem solid #931c19;
+  transition: background 0.3s ease;
+}
+
+.sidebar-main {
+  height: auto;
+}
+
+.links {
+  padding: 1rem 0 1rem 2rem;
+  transition: background 0.3s ease, padding-left 0.3s ease;
+}
+
+.links:hover {
+  background: linear-gradient(#931b19b4, #610101b4);
+  padding-left: 2.5rem;
+}
+
+/* ====== MAIN CONTENT ====== */
+main {
+  background-color: rgb(235, 233, 216);
+  min-height: 100%;
+  padding-bottom: 3rem;
+  overflow-y: auto;
+}
+
+.container {
+  margin-top: 6rem;
+}
+
+/* ====== SECTION STYLES ====== */
+.section {
+  padding: 1rem;
+  margin: 2rem;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 8px rgba(97, 1, 1, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  width: 95%;
+}
+
+.section:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 14px rgba(97, 1, 1, 0.3);
+}
+
+/* ====== BUTTON TABS ====== */
+.manage {
+  padding: 0.5rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border-radius: 0 0.5rem 0 0;
+}
+
+#manageBooksBtn {
+  background-color: #931c19;
+  color: white;
+}
+
+#manageCategoriesBtn {
+  background-color: white;
+  color: #333;
+}
+
+#manageBooksBtn,
+#manageCategoriesBtn {
+  border-bottom: 4px solid #8b8b8b;
+  border-right: 4px solid #8b8b8b;
+  border-bottom-right-radius: 2rem;
+  border-bottom-left-radius: 0.5rem;
+  border-left: none;
+  cursor: pointer;
+  height: 4rem;
+  box-shadow: 3px 3px 2px rgba(49, 49, 49, 0.1);
+}
+
+#manageBooksBtn:hover,
+#manageCategoriesBtn:hover {
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3) inset;
+  transform: scale(1.02);
+}
+
+.btn-group {
+  border-bottom: 2px solid #ccc;
+  display: flex;
+  justify-content: start;
+  gap: 0.5rem;
+}
+
+.search {
+  height: 3rem;
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid #931c19;
+  transition: ease;
+}
+
+/* ====== TABLE STYLES ====== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1.5rem;
+  font-size: 0.95rem;
+}
+
+th {
+  background-color: #940c0c;
+  color: white;
+  text-align: left;
+  padding: 0.8rem;
+  text-align: center;
+}
+
+td {
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+}
+
+tr:nth-child(even) {
+  background-color: #ffe0e0a6;
+}
+
+tr:nth-child(odd) {
+  background-color: #f9f7ed;
+}
+
+tr:hover {
+  background-color: #f8caca;
+  transition: background-color 0.3s ease;
+}
+
+/* ====== ACTION BUTTONS ====== */
+.action {
+  width: 22rem;
+  text-align: center;
+}
+
+.editBtn,
+.deleteBtn,
+.viewBtn {
+  padding: 0.4rem;
+  border-radius: 0.5rem;
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  margin: 0 0.2rem;
+  border: 2px solid rgba(44, 44, 44, 0.3);
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.editBtn {
+  background-color: #52b86c;
+}
+
+.deleteBtn {
+  background-color: #e62929;
+}
+
+.viewBtn {
+  background-color: #bd9e24;
+}
+
+.editBtn:hover {
+  background-color: #47a661;
+  transform: translateY(-2px);
+}
+
+.deleteBtn:hover {
+  background-color: #c92222;
+  transform: translateY(-2px);
+}
+
+.viewBtn:hover {
+  background-color: #a88b1d;
+  transform: translateY(-2px);
+}
+
+/* ====== SEARCH FORM ====== */
+.searchBook {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.searchBook input,
+.searchBook select {
+  border: 2px solid #931c19;
+  border-radius: 0.5rem;
+  padding: 0.6rem 1rem;
+  outline: none;
+  transition: border 0.3s ease, box-shadow 0.3s ease;
+}
+
+.searchBook input:focus,
+.searchBook select:focus {
+  border-color: #610101;
+  box-shadow: 0 0 5px rgba(97, 1, 1, 0.3);
+}
+
+.searchBook button {
+  background-color: #931c19;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  font-weight: 500;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.searchBook button:hover {
+  background-color: #610101;
+  transform: scale(1.05);
+}
+
+
+
+label {
+    display: block;
+}
+
+span {
+  color: red;
+}
+
+.input {
+  margin: 1rem 1rem 0 0.5rem;
+}
+
+.input-field {
+  border: 1px solid #d1d5db;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #931c19;
+  box-shadow: 0 0 0 4px rgba(147, 28, 25, 0.2);
+}
+
+.categoryID,
+.book_condition {
+  margin: 0.75rem 1.5rem 0.75rem 0.5rem;
+}
+
+select {
+  height: 3rem;
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid #931c19;
+  transition: ease;
+}
+
+select:focus {
+  outline: none;
+  border-color: #610101;
+  box-shadow: 0 0 0 4px rgba(97, 1, 1, 0.2);
+}
+
+input[type="submit"] {
+  background-color: #610101;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  box-shadow: 0 4px 10px rgba(147, 28, 25, 0.3);
+  transition: background 0.5s ease-in-out, transform 0.2s ease-in-out;
+}
+
+input[type="submit"]:hover {
+  transform: translateY(-2px);
+  background-position: right;
+  box-shadow: 0 8px 15px rgba(147, 28, 25, 0.4);
+  background: linear-gradient(#931c19, #610101);
+  transition: background 0.2s ease, transform 0.2s ease-in-out;
+}
+
+.errors {
+  color: #dc2626;
+  font-size: 0.8rem;
+  margin-top: 0.2rem;
+}
+
+
+/* ===============================
+   INFO SECTION (from manage_book)
+================================= */
+.info {
+  height: 7rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 600;
+  color: #931c19;
+  background-color: #f9f7ed;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(147, 28, 25, 0.1);
+}
+
+/* ===============================
+   MODAL SECTION (for addBook)
+================================= */
+/* Overlay */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.2s ease;
+  z-index: 50;
+}
+
+/* Inner box — make this scrollable */
+.modal .bg-white {
+  max-height: 90vh;         /* limit height */
+  overflow-y: auto;         /* scroll inside */
+  width: 50vw;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+}
+
+/* Optional: style scrollbar */
+.modal .bg-white::-webkit-scrollbar {
+  width: 8px;
+}
+.modal .bg-white::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+.hidden {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
