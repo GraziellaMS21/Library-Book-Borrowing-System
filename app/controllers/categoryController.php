@@ -8,76 +8,78 @@ $category = [];
 $categoryObj = new Category();
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
+$categoryID = $_POST["categoryID"] ?? $_GET["id"] ?? null;
 
-switch ($action) {
-    case 'add':
-        $category["category_name"] = trim(htmlspecialchars($_POST["category_name"]));
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-        if (empty($category["category_name"])) {
-            $errors["category_name"] = "Category Name is required.";
-        } elseif ($categoryObj->isCategoryExist($category["category_name"], "")) {
+    $category["category_name"] = trim(htmlspecialchars($_POST["category_name"] ?? ''));
+
+    // Common validation
+    if (empty($category["category_name"])) {
+        $errors["category_name"] = "Category Name is required.";
+    }
+
+    if ($action === 'add') {
+        if (empty($errors) && $categoryObj->isCategoryExist($category["category_name"], null)) {
             $errors["category_name"] = "Category Name already exists.";
         }
 
-        if (empty($errors)) {
+        if (empty(array_filter($errors))) {
             $categoryObj->category_name = $category["category_name"];
             if ($categoryObj->addCategory()) {
-                header("Location: ../../app/views/librarian/categorySection.php");
+                header("Location: ../../app/views/librarian/categorySection.php?success=add");
                 exit;
             } else {
-                echo "Failed to add category.";
+                $_SESSION["errors"] = ["general" => "Failed to add category due to a database error."];
+                $_SESSION["old"] = $category;
+                header("Location: ../../app/views/librarian/categorySection.php?modal=add");
+                exit;
             }
         } else {
-            // Use $_SESSION["errors"] and $_SESSION["old"] for consistency with bookController.php
             $_SESSION["errors"] = $errors;
             $_SESSION["old"] = $category;
             header("Location: ../../app/views/librarian/categorySection.php?modal=add");
             exit;
         }
-        break;
-    case 'edit':
-        $categoryID = $_POST["categoryID"] ?? $_GET["id"];
-        $category["category_name"] = trim(htmlspecialchars($_POST["category_name"]));
-
-        if (empty($category["category_name"])) {
-            $errors["category_name"] = "Category Name is required.";
-        } elseif ($categoryObj->isCategoryExist($category["category_name"], $categoryID)) {
+    } elseif ($action === 'edit' && $categoryID) {
+        if (empty($errors) && $categoryObj->isCategoryExist($category["category_name"], $categoryID)) {
             $errors["category_name"] = "Category Name already exists.";
         }
 
-        if (empty($errors)) {
+        if (empty(array_filter($errors))) {
             $categoryObj->category_name = $category["category_name"];
 
             if ($categoryObj->editCategory($categoryID)) {
-                header("Location: ../../app/views/librarian/categorySection.php");
+                header("Location: ../../app/views/librarian/categorySection.php?success=edit");
                 exit;
             } else {
-                echo "Failed to update category.";
+                $_SESSION["errors"] = ["general" => "Failed to update category due to a database error."];
+                $_SESSION["old"] = $category;
+                header("Location: ../../app/views/librarian/categorySection.php?modal=edit&id={$categoryID}");
+                exit;
             }
         } else {
-            // Use $_SESSION["errors"] and $_SESSION["old"] for consistency with bookController.php
             $_SESSION["errors"] = $errors;
             $_SESSION["old"] = $category;
-            // CORRECTED: Added &id={$categoryID} to the failure redirect
             header("Location: ../../app/views/librarian/categorySection.php?modal=edit&id={$categoryID}");
             exit;
         }
-        break;
-    case 'delete':
-        if (isset($_GET['id'])) {
-            $categoryID = $_GET['id'];
-
-            if ($categoryObj->deleteCategory($categoryID)) {
-                header("Location: ../../app/views/librarian/categorySection.php");
-                exit;
-            } else {
-                echo "<script>alert('Failed to delete category.');</script>";
-                header("Location: ../../app/views/librarian/categorySection.php");
-                exit;
-            }
-        } else {
-            echo "<script>alert('No category ID provided.');</script>";
-            header("Location: ../../app/views/librarian/categorySection.php");
-            exit;
-        }
+    }
 }
+
+if ($action === 'delete' && $categoryID) {
+    if ($categoryObj->deleteCategory($categoryID)) {
+        header("Location: ../../app/views/librarian/categorySection.php?success=delete");
+        exit;
+    } else {
+        $_SESSION["errors"] = ["general" => "Failed to delete category."];
+        header("Location: ../../app/views/librarian/categorySection.php?error=delete");
+        exit;
+    }
+}
+
+if (!isset($_GET['action']) && !isset($_POST['action']) && $_SERVER["REQUEST_METHOD"] != "POST") {
+    header("Location: ../../app/views/librarian/categorySection.php");
+    exit;
+}
+?>
