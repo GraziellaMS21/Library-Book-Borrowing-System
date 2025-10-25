@@ -16,9 +16,9 @@ $userTypes = $registerObj->fetchUserType();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register Account</title>
-    <link rel="stylesheet" href="../../../public/assets/css/borrower/register1.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/register.css" />
     <link rel="stylesheet" href="../../../public/assets/css/components/header_footer.css" />
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Licorice&display=swap" rel="stylesheet">
 </head>
 

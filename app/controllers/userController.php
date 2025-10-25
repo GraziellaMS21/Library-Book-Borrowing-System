@@ -92,7 +92,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $userObj->imageID_dir = $new_image_dir;
 
             if ($userObj->editUser($userID)) {
-                header("Location: ../../app/views/librarian/usersSection.php?success=edit&tab={$currentTab}");
+                header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}");
                 exit;
             } else {
                 $_SESSION["errors"] = ["db_error" => "Failed to update user due to a database error."];
@@ -125,7 +125,7 @@ if ($action === 'approveReject' && $userID && isset($_GET['status'])) {
     }
 
     if ($userObj->approveRejectUser($userID, $newStatus)) {
-        header("Location: ../../app/views/librarian/usersSection.php?success=" . strtolower($newStatus) . "&tab={$currentTab}");
+        header("Location: ../../app/views/librarian/usersSection.php?" . "tab={$currentTab}");
         exit;
     } else {
         $_SESSION["errors"] = ["db_error" => "Failed to update user status due to a database error."];
@@ -135,10 +135,8 @@ if ($action === 'approveReject' && $userID && isset($_GET['status'])) {
 }
 
 if ($action === 'block' && $userID) {
-    $newStatus = 'Blocked';
-
-    if ($userObj->approveRejectUser($userID, $newStatus)) {
-        header("Location: ../../app/views/librarian/usersSection.php?success=blocked&tab=blocked");
+    if ($userObj->approveRejectUser($userID, "Blocked")) {
+        header("Location: ../../app/views/librarian/usersSection.php?tab=blocked");
         exit;
     } else {
         $_SESSION["errors"] = ["db_error" => "Failed to block user due to a database error."];
@@ -148,10 +146,8 @@ if ($action === 'block' && $userID) {
 }
 
 if ($action === 'unblock' && $userID) {
-    $newStatus = 'Approved';
-
-    if ($userObj->approveRejectUser($userID, $newStatus)) {
-        header("Location: ../../app/views/librarian/usersSection.php?success=unblocked&tab=approved");
+    if ($userObj->approveRejectUser($userID, "Approved")) {
+        header("Location: ../../app/views/librarian/usersSection.php?tab=approved");
         exit;
     } else {
         $_SESSION["errors"] = ["db_error" => "Failed to unblock user due to a database error."];
@@ -168,7 +164,7 @@ if ($action === 'delete' && $userID) {
         if ($imagePath && file_exists(__DIR__ . "/../../" . $imagePath)) {
             unlink(__DIR__ . "/../../" . $imagePath);
         }
-        header("Location: ../../app/views/librarian/usersSection.php?success=delete&tab={$currentTab}");
+        header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}");
         exit;
     } else {
         $_SESSION["errors"] = ["db_error" => "Failed to delete user."];

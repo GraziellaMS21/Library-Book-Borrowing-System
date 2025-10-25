@@ -32,8 +32,17 @@ $modal_book = [];
 
 if ($open_modal == 'editBookModal' || $open_modal == 'viewDetailsModal' || $open_modal == 'deleteConfirmModal') {
     if ($open_modal == 'editBookModal' && !empty($old)) {
+        // Populate from session data if there were errors
         $modal_book = $old;
+        // If coming from error, fetch original DB ID and cover data
+        $db_data = $bookObj->fetchBook(bookID: $book_id);
+        $modal_book['bookID'] = $book_id;
+        // Preserve image data from DB if not in old array
+        $modal_book['book_cover_name'] = $modal_book['existing_cover_name'] ?? $db_data['book_cover_name'];
+        $modal_book['book_cover_dir'] = $modal_book['existing_cover_dir'] ?? $db_data['book_cover_dir'];
+
     } else {
+        // Fetch fresh data from DB
         $modal_book = $bookObj->fetchBook(bookID: $book_id) ?: [];
     }
     if ($open_modal != 'viewDetailsModal') {
@@ -61,84 +70,88 @@ $books = $bookObj->viewBook($search, $categoryID);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Librarian Dashboard</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/librarian/adminFinal.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/adminFinal.css" />
 </head>
 
 <body class="h-screen w-screen flex">
     <?php require_once(__DIR__ . '/../shared/dashboardHeader.php'); ?>
+    <div class="flex flex-col w-10/12">
+        <nav>
+            <h1 class="text-xl font-semibold">Books</h1>
+        </nav>
+        <main>
+            <div class="container">
+                <div class="section h-full">
+                    <div class="title flex w-full items-center justify-between">
+                        <h1 class="text-red-800 font-bold text-4xl">MANAGE BOOKS</h1>
+                        <a id="openAddBookModalBtn" class="addBtn" href="booksSection.php?modal=add" ?>+ Add Book</a>
+                    </div>
 
-    <main>
-        <div class="container">
-            <div class="section h-full">
-                <div class="title flex w-full items-center justify-between">
-                    <h1 class="text-red-800 font-bold text-4xl">MANAGE BOOKS</h1>
-                    <a id="openAddBookModalBtn" class="addBtn" href="booksSection.php?modal=add" ?>+ Add Book</a>
-                </div>
-
-                <form method="GET" class="search">
-                    <input type="text" name="search" placeholder="Search book title..." value="<?= $search ?>">
-                    <select name="category" id="category">
-                        <option value="">All Categories</option>
-                        <?php foreach ($category as $cat): ?>
-                            <option value="<?= $cat["categoryID"] ?>" <?= $categoryID == $cat["categoryID"] ? 'selected' : '' ?>> <?= $cat["category_name"] ?> </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <button type="submit" class="bg-red-800 text-white rounded-lg px-4 py-2">Search</button>
-                </form>
+                    <form method="GET" class="search">
+                        <input type="text" name="search" placeholder="Search book title..." value="<?= $search ?>">
+                        <select name="category" id="category">
+                            <option value="">All Categories</option>
+                            <?php foreach ($category as $cat): ?>
+                                <option value="<?= $cat["categoryID"] ?>" <?= $categoryID == $cat["categoryID"] ? 'selected' : '' ?>> <?= $cat["category_name"] ?> </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button type="submit" class="bg-red-800 text-white rounded-lg px-4 py-2">Search</button>
+                    </form>
 
 
-                <div class="view">
-                    <table>
-                        <tr>
-                            <th>No</th>
-                            <th>Book Cover</th>
-                            <th>Book Title</th>
-                            <th>Author</th>
-                            <th>Category</th>
-                            <th>No. of Copies</th>
-                            <th>Condition</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-
-                        <?php
-                        $no = 1;
-                        foreach ($books as $book) {
-                            $book_cover_url = !empty($book["book_cover_dir"]) ? "../../../" . $book["book_cover_dir"] : null;
-                            ?>
+                    <div class="view">
+                        <table>
                             <tr>
-                                <td><?= $no++ ?></td>
-                                <td class="text-center"> <?php if ($book_cover_url) { ?>
-                                        <img src="<?= $book_cover_url ?>" alt="Cover"
-                                            class="w-16 h-16 object-cover rounded mx-auto border border-gray-300"
-                                            title="<?= $book["book_cover_name"] ?? 'Book Cover' ?>">
-                                    <?php } else { ?>
-                                        <span class="text-gray-500 text-xs">N/A</span>
-                                    <?php } ?>
-                                </td>
-                                <td><?= $book["book_title"] ?></td>
-                                <td><?= $book["author"] ?></td>
-                                <td><?= $book["category_name"] ?></td>
-                                <td><?= $book["book_copies"] ?></td>
-                                <td><?= $book["book_condition"] ?></td>
-                                <td><?= $book["status"] ?></td>
-                                <td class="action text-center">
-                                    <a class="editBtn" href="booksSection.php?modal=edit&id=<?= $book['bookID'] ?>">Edit</a>
-                                    <a class="viewBtn" href="booksSection.php?modal=view&id=<?= $book['bookID'] ?>">View
-                                        Details</a>
-                                    <a class="deleteBtn" href="booksSection.php?modal=delete&id=<?= $book['bookID'] ?>">
-                                        Delete
-                                    </a>
-                                </td>
+                                <th>No</th>
+                                <th>Book Cover</th>
+                                <th>Book Title</th>
+                                <th>Author</th>
+                                <th>Category</th>
+                                <th>No. of Copies</th>
+                                <th>Condition</th>
+                                <th>Status</th>
+                                <th>Actions</th>
                             </tr>
+
                             <?php
-                        }
-                        ?>
-                    </table>
+                            $no = 1;
+                            foreach ($books as $book) {
+                                $book_cover_url = !empty($book["book_cover_dir"]) ? "../../../" . $book["book_cover_dir"] : null;
+                                ?>
+                                <tr>
+                                    <td><?= $no++ ?></td>
+                                    <td class="text-center"> <?php if ($book_cover_url) { ?>
+                                            <img src="<?= $book_cover_url ?>" alt="Cover"
+                                                class="w-16 h-16 object-cover rounded mx-auto border border-gray-300"
+                                                title="<?= $book["book_cover_name"] ?? 'Book Cover' ?>">
+                                        <?php } else { ?>
+                                            <span class="text-gray-500 text-xs">N/A</span>
+                                        <?php } ?>
+                                    </td>
+                                    <td><?= $book["book_title"] ?></td>
+                                    <td><?= $book["author"] ?></td>
+                                    <td><?= $book["category_name"] ?></td>
+                                    <td><?= $book["book_copies"] ?></td>
+                                    <td><?= $book["book_condition"] ?></td>
+                                    <td><?= $book["status"] ?></td>
+                                    <td class="action text-center">
+                                        <a class="editBtn"
+                                            href="booksSection.php?modal=edit&id=<?= $book['bookID'] ?>">Edit</a>
+                                        <a class="viewBtn" href="booksSection.php?modal=view&id=<?= $book['bookID'] ?>">View
+                                            Details</a>
+                                        <a class="deleteBtn" href="booksSection.php?modal=delete&id=<?= $book['bookID'] ?>">
+                                            Delete
+                                        </a>
+                                    </td>
+                                </tr>
+                                <?php
+                            }
+                            ?>
+                        </table>
+                    </div>
                 </div>
             </div>
-        </div>
-    </main>
+        </main>
     </div>
 
     <div id="addBookModal" class="modal <?= $open_modal == 'addBookModal' ? 'open' : '' ?>">
@@ -208,6 +221,13 @@ $books = $bookObj->viewBook($search, $categoryID);
                     <input type="text" class="input-field" name="book_copies" id="book_copies"
                         value="<?= $modal_book["book_copies"] ?? "" ?>">
                     <p class="errors"><?= $errors["book_copies"] ?? "" ?></p>
+                </div>
+
+                <div class="input">
+                    <label for="replacement_cost">Replacement Cost (₱)<span>*</span> : </label>
+                    <input type="number" step="0.01" class="input-field" name="replacement_cost" id="replacement_cost"
+                        value="<?= $modal_book["replacement_cost"] ?? "400.00" ?>">
+                    <p class="errors"><?= $errors["replacement_cost"] ?? "" ?></p>
                 </div>
 
                 <div class="book_condition">
@@ -322,6 +342,15 @@ $books = $bookObj->viewBook($search, $categoryID);
                     </p>
                 </div>
 
+                <div class="input">
+                    <label for="replacement_cost">Replacement Cost (₱)<span>*</span> : </label>
+                    <input type="number" step="0.01" class="input-field" name="replacement_cost"
+                        id="edit_replacement_cost" value="<?= $modal_book["replacement_cost"] ?? "400.00" ?>">
+                    <p class="errors">
+                        <?= $errors["replacement_cost"] ?? "" ?>
+                    </p>
+                </div>
+
                 <div class="book_condition">
                     <label for="book_condition">Condition<span>*</span> : </label>
                     <select name="book_condition" id="edit_book_condition">
@@ -375,6 +404,10 @@ $books = $bookObj->viewBook($search, $categoryID);
                 <p><strong>Condition:</strong> <?= $modal_book['book_condition'] ?? 'N/A' ?></p>
                 <p><strong>Date Added:</strong> <?= $modal_book['date_added'] ?? 'N/A' ?></p>
 
+                <!-- NEW: Display Replacement Cost -->
+                <p><strong>Replacement Cost:</strong> <span
+                        class="font-semibold">₱<?= number_format($modal_book['replacement_cost'] ?? 400.00, 2) ?></span>
+                </p>
                 <p><strong>Status:</strong> <span class="font-semibold"><?= $modal_book['status'] ?? 'N/A' ?></span></p>
 
 

@@ -18,6 +18,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $book["ISBN"] = trim(htmlspecialchars($_POST["ISBN"] ?? ''));
     $book["book_copies"] = trim(htmlspecialchars($_POST["book_copies"] ?? ''));
     $book["book_condition"] = trim(htmlspecialchars($_POST["book_condition"] ?? ''));
+    // NEW: Replacement Cost
+    $book["replacement_cost"] = trim(htmlspecialchars($_POST["replacement_cost"] ?? 400.00));
 
     if (empty($book["author"])) {
         $errors["author"] = "Author is required";
@@ -46,6 +48,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (empty($book["book_condition"])) {
         $errors["book_condition"] = "Please Describe Book Condition";
     }
+    // NEW: Validate Replacement Cost
+    if (empty($book["replacement_cost"]) || !is_numeric($book["replacement_cost"]) || $book["replacement_cost"] <= 0) {
+        $errors["replacement_cost"] = "Replacement cost is required and must be a positive number.";
+    }
+
 
     if ($action === 'add') {
         $book["book_cover_name"] = $_FILES["book_cover"]["name"] ?? '';
@@ -76,6 +83,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $bookObj->date_added = date("Y-m-d");
                 $bookObj->book_cover_name = $book["book_cover_name"];
                 $bookObj->book_cover_dir = "public/uploads/book_cover_images/" . basename($book["book_cover_name"]);
+                $bookObj->replacement_cost = $book["replacement_cost"]; // NEW
 
                 if ($bookObj->addBook()) {
                     header("Location: ../../app/views/librarian/booksSection.php?success=add");
@@ -150,6 +158,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $bookObj->ISBN = $book["ISBN"];
             $bookObj->book_copies = $book["book_copies"];
             $bookObj->book_condition = $book["book_condition"];
+            $bookObj->replacement_cost = $book["replacement_cost"]; // NEW
 
             $bookObj->book_cover_name = $new_cover_name;
             $bookObj->book_cover_dir = $new_cover_dir;
@@ -186,9 +195,11 @@ if ($action === 'delete' && isset($_GET['id'])) {
         header("Location: ../../app/views/librarian/booksSection.php?success=delete");
         exit;
     } else {
-        echo "<script>alert('Failed to delete book.');</script>";
+        // Changed alert to session error and redirect
+        $_SESSION["errors"] = ["general" => "Failed to delete book."];
         header("Location: ../../app/views/librarian/booksSection.php?error=delete");
         exit;
     }
+    
 }
 ?>

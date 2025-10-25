@@ -7,15 +7,15 @@ class User extends Database
     public $fName = "";
     public $middleIn = "";
     public $contact_no = "";
-    public $college_department = ""; // Combined property
-    public $imageID_name = ""; // Image filename
-    public $imageID_dir = ""; // Image path/directory
+    public $college_department = "";
+    public $imageID_name = ""; 
+    public $imageID_dir = ""; 
     public $email = "";
     public $password = "";
     public $userTypeID = "";
     public $date_registered = "";
     public $role = "";
-    public $user_status = ""; // NEW PROPERTY for status management
+    public $user_status = ""; 
 
     protected $db;
 
@@ -23,18 +23,15 @@ class User extends Database
     {
         $whereConditions = [];
 
-        // Base SQL
         $sql = "SELECT u.*, ut.type_name
                 FROM users u
                 JOIN user_type ut ON u.userTypeID = ut.userTypeID";
 
-        // Handle Status Filter
         if ($statusFilter != "") {
-            $dbStatus = ucfirst(strtolower($statusFilter));
+            $dbStatus = strtolower($statusFilter);
 
-            // MODIFIED LOGIC: Map tabs to database status values
             if ($statusFilter == 'blocked') {
-                $dbStatus = 'Blocked'; // 'blocked' tab shows 'Blocked' accounts
+                $dbStatus = 'Blocked';
             } elseif ($statusFilter == 'approved') {
                 $dbStatus = 'Approved';
             } elseif ($statusFilter == 'rejected') {
@@ -46,7 +43,6 @@ class User extends Database
             $whereConditions[] = "u.user_status = :statusFilter";
         }
 
-        // Build WHERE clause for search and userType
         if ($search != "") {
             $whereConditions[] = "(u.fName LIKE CONCAT('%', :search, '%') 
                                 OR u.lName LIKE CONCAT('%', :search, '%')
@@ -65,7 +61,6 @@ class User extends Database
 
         $query = $this->connect()->prepare($sql);
 
-        // Bind parameters
         if ($search != "") {
             $query->bindParam(":search", $search);
         }
@@ -73,7 +68,6 @@ class User extends Database
             $query->bindParam(":userType", $userType);
         }
         if ($statusFilter != "") {
-            // Re-map $dbStatus for binding
             if ($statusFilter == 'blocked') {
                 $dbStatus = 'Blocked';
             } elseif ($statusFilter == 'approved') {
@@ -95,13 +89,30 @@ class User extends Database
 
     public function fetchUser($userID)
     {
-        // Aliasing u.user_status as 'status' for easier access in the view.
         $sql = "SELECT u.*, ut.type_name, u.user_status AS status FROM users u JOIN user_type ut ON u.userTypeID = ut.userTypeID WHERE u.userID = :userID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(':userID', $userID);
         $query->execute();
         return $query->fetch();
     }
+
+    public function fetchUserName($userID)
+{
+    // Select only the name columns you need (e.g., fName and lName)
+    $sql = "SELECT fName, lName FROM users WHERE userID = :userID";
+    
+    $query = $this->connect()->prepare($sql);
+    $query->bindParam(':userID', $userID);
+    $query->execute();
+    $user = $query->fetch();
+    
+    // Ensure we always return an array, not false
+    if ($user === false) {
+        return null;
+    }
+    
+    return $user;
+}
 
     public function fetchUserTypes()
     {
@@ -163,12 +174,10 @@ class User extends Database
 
     public function approveRejectUser($userID, $newStatus)
     {
-        // $newStatus can be 'Approved', 'Rejected', or 'Blocked'
         $sql = "UPDATE users SET user_status = :newStatus WHERE userID = :userID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":newStatus", $newStatus);
         $query->bindParam(":userID", $userID);
-
         return $query->execute();
     }
 
@@ -177,6 +186,17 @@ class User extends Database
         $sql = "DELETE FROM users WHERE userID = :userID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":userID", $userID);
+        return $query->execute();
+    }
+
+    public function updateUserStatus($userID, $newStatus)
+    {
+        $sql = "UPDATE users SET user_status = :newStatus WHERE userID = :userID";
+        $query = $this->connect()->prepare($sql);
+        
+        $query->bindParam(":newStatus", $newStatus);
+        $query->bindParam(":userID", $userID);
+        
         return $query->execute();
     }
 }

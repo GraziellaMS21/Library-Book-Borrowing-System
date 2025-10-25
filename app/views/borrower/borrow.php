@@ -41,7 +41,7 @@ $return_date = date("Y-m-d", strtotime("+$borrow_period days"));
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Borrow Book</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
 </head>
 
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
@@ -56,29 +56,27 @@ $return_date = date("Y-m-d", strtotime("+$borrow_period days"));
 
         <div class="mb-4">
             <label class="block text-gray-700 font-semibold">Book ID:</label>
-            <input type="text" value="<?= htmlspecialchars($bookID) ?>" disabled class="w-full border rounded-lg p-2 bg-gray-100">
+            <input type="text" value="<?= htmlspecialchars($bookID) ?>" disabled
+                class="w-full border rounded-lg p-2 bg-gray-100">
         </div>
 
         <div class="mb-4">
             <label class="block text-gray-700 font-semibold">User ID:</label>
-            <input type="text" value="<?= htmlspecialchars($userID) ?>" disabled class="w-full border rounded-lg p-2 bg-gray-100">
+            <input type="text" value="<?= htmlspecialchars($userID) ?>" disabled
+                class="w-full border rounded-lg p-2 bg-gray-100">
         </div>
 
         <div class="mb-4">
             <label class="block text-gray-700 font-semibold">Pickup Date:</label>
-            <input type="date" name="pickup_date" 
-                value="<?= $pickup_date ?>" 
-                class="w-full border rounded-lg p-2"
-                min="<?= $pickup_date ?>" 
-                max="<?= $return_date ?>" required>
+            <input type="date" name="pickup_date" value="<?= $pickup_date ?>" class="w-full border rounded-lg p-2"
+                min="<?= $pickup_date ?>" max="<?= $return_date ?>" required>
             <p class="text-sm text-gray-500 mt-1">* You can pick up your book starting today.</p>
             <p class="errors text-red-500 text-sm"><?= $errors["pickup_date"] ?? "" ?></p>
         </div>
 
         <div class="mb-4">
             <label class="block text-gray-700 font-semibold">Return Date:</label>
-            <input type="date" name="return_date"
-                value="<?= $return_date ?>"
+            <input type="date" name="return_date" value="<?= $return_date ?>"
                 class="w-full border rounded-lg p-2 bg-gray-100" readonly>
             <p class="text-sm text-gray-500 mt-1">
                 * Maximum borrow period: <?= $borrow_period ?> days

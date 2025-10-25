@@ -32,7 +32,7 @@ header {
   display: inline-block;
 }
 
-.nav-links a {
+.nav-links a, #account-dropdown-btn {
   text-decoration: none;
   color: #610101;
   font-weight: bold;

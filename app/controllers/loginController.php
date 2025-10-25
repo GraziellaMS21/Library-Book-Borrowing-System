@@ -29,14 +29,17 @@
                 $_SESSION["fName"] = $result["fName"];
                 $_SESSION["userTypeID"] = $result["userTypeID"];
 
-                if ($result["userTypeID"] == 2) {
-                    header("Location: ../../app/views/librarian/dashboard.php");
-                    exit;
-                } elseif ($result["userTypeID"] == 1  || $result["userTypeID"] == 3) {
+                if ($result["role"] === "Borrower") {
                     header("Location: ../../app/views/borrower/catalogue.php");
                     exit;
-                } else {
-                    $errors["invalid"] = "Invalid borrower type.";
+                } elseif ($result["role"] === "Admin") {
+                    header("Location: ../../app/views/librarian/dashboard.php");
+                    exit;
+                } elseif ($result["user_status"] === "Blocked"){
+                    header("Location: ../../app/views/borrower/catalogue.php");
+                }
+                else {
+                    $errors["invalid"] = "Invalid User.";
                 }
             } else {
                 $errors["invalid"] = $result;

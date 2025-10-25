@@ -16,9 +16,9 @@ unset($_SESSION["errors"]);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Log In</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/borrower/login1.css">
-    <link rel="stylesheet" href="../../../public/assets/css/components/header_footer.css">
+    <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
+    <link rel="stylesheet" href="../../../public/assets/css/login.css">
+    <link rel="stylesheet" href="../../../public/assets/css/header_footer.css">
     <link href="https://fonts.googleapis.com/css2?family=Licorice&display=swap" rel="stylesheet">
 </head>
 

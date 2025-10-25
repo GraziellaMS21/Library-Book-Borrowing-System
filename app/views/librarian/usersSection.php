@@ -65,188 +65,193 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Librarian Dashboard - Manage Users</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/librarian/adminFinal.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/adminFinal.css" />
 </head>
 
 <body class="h-screen w-screen flex">
     <?php require_once(__DIR__ . '/../shared/dashboardHeader.php'); ?>
+    <div class="flex flex-col w-10/12">
+        <nav>
+            <h1 class="text-xl font-semibold">Users</h1>
+        </nav>
+        <main>
+            <div class="container">
+                <div class="section manage_users h-full">
+                    <div class="title flex w-full items-center justify-between mb-4">
+                        <h1 class="text-red-800 font-bold text-4xl">MANAGE USERS</h1>
+                    </div>
 
-    <main>
-        <div class="container">
-            <div class="section manage_users h-full">
-                <div class="title flex w-full items-center justify-between mb-4">
-                    <h1 class="text-red-800 font-bold text-4xl">MANAGE USERS</h1>
-                </div>
+                    <div class="tabs flex border-b border-gray-200 mb-6">
+                        <a href="?tab=pending" class="tab-btn <?= $current_tab == 'pending' ? 'active' : '' ?>">Pending
+                            Registers</a>
+                        <a href="?tab=approved"
+                            class="tab-btn <?= $current_tab == 'approved' ? 'active' : '' ?>">Approved
+                            Users</a>
+                        <a href="?tab=rejected"
+                            class="tab-btn <?= $current_tab == 'rejected' ? 'active' : '' ?>">Rejected
+                            Users</a>
+                        <a href="?tab=blocked" class="tab-btn <?= $current_tab == 'blocked' ? 'active' : '' ?>">Blocked
+                            Accounts</a>
+                    </div>
 
-                <div class="tabs flex border-b border-gray-200 mb-6">
-                    <a href="?tab=pending" class="tab-btn <?= $current_tab == 'pending' ? 'active' : '' ?>">Pending
-                        Registers</a>
-                    <a href="?tab=approved" class="tab-btn <?= $current_tab == 'approved' ? 'active' : '' ?>">Approved
-                        Users</a>
-                    <a href="?tab=rejected" class="tab-btn <?= $current_tab == 'rejected' ? 'active' : '' ?>">Rejected
-                        Users</a>
-                    <a href="?tab=blocked" class="tab-btn <?= $current_tab == 'blocked' ? 'active' : '' ?>">Blocked
-                        Accounts</a>
-                </div>
+                    <form method="GET" class="search flex gap-2 items-center mb-6">
+                        <input type="hidden" name="tab" value="<?= $current_tab ?>">
+                        <input type="text" name="search" placeholder="Search by name or email" value="<?= $search ?>"
+                            class="border rounded-lg p-2 flex-grow">
+                        <select name="userType" class="border rounded-lg p-2">
+                            <option value="">All Types</option>
+                            <?php foreach ($userTypes as $type) { ?>
+                                <option value="<?= $type['userTypeID'] ?>" <?= $userTypeID == $type['userTypeID'] ? 'selected' : '' ?>>
+                                    <?= $type['type_name'] ?>
+                                </option>
+                            <?php } ?>
+                        </select>
+                        <button type="submit"
+                            class="bg-red-800 text-white rounded-lg px-4 py-2 hover:bg-red-700">Search</button>
+                    </form>
 
-                <form method="GET" class="search flex gap-2 items-center mb-6">
-                    <input type="hidden" name="tab" value="<?= $current_tab ?>">
-                    <input type="text" name="search" placeholder="Search by name or email" value="<?= $search ?>"
-                        class="border rounded-lg p-2 flex-grow">
-                    <select name="userType" class="border rounded-lg p-2">
-                        <option value="">All Types</option>
-                        <?php foreach ($userTypes as $type) { ?>
-                            <option value="<?= $type['userTypeID'] ?>" <?= $userTypeID == $type['userTypeID'] ? 'selected' : '' ?>>
-                                <?= $type['type_name'] ?>
-                            </option>
-                        <?php } ?>
-                    </select>
-                    <button type="submit"
-                        class="bg-red-800 text-white rounded-lg px-4 py-2 hover:bg-red-700">Search</button>
-                </form>
-
-                <h2 class="text-2xl font-semibold mb-4 text-gray-700">
-                    <?php
-                    switch ($current_tab) {
-                        case 'pending':
-                            echo 'Pending User Registrations';
-                            break;
-                        case 'approved':
-                            echo 'Approved System Users';
-                            break;
-                        case 'rejected':
-                            echo 'Rejected User Registrations';
-                            break;
-                        case 'blocked':
-                            echo 'Blocked Accounts';
-                            break;
-                    }
-                    ?>
-                </h2>
-
-                <div class="view">
-                    <table>
-                        <tr>
-                            <th>No</th>
-                            <th>Last Name</th>
-                            <th>First Name</th>
-                            <th>Email</th>
-                            <th>ID Image</th>
-                            <th>User Type</th>
-                            <th>Date Reg.</th>
-                            <th>Actions</th>
-                        </tr>
-
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">
                         <?php
-                        $no = 1;
-                        $colspan = ($current_tab == 'approved' || $current_tab == 'blocked') ? 9 : 8;
+                        switch ($current_tab) {
+                            case 'pending':
+                                echo 'Pending User Registrations';
+                                break;
+                            case 'approved':
+                                echo 'Approved System Users';
+                                break;
+                            case 'rejected':
+                                echo 'Rejected User Registrations';
+                                break;
+                            case 'blocked':
+                                echo 'Blocked Accounts';
+                                break;
+                        }
+                        ?>
+                    </h2>
 
-                        if (empty($users)): ?>
+                    <div class="view">
+                        <table>
                             <tr>
-                                <td colspan="<?= $colspan ?>" class="text-center py-4 text-gray-500">
-                                    No <?= strtolower(str_replace('d', 'd ', $current_tab)) ?> users found.
-                                </td>
+                                <th>No</th>
+                                <th>Last Name</th>
+                                <th>First Name</th>
+                                <th>Email</th>
+                                <th>ID Image</th>
+                                <th>User Type</th>
+                                <th>Date Reg.</th>
+                                <th>Actions</th>
                             </tr>
-                        <?php else:
-                            foreach ($users as $user) {
-                                $image_url = !empty($user["imageID_dir"]) ? "../../../" . $user["imageID_dir"] : null;
-                                ?>
+
+                            <?php
+                            $no = 1;
+                            $colspan = ($current_tab == 'approved' || $current_tab == 'blocked') ? 9 : 8;
+
+                            if (empty($users)): ?>
                                 <tr>
-                                    <td><?= $no++ ?></td>
-                                    <td><?= $user["lName"] ?></td>
-                                    <td><?= $user["fName"] ?></td>
-                                    <td><?= $user["email"] ?></td>
-                                    <td class="text-center">
-                                        <?php
-                                        if ($image_url) { ?>
-                                            <img src="<?= $image_url ?>" alt="ID"
-                                                class="w-16 h-16 object-cover rounded mx-auto border border-gray-300"
-                                                title="<?= $user["imageID_name"] ?>">
-                                        <?php } else { ?>
-                                            <span class="text-gray-500 text-xs">N/A</span>
-                                        <?php } ?>
-                                    </td>
-                                    <td><?= $user["type_name"] ?></td>
-                                    <td><?= $user['date_registered'] ?? 'N/A' ?></td>
-                                    <td class="action text-center">
-
-                                        <?php if ($current_tab == 'pending'): ?>
-                                            <a href="../../../app/controllers/userController.php?action=approveReject&id=<?= $user['userID'] ?>&status=Approved&tab=<?= $current_tab ?>"
-                                                class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1">
-                                                Approve
-                                            </a>
-                                            <a href="../../../app/controllers/userController.php?action=approveReject&id=<?= $user['userID'] ?>&status=Rejected&tab=<?= $current_tab ?>"
-                                                class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1">
-                                                Reject
-                                            </a>
-                                            <a class="actionBtn bg-yellow-500 hover:bg-yellow-600 text-sm inline-block mb-1"
-                                                href="usersSection.php?modal=view&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
-                                                View Details
-                                            </a>
-
-                                        <?php elseif ($current_tab == 'approved'): ?>
-                                            <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
-                                                href="usersSection.php?modal=edit&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">Edit</a>
-
-                                            <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
-                                                href="usersSection.php?modal=view&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
-                                                View
-                                            </a>
-
-                                            <a class="actionBtn bg-yellow-600 hover:bg-yellow-700 text-sm inline-block mb-1"
-                                                href="usersSection.php?modal=block&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
-                                                Block
-                                            </a>
-
-                                            <a class="actionBtn bg-red-800 hover:bg-red-900 text-sm inline-block mb-1"
-                                                href="usersSection.php?modal=delete&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
-                                                Delete
-                                            </a>
-
-                                        <?php elseif ($current_tab == 'blocked'): ?>
-                                            <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1"
-                                                href="../../../app/controllers/userController.php?action=unblock&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
-                                                Unblock
-                                            </a>
-
-                                            <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
-                                                href="usersSection.php?modal=view&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
-                                                View Details
-                                            </a>
-
-                                            <a class="actionBtn bg-red-800 hover:bg-red-900 text-sm inline-block mb-1"
-                                                href="usersSection.php?modal=delete&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
-                                                Delete
-                                            </a>
-
-                                        <?php else: ?>
-                                            <a href="../../../app/controllers/userController.php?action=approveReject&id=<?= $user['userID'] ?>&status=Approved&tab=<?= $current_tab ?>"
-                                                class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1">
-                                                Approve
-                                            </a>
-
-                                            <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
-                                                href="usersSection.php?modal=view&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
-                                                View Details
-                                            </a>
-
-                                            <a class="actionBtn bg-red-800 hover:bg-red-900 text-sm inline-block mb-1"
-                                                href="usersSection.php?modal=delete&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
-                                                Delete
-                                            </a>
-                                        <?php endif; ?>
-
+                                    <td colspan="<?= $colspan ?>" class="text-center py-4 text-gray-500">
+                                        No <?= strtolower(str_replace('d', 'd ', $current_tab)) ?> users found.
                                     </td>
                                 </tr>
-                                <?php
-                            }
-                        endif;
-                        ?>
-                    </table>
+                            <?php else:
+                                foreach ($users as $user) {
+                                    $image_url = !empty($user["imageID_dir"]) ? "../../../" . $user["imageID_dir"] : null;
+                                    ?>
+                                    <tr>
+                                        <td><?= $no++ ?></td>
+                                        <td><?= $user["lName"] ?></td>
+                                        <td><?= $user["fName"] ?></td>
+                                        <td><?= $user["email"] ?></td>
+                                        <td class="text-center">
+                                            <?php
+                                            if ($image_url) { ?>
+                                                <img src="<?= $image_url ?>" alt="ID"
+                                                    class="w-16 h-16 object-cover rounded mx-auto border border-gray-300"
+                                                    title="<?= $user["imageID_name"] ?>">
+                                            <?php } else { ?>
+                                                <span class="text-gray-500 text-xs">N/A</span>
+                                            <?php } ?>
+                                        </td>
+                                        <td><?= $user["type_name"] ?></td>
+                                        <td><?= $user['date_registered'] ?? 'N/A' ?></td>
+                                        <td class="action text-center">
+
+                                            <?php if ($current_tab == 'pending'): ?>
+                                                <a href="../../../app/controllers/userController.php?action=approveReject&id=<?= $user['userID'] ?>&status=Approved&tab=<?= $current_tab ?>"
+                                                    class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1">
+                                                    Approve
+                                                </a>
+                                                <a href="../../../app/controllers/userController.php?action=approveReject&id=<?= $user['userID'] ?>&status=Rejected&tab=<?= $current_tab ?>"
+                                                    class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1">
+                                                    Reject
+                                                </a>
+                                                <a class="actionBtn bg-yellow-500 hover:bg-yellow-600 text-sm inline-block mb-1"
+                                                    href="usersSection.php?modal=view&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    View Details
+                                                </a>
+
+                                            <?php elseif ($current_tab == 'approved'): ?>
+                                                <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
+                                                    href="usersSection.php?modal=edit&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">Edit</a>
+
+                                                <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
+                                                    href="usersSection.php?modal=view&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    View
+                                                </a>
+
+                                                <a class="actionBtn bg-yellow-600 hover:bg-yellow-700 text-sm inline-block mb-1"
+                                                    href="usersSection.php?modal=block&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    Block
+                                                </a>
+
+                                                <a class="actionBtn bg-red-800 hover:bg-red-900 text-sm inline-block mb-1"
+                                                    href="usersSection.php?modal=delete&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    Delete
+                                                </a>
+
+                                            <?php elseif ($current_tab == 'blocked'): ?>
+                                                <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1"
+                                                    href="../../../app/controllers/userController.php?action=unblock&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    Unblock
+                                                </a>
+
+                                                <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
+                                                    href="usersSection.php?modal=view&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    View Details
+                                                </a>
+
+                                                <a class="actionBtn bg-red-800 hover:bg-red-900 text-sm inline-block mb-1"
+                                                    href="usersSection.php?modal=delete&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    Delete
+                                                </a>
+
+                                            <?php else: ?>
+                                                <a href="../../../app/controllers/userController.php?action=approveReject&id=<?= $user['userID'] ?>&status=Approved&tab=<?= $current_tab ?>"
+                                                    class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1">
+                                                    Approve
+                                                </a>
+
+                                                <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
+                                                    href="usersSection.php?modal=view&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    View Details
+                                                </a>
+
+                                                <a class="actionBtn bg-red-800 hover:bg-red-900 text-sm inline-block mb-1"
+                                                    href="usersSection.php?modal=delete&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    Delete
+                                                </a>
+                                            <?php endif; ?>
+
+                                        </td>
+                                    </tr>
+                                    <?php
+                                }
+                            endif;
+                            ?>
+                        </table>
+                    </div>
                 </div>
             </div>
-        </div>
-    </main>
+        </main>
     </div>
 
     <div id="editUserModal" class="modal <?= $open_modal == 'editUserModal' ? 'open' : '' ?>">
@@ -374,7 +379,8 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                 <p><strong>Role:</strong> <?= $modal_user['role'] ?? 'N/A' ?></p>
                 <p><strong>College/Department:</strong> <?= $modal_user['college_department'] ?? 'N/A' ?></p>
 
-                <p><strong>Status:</strong> <span class="font-bold text-red-800"><?= $modal_user['status'] ?? 'N/A' ?></span></p>
+                <p><strong>Status:</strong> <span
+                        class="font-bold text-red-800"><?= $modal_user['status'] ?? 'N/A' ?></span></p>
 
                 <p><strong>Date Registered:</strong>
                     <?= $modal_user['date_registered'] ?? 'N/A' ?>
