@@ -16,13 +16,12 @@ class Register extends Database
     public $userTypeID = "";
     public $date_registered = "";
     public $role = "";
-    public $user_status = "Pending"; // Status remains 'Pending' initially
+    public $user_status = "Pending";
 
     protected $db;
 
     public function addUser()
     {
-        // SQL remains the same, as we're just updating the value of $this->user_status
         $sql = "INSERT INTO users (lName, fName, middleIn, id_number, college_department, imageID_name, imageID_dir, contact_no, email, password, role, userTypeID, date_registered, user_status) 
                 VALUES (:lName, :fName, :middleIn, :id_number, :college_department, :imageID_name, :imageID_dir, :contact_no, :email, :password, :role, :userTypeID, :date_registered, :user_status)";
 
@@ -40,7 +39,6 @@ class Register extends Database
         $query->bindParam(":password", $this->password);
 
         $role = 'Borrower';
-        // Ensure default status is 'Pending'
         $this->user_status = "Pending";
 
         $query->bindParam(":role", $role);

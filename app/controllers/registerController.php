@@ -38,17 +38,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $errors["fName"] = "First Name is required";
     }
 
-    if (empty($register["id_number"])) {
-        $errors["id_number"] = "ID Number is required";
-    } elseif (!is_numeric($register["id_number"])) {
-        $errors["id_number"] = "ID Number Format is Invalid";
-    }
+    if ($register["userTypeID"] == 1) {
+        if (empty($register["id_number"])) {
+            $errors["id_number"] = "ID Number is required";
+        } elseif (!is_numeric($register["id_number"])) {
+            $errors["id_number"] = "ID Number Format is Invalid";
+        }
 
-    if ($register["userTypeID"] == 1 || $register["userTypeID"] == 2) {
         if (empty($register["college_department"])) {
             $errors["college_department"] = "College/Department is required";
         }
     }
+
+    if ($register["userTypeID"] == 2) {
+        if (empty($register["id_number"])) {
+            $errors["id_number"] = "ID Number is required";
+        } elseif (!is_numeric($register["id_number"])) {
+            $errors["id_number"] = "ID Number Format is Invalid";
+        }
+
+        if (empty($register["college_department"])) {
+            $errors["college_department"] = "College/Department is required";
+        }
+    }
+
 
     if (empty($register["contact_no"])) {
         $errors["contact_no"] = "Contact Number is required";
@@ -92,9 +105,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $registerObj->fName = $register["fName"];
 
             $registerObj->middleIn = empty($register["middleIn"]) ? NULL : $register["middleIn"];
-            $registerObj->id_number = $register["id_number"];
-
+            $registerObj->id_number = empty($register["id_number"]) ? NULL : $register["id_number"];
             $registerObj->college_department = empty($register["college_department"]) ? NULL : $register["college_department"];
+//
 
             $registerObj->imageID_name = $register["imageID_name"];
             $registerObj->imageID_dir = "public/uploads/id_images/" . basename($register["imageID_name"]);
