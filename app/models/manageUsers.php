@@ -8,14 +8,14 @@ class User extends Database
     public $middleIn = "";
     public $contact_no = "";
     public $college_department = "";
-    public $imageID_name = ""; 
-    public $imageID_dir = ""; 
+    public $imageID_name = "";
+    public $imageID_dir = "";
     public $email = "";
     public $password = "";
     public $userTypeID = "";
     public $date_registered = "";
     public $role = "";
-    public $user_status = ""; 
+    public $user_status = "";
 
     protected $db;
 
@@ -89,30 +89,31 @@ class User extends Database
 
     public function fetchUser($userID)
     {
-        $sql = "SELECT u.*, ut.type_name, u.user_status AS status FROM users u JOIN user_type ut ON u.userTypeID = ut.userTypeID WHERE u.userID = :userID";
+        $sql = "SELECT u.*, ut.*, u.userTypeID AS status FROM users u JOIN user_type ut ON u.userTypeID = ut.userTypeID WHERE u.userID = :userID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(':userID', $userID);
         $query->execute();
         return $query->fetch();
     }
 
+
     public function fetchUserName($userID)
-{
-    // Select only the name columns you need (e.g., fName and lName)
-    $sql = "SELECT fName, lName FROM users WHERE userID = :userID";
-    
-    $query = $this->connect()->prepare($sql);
-    $query->bindParam(':userID', $userID);
-    $query->execute();
-    $user = $query->fetch();
-    
-    // Ensure we always return an array, not false
-    if ($user === false) {
-        return null;
+    {
+        // Select only the name columns you need (e.g., fName and lName)
+        $sql = "SELECT fName, lName FROM users WHERE userID = :userID";
+
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(':userID', $userID);
+        $query->execute();
+        $user = $query->fetch();
+
+        // Ensure we always return an array, not false
+        if ($user === false) {
+            return null;
+        }
+
+        return $user;
     }
-    
-    return $user;
-}
 
     public function fetchUserTypes()
     {
@@ -120,6 +121,16 @@ class User extends Database
         $query = $this->connect()->prepare($sql);
         $query->execute();
         return $query->fetchAll();
+    }
+
+    public function fetchUserLimit($userTypeID)
+    {
+        $sql = "SELECT borrower_limit FROM user_type WHERE userTypeID = :userTypeID LIMIT 1";
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(':userTypeID', $userTypeID);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result['borrower_limit'] ?? 0;
     }
 
     public function isEmailExist($email, $userID = "")
@@ -193,10 +204,13 @@ class User extends Database
     {
         $sql = "UPDATE users SET user_status = :newStatus WHERE userID = :userID";
         $query = $this->connect()->prepare($sql);
-        
+
         $query->bindParam(":newStatus", $newStatus);
         $query->bindParam(":userID", $userID);
-        
+
         return $query->execute();
     }
 }
+
+// $Obj = new User();
+// var_dump($Obj->fetchUserLimit(2));

@@ -104,7 +104,16 @@ class Book extends Database
         $query->execute();
         return $query->fetch();
     }
-    
+
+    public function fetchBookTitles()
+    {
+        $sql = "SELECT bookID, book_title FROM books";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        return $query->fetchAll();
+    }
+
+
     // NEW: Function to get just the replacement cost
     public function fetchBookReplacementCost($bookID)
     {
@@ -114,7 +123,7 @@ class Book extends Database
         $query->execute();
         $result = $query->fetchColumn();
         // Ensure a valid number is returned, default to the 400 base if NULL
-        return $result !== false ? (float) $result : 400.00; 
+        return $result !== false ? (float) $result : 400.00;
     }
 
     public function isTitleExist($book_title, $bookID = "")
@@ -213,15 +222,12 @@ class Book extends Database
 
     public function countBooksByCategory($categoryID)
     {
-        $sql = "SELECT COUNT(bookID) AS total FROM books WHERE categoryID = :categoryID";
+        $sql = "SELECT COUNT(*) AS total FROM books WHERE categoryID = :categoryID";
         $query = $this->connect()->prepare($sql);
-        $query->bindParam(":categoryID", $categoryID);
-
-        if ($query->execute()) {
-            return $query->fetch()['total'];
-        } else {
-            return 0;
-        }
+        $query->bindParam(':categoryID', $categoryID);
+        $query->execute();
+        $result = $query->fetch();
+        return $result['total'] ?? 0;
     }
 
     public function decrementBookCopies($bookID, $quantity)

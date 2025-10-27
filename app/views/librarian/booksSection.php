@@ -135,13 +135,12 @@ $books = $bookObj->viewBook($search, $categoryID);
                                     <td><?= $book["book_condition"] ?></td>
                                     <td><?= $book["status"] ?></td>
                                     <td class="action text-center">
-                                        <a class="editBtn"
-                                            href="booksSection.php?modal=edit&id=<?= $book['bookID'] ?>">Edit</a>
-                                        <a class="viewBtn" href="booksSection.php?modal=view&id=<?= $book['bookID'] ?>">View
-                                            Details</a>
-                                        <a class="deleteBtn" href="booksSection.php?modal=delete&id=<?= $book['bookID'] ?>">
+                                        <a class="editBtn bg-blue-500 hover:bg-blue-600"
+                                        href="booksSection.php?modal=edit&id=<?= $book['bookID'] ?>">Edit</a>
+                                        <a class="deleteBtn  bg-red-500 hover:bg-red-600" href="booksSection.php?modal=delete&id=<?= $book['bookID'] ?>">
                                             Delete
                                         </a>
+                                        <a class="viewBtn bg-gray-500 hover:bg-gray-600 text-white " href="booksSection.php?modal=view&id=<?= $book['bookID'] ?>">View</a>
                                     </td>
                                 </tr>
                                 <?php

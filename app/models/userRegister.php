@@ -67,7 +67,7 @@ class Register extends Database
     {
         $sql = "SELECT COUNT(userID) as total_users FROM users WHERE email = :email ";
         $query = $this->connect()->prepare($sql);
-        $result = NULL;
+        $record = NULL;
 
         $query->bindParam(":email", $email);
         if ($query->execute()) {

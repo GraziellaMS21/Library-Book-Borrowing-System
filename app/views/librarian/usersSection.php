@@ -184,9 +184,9 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                                                     class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1">
                                                     Reject
                                                 </a>
-                                                <a class="actionBtn bg-yellow-500 hover:bg-yellow-600 text-sm inline-block mb-1"
+                                                <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
                                                     href="usersSection.php?modal=view&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
-                                                    View Details
+                                                    View
                                                 </a>
 
                                             <?php elseif ($current_tab == 'approved'): ?>
@@ -198,12 +198,12 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                                                     View
                                                 </a>
 
-                                                <a class="actionBtn bg-yellow-600 hover:bg-yellow-700 text-sm inline-block mb-1"
+                                                <a class="actionBtn bg-amber-500 hover:bg-amber-600 text-sm inline-block mb-1"
                                                     href="usersSection.php?modal=block&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
                                                     Block
                                                 </a>
 
-                                                <a class="actionBtn bg-red-800 hover:bg-red-900 text-sm inline-block mb-1"
+                                                <a class="actionBtn  bg-red-500 hover:bg-red-600 text-sm inline-block mb-1"
                                                     href="usersSection.php?modal=delete&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
                                                     Delete
                                                 </a>
@@ -216,10 +216,10 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
 
                                                 <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
                                                     href="usersSection.php?modal=view&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
-                                                    View Details
+                                                    View
                                                 </a>
 
-                                                <a class="actionBtn bg-red-800 hover:bg-red-900 text-sm inline-block mb-1"
+                                                <a class="actionBtn  bg-red-500 hover:bg-red-600 text-sm inline-block mb-1"
                                                     href="usersSection.php?modal=delete&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
                                                     Delete
                                                 </a>
@@ -232,10 +232,10 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
 
                                                 <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
                                                     href="usersSection.php?modal=view&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
-                                                    View Details
+                                                    View
                                                 </a>
 
-                                                <a class="actionBtn bg-red-800 hover:bg-red-900 text-sm inline-block mb-1"
+                                                <a class="actionBtn  bg-red-500 hover:bg-red-600 text-sm inline-block mb-1"
                                                     href="usersSection.php?modal=delete&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
                                                     Delete
                                                 </a>

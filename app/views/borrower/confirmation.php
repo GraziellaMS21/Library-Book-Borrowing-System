@@ -10,105 +10,162 @@ unset($_SESSION["errors"]);
 
 require_once(__DIR__ . "/../../models/manageBook.php");
 require_once(__DIR__ . "/../../models/manageBorrowDetails.php");
+require_once(__DIR__ . "/../../models/manageUsers.php");
+
 $borrowObj = new BorrowDetails();
 $bookObj = new Book();
+$userObj = new User();
 
 $bookID = $_GET['bookID'] ?? null;
-
-$no_of_copies = (int) ($_GET['copies'] ?? 1);
+$action = $_GET['action'] ?? null;
+$is_list_checkout = ($action === 'list_checkout' && $_SERVER["REQUEST_METHOD"] === 'POST');
 
 $userID = $_SESSION["user_id"];
-$borrower = $borrowObj->fetchUser($userID);
-$userTypeID = $borrower["userTypeID"];
+$user = $userObj->fetchUser($userID);
+$userTypeID = $user["userTypeID"];
 
-
-$userName = $borrower ? $borrower["lName"] . " " . $borrower["fName"] : 'Borrower Name Not Found';
+$userName = $user ? $user["lName"] . " " . $user["fName"] : 'Borrower Name Not Found';
 //fetch user_type infos
-$userTypeName = $borrower["type_name"];
-$borrow_limit = $borrower["borrower_limit"];
-$borrow_period = $borrower["borrower_period"];
+$userTypeName = $user["type_name"];
+$borrow_limit = (int) ($user["borrower_limit"] ?? 1);
+$borrow_period = (int) ($user["borrower_period"] ?? 7);
 
 
-$pickup_date = date("Y-m-d");
-$expected_return_date = date("Y-m-d", strtotime("+$borrow_period days"));
+$pickup_date = trim(htmlspecialchars($_POST['pickup_date'] ?? date("Y-m-d")));
+$expected_return_date = trim(htmlspecialchars($_POST['expected_return_date'] ?? date("Y-m-d", strtotime("+$borrow_period days"))));
 
 
-// Fetch book data
-$book = null;
-if ($bookID) {
-    $book = $bookObj->fetchBook($bookID);
-}
-$max_available = (int) $book['book_copies'];
-
-$current_borrowed_count = $borrowObj->getTotalCurrentlyBorrowedCount($userID); //fetch how many books were processed/borrowed
+$current_borrowed_count = $borrowObj->fetchTotalBorrowedBooks($userID); //fetch how many books were processed/borrowed
 $borrow_many_copies = $borrowObj->hasManyCopyBooks($userID); //fetch no of copies borrowed by the user
-$is_borrowed = $borrowObj->isBookBorrowed($userID, $bookID); //fetch if the book was already borrowed
-
-// Restriction for the maximum copies allowed
-$max_copies_allowed = 1; // Default for Students and Guests
-if ($userTypeID == 2) {
-    // Staff can try to borrow up to the available stock or their limit (whichever is lower)
-    $max_copies_allowed = min($max_available, $borrow_limit);
-} else {
-    // Student (1) and Guest (3) are restricted to 1 copy total of any *single* book
-    $max_copies_allowed = 1;
-}
+$available_slots = $borrow_limit - $current_borrowed_count;
 
 
-//Restriction for Students (1) and Guests (3)
-if ($userTypeID == 1 || $userTypeID == 3) {
-    if ($is_borrowed) {
-        $errors['borrow_restriction'] = "You cannot borrow multiple copies of the same book. Please return the existing copy first.";
-    }
-    // Also limit by the general borrower_limit (Total borrowed + requested copies)
-    $available_slots = $borrow_limit - $current_borrowed_count;
-
-    if ($available_slots <= 0) {
-        $errors['borrow_limit'] = "You have reached your total borrowing limit of {$borrow_limit} books. You currently have {$current_borrowed_count} books requested or checked out.";
+// Helper function to consolidate complex borrowing restrictions
+function calculateMaxCopiesAllowed($userTypeID, $borrow_limit, $current_borrowed_count, $max_available, $is_borrowed, $borrow_many_copies)
+{
+    if ($userTypeID == 1 || $userTypeID == 3) { // Student, Guest: Max 1 copy of any single book
+        if ($is_borrowed)
+            return 0; // Already borrowed this specific book
+        $available_slots = $borrow_limit - $current_borrowed_count;
+        return min(1, max(0, $available_slots), $max_available);
     }
 
-    // Clamp max_copies_allowed by available slots (which is max 1 for this group anyway)
-    $max_copies_allowed = min($max_copies_allowed, max(0, $available_slots));
-}
+    if ($userTypeID == 2) { // Staff
+        $available_slots = $borrow_limit - $current_borrowed_count;
 
-
-// Restriction for Staff
-if ($userTypeID == 2) {
-    $available_slots = $borrow_limit - $current_borrowed_count;
-
-    if ($borrow_many_copies && !$is_borrowed) {
         // Staff borrowed books with same copies (of a DIFFERENT book) but is trying to borrow a NEW book.
-        $errors['borrow_restriction'] = "You must return all books from borrowing books with same copies before borrowing a different book.";
-        $max_copies_allowed = 0; // Prevent borrowing
-    } else {
-        // Staff is either borrowing the same book, or has only single-copy loans, or no loans. They are limited by total slots.
-        if ($available_slots <= 0) {
-            $errors['borrow_limit'] = "You have reached your total borrowing limit of {$borrow_limit} copies. You currently have {$current_borrowed_count} copies requested or checked out.";
+        if ($borrow_many_copies && !$is_borrowed) {
+            return 0; // Prevent borrowing a new book until existing multi-copy borrows are returned.
         }
 
-        // Clamp max_copies_allowed by available stock and available slots
-        $max_copies_allowed = min($max_available, max(0, $available_slots));
+        // Allowed by stock and overall limit
+        return min($max_available, max(0, $available_slots));
+    }
+    return 0; // Default safety
+}
+
+
+// --- Handle List Borrow vs. Single Borrow ---
+$books_to_checkout = [];
+$total_requested_copies = 0;
+
+if ($is_list_checkout) {
+    // 1. Process List Data received from myList.php POST
+    $list_items_post = $_POST['list_data'] ?? [];
+
+    if (empty($list_items_post)) {
+        $errors['list_empty'] = "No books selected for list checkout.";
+    } else {
+        foreach ($list_items_post as $listID => $item) {
+            $bookID_local = (int) ($item['bookID'] ?? 0);
+            $no_of_copies = (int) ($item['copies_requested'] ?? 1);
+            $max_available = (int) ($item['book_copies'] ?? 0);
+
+            // Fetch current borrowing status for the *actual* book
+            $is_borrowed = $borrowObj->isBookBorrowed($userID, $bookID_local);
+
+            $max_copies_allowed = calculateMaxCopiesAllowed($userTypeID, $borrow_limit, $current_borrowed_count, $max_available, $is_borrowed, $borrow_many_copies);
+
+            // Clamp requested copies against restrictions and availability
+            $final_copies = min($no_of_copies, $max_available, max(0, $max_copies_allowed));
+
+            if ($final_copies > 0) {
+                $books_to_checkout[$listID] = [
+                    'listID' => $listID,
+                    'bookID' => $bookID_local,
+                    'book_title' => $item['book_title'],
+                    'author' => $item['author'],
+                    'book_condition' => $item['book_condition'],
+                    'book_cover_dir' => $item['book_cover_dir'],
+                    'copies_requested' => $final_copies,
+                    'max_allowed' => $max_copies_allowed,
+                    'max_available' => $max_available,
+                ];
+                $total_requested_copies += $final_copies;
+            } else {
+                $errors['list_restriction_' . $bookID_local] = "Cannot borrow '{$item['book_title']}' (ID: {$listID}) due to borrowing limits, multi-copy restriction, or unavailability.";
+            }
+        }
+    }
+
+    // Total copies requested can't exceed total available slots
+    if ($total_requested_copies > $available_slots) {
+        $errors['total_limit'] = "The total number of books requested ({$total_requested_copies}) exceeds your available slots ({$available_slots}).";
+        $books_to_checkout = []; // Block checkout of all items if the total limit is exceeded by the request.
+    }
+
+} else {
+    // --- Single Book Borrow (Original Logic) ---
+    $no_of_copies = (int) ($_GET['copies'] ?? 1);
+
+    if ($bookID) {
+        $book = $bookObj->fetchBook($bookID);
+    }
+
+    if (!$book) {
+        $errors['book_not_found'] = "Book details could not be loaded.";
+    } else {
+        $max_available = (int) $book['book_copies'];
+        $is_borrowed = $borrowObj->isBookBorrowed($userID, $bookID);
+
+        $max_copies_allowed = calculateMaxCopiesAllowed($userTypeID, $borrow_limit, $current_borrowed_count, $max_available, $is_borrowed, $borrow_many_copies);
+
+        // Final check: clamp the requested copies
+        $final_copies = min($no_of_copies, $max_available, max(0, $max_copies_allowed));
+
+        // Also ensure it doesn't exceed total available slots (which should be handled by max_copies_allowed but is a good final check)
+        if ($final_copies > $available_slots) {
+            $final_copies = $available_slots;
+        }
+
+
+        if ($final_copies <= 0) {
+            if ($max_available <= 0) {
+                $errors['availability'] = "All copies of this book are currently borrowed.";
+            } else {
+                $errors['borrow_limit'] = "You cannot borrow any more books at this time due to your current borrow status or limit (You have {$current_borrowed_count} out of {$borrow_limit} allowed).";
+            }
+        } else {
+            // Book is valid for checkout
+            $books_to_checkout[$bookID] = [
+                'listID' => 0, // Not from a list
+                'bookID' => $bookID,
+                'book_title' => $book['book_title'],
+                'author' => $book['author'],
+                'book_condition' => $book['book_condition'],
+                'book_cover_dir' => $book['book_cover_dir'],
+                'copies_requested' => $final_copies,
+                'max_allowed' => $max_copies_allowed,
+                'max_available' => $max_available,
+            ];
+            $total_requested_copies = $final_copies;
+        }
     }
 }
 
-
-// Final check: clamp the requested copies
-if ($no_of_copies > $max_available) {
-    $no_of_copies = $max_available;
-}
-if ($no_of_copies > $max_copies_allowed) {
-    $no_of_copies = $max_copies_allowed;
-}
-
-// If max available is 0, or max allowed is 0 due to restriction, add an error if not already set.
-if ($max_available <= 0 && empty($errors['availability'])) {
-    $errors['availability'] = "All copies of this book are currently borrowed.";
-}
-
-if ($no_of_copies <= 0 && empty($errors)) {
-    if ($max_available > 0) {
-        $errors['borrow_limit'] = "You cannot borrow any more books at this time due to your current borrow status or limit (You have {$current_borrowed_count} out of {$borrow_limit} allowed).";
-    }
+// Final check after processing all items
+if (empty($books_to_checkout) && empty($errors)) {
+    $errors['general_error'] = "No items could be confirmed for checkout.";
 }
 ?>
 
@@ -120,9 +177,29 @@ if ($no_of_copies <= 0 && empty($errors)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Confirm Borrowing</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/borrower.css" />
-    <link rel="stylesheet" href="../../../public/assets/css/header_footer.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Licorice&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../../public/assets/css/borrower1.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/header_footer2.css" />
+    <style>
+        /* Custom styles to make the readonly date input look like regular text */
+        #expected_return_date_display {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-color: transparent;
+            border: none;
+            padding: 0;
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #1f2937;
+            width: auto;
+        }
+
+        .borrow-form-container {
+            max-width: 50rem;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
 </head>
 
 <body class="bg-gray-50 min-h-screen">
@@ -130,144 +207,219 @@ if ($no_of_copies <= 0 && empty($errors)) {
         <?php require_once(__DIR__ . '/../shared/headerBorrower.php'); ?>
 
         <header class="text-center my-10">
-            <h1 class="text-4xl sm:text-5xl font-extrabold">Book Borrowing Details
-            </h1>
-            <p class="text-xl mt-2">Please verify the details below before finalizing.</p>
+            <h1 class="title text-4xl sm:text-5xl font-extrabold text-gray-900">Book Borrowing Confirmation</h1>
+            <p class="text-lg mt-2 text-white">Review the details and confirm your borrow request below.</p>
         </header>
 
-        <?php if (!empty($errors)): ?>
-            <div class="max-w-3xl mx-auto mb-12 bg-white p-8 rounded-xl shadow-lg border-t-4 border-red-700">
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
-                    <strong class="font-bold">Cannot proceed with loan request!</strong>
-                    <ul class="list-disc ml-5 mt-2">
+        <?php if (!empty($errors) || empty($books_to_checkout)): ?>
+            <div class="borrow-form-container mb-12 bg-white p-8 rounded-xl shadow-2xl border-t-8 border-red-900">
+                <div class="bg-red-50 border border-red-400 text-red-700 px-6 py-4 rounded-lg relative" role="alert">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v4a1 1 0 102 0V7zm-1 9a1 1 0 100-2 1 1 0 000 2z"
+                                clip-rule="evenodd" />
+                        </svg>
+                        <strong class="font-bold text-lg">Borrow Request Denied</strong>
+                    </div>
+                    <ul class="list-disc ml-10 mt-3 space-y-1">
                         <?php foreach ($errors as $error): ?>
-                            <li><?= $error ?></li>
+                            <li>
+                                <?= $error ?>
+                            </li>
                         <?php endforeach; ?>
+                        <?php if (empty($books_to_checkout) && !$is_list_checkout): ?>
+                            <li>No book selected or available for checkout.</li>
+                        <?php endif; ?>
                     </ul>
                 </div>
-                <div class="flex justify-center">
-                    <a href="catalogue.php"
-                        class="mt-4 inline-block px-6 py-3 bg-red-800 text-white rounded-lg font-semibold hover:bg-red-700 transition shadow-md">
-                        Return to Catalogue
+                <div class="flex justify-center mt-8">
+                    <a href="<?= $is_list_checkout ? 'myList.php' : 'catalogue.php' ?>"
+                        class="inline-block px-8 py-3 bg-red-700 text-white font-semibold rounded-full hover:bg-red-600 transition shadow-lg transform hover:scale-105">
+                        &larr; Return to
+                        <?= $is_list_checkout ? 'My List' : 'Catalogue' ?>
                     </a>
                 </div>
             </div>
         <?php else: ?>
 
-            <form method="POST" action="../../../app/controllers/borrowBookController.php?action=add"
-                class="max-w-3xl mx-auto">
-                <input type="hidden" name="userID" value="<?= $userID ?? "" ?>">
-                <input type="hidden" name="bookID" value="<?= $bookID ?? "" ?>">
-                <input type="hidden" name="copies" id="copies_input" value="<?= $no_of_copies ?? "" ?>">
+            <form method="POST"
+                action="../../../app/controllers/borrowBookController.php?action=<?= $is_list_checkout ? 'add_multiple' : 'add' ?>"
+                class="borrow-form-container">
+                <input type="hidden" name="userID" value="<?= $userID ?>">
+                <input type="hidden" name="is_list_checkout" value="<?= $is_list_checkout ? '1' : '0' ?>">
 
-                <div class="mb-12 bg-white p-8 rounded-xl shadow-lg border-t-4 border-red-700">
+                <div class="bg-white p-8 rounded-xl shadow-2xl border-t-8 border-red-900 space-y-10">
 
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Items to be Borrowed</h2>
-
-                    <div
-                        class="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-4 border border-gray-200 rounded-lg">
-                        <div
-                            class="flex-shrink-0 w-24 h-36 shadow-lg rounded-md overflow-hidden bg-gray-200 border-2 border-gray-100">
-                            <?php
-                            if ($book['book_cover_dir']) { ?>
-                                <img src="<?= "../../../" . $book['book_cover_dir'] ?>" alt="<?= $book['book_title'] ?> Cover"
-                                    class="w-full h-full object-cover">
-                            <?php } else { ?>
-                                <div
-                                    class="flex items-center justify-center w-full h-full text-xs text-gray-500 text-center p-1">
-                                    No Cover
-                                </div>
-                            <?php } ?>
-                        </div>
-
-                        <div class="flex-grow">
-                            <h3 class="text-xl font-bold text-red-800 mb-1"><?= $book['book_title'] ?></h3>
-                            <p class="text-md text-gray-700"><strong>Author:</strong> <?= $book['author'] ?></p>
-
-                            <p class="text-md text-gray-700 mt-2"><strong>Copies Requested:</strong>
-                                <?php if ($userTypeID == 2): // Staff (userTypeID 2) ?>
-                                    <input type="number" name="no_of_copies" id="no_of_copies" value="<?= $no_of_copies ?>"
-                                        min="1" max="<?= $max_copies_allowed ?>"
-                                        class="w-20 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 inline-block text-xl text-red-800 font-extrabold text-center">
-                                    <span class="text-sm text-gray-500 block sm:inline-block ml-2">(Max:
-                                        <?= $max_copies_allowed ?>)</span>
-                                <?php else: // Non-Staff (limited to 1) ?>
-                                    <span class="font-extrabold text-2xl text-red-800"
-                                        id="copies_display"><?= $no_of_copies ?></span>
-                                    <span class="text-sm text-gray-500 block sm:inline-block ml-2">(Max: 1)</span>
-                                <?php endif; ?>
-                            </p>
-
-                            <p class="text-md text-gray-700"><strong>Current Book Condition:</strong>
-                                <span class="font-bold text-red-700"><?= $book['book_condition'] ?></span>
-                            </p>
-                            <p class="text-sm text-gray-500">Available Stock: <?= $max_available ?></p>
-                        </div>
-                    </div>
-
-                    <div class="mt-8 pt-6 border-t border-gray-200">
-                        <h3 class="text-xl font-bold text-gray-800 mb-4">Book Borrowing Details</h3>
-                        <ul class="space-y-3 text-lg text-gray-700 mb-8 p-4 bg-gray-50 rounded-lg border">
-                            <li><strong class="text-red-800">Borrower:</strong>
-                                <span class="font-bold text-gray-900"><?= $userName ?></span>
-                            </li>
-                            <li><strong class="text-red-800">Maximum Borrow Limit:</strong> <?= $borrow_limit ?> copies</li>
-                            <li><strong class="text-red-800">Currently Requested/Borrowed:</strong>
-                                <?= $current_borrowed_count ?> copies</li>
-                            <li><strong class="text-red-800">Maximum Borrow Period:</strong> <?= $borrow_period ?> Days</li>
-
-                            <li class="flex flex-col sm:flex-row sm:items-center">
-                                <strong class="text-red-800 w-full sm:w-1/2">Expected Pickup Date:</strong>
-                                <input type="date" name="pickup_date" id="pickup_date" value="<?= $pickup_date ?? "" ?>"
-                                    min="<?= $pickup_date ?>"
-                                    class="mt-2 sm:mt-0 w-full sm:w-1/2 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500">
-
-                            </li>
-                            <li class="pt-2"><strong class="text-red-800">Expected Return Date:</strong>
-
-                                <input type="date" name="expected_return_date" id="expected_return_date_display"
-                                    value="<?= $expected_return_date ?? "" ?>" readonly>
-                                <span class="text-sm text-gray-500 block sm:inline-block">(Calculated based on max loan
-                                    period)</span>
-                            </li>
-                        </ul>
-
-                        <div class="mt-8 p-4 border border-red-200 bg-red-50 rounded-lg">
-                            <h3 class="text-xl font-bold text-red-800 mb-3">Terms and Conditions</h3>
-                            <ul class="list-disc ml-5 text-gray-700 space-y-2 text-base">
-                                <li>Loaned items must be returned on or before the <strong>Expected Return Date</strong>.
-                                </li>
-                                <li><strong>Late Return Penalty:</strong> A fine of <strong>20 pesos (₱20.00) per
-                                        week</strong> will be incurred for
-                                    each item returned past the due date.</li>
-                                <li><strong>Damage or Loss:</strong> Any damage or loss of the loaned book must be
-                                    immediately reported
-                                    to the library staff. The associated cost will be discussed with the borrower.</li>
-                                <li><strong>Non-Compliance:</strong> Failure to resolve outstanding issues (e.g., unpaid
-                                    fines,
-                                    unresolved damage/loss) may result in the user's borrowing privileges being suspended
-                                    indefinitely.</li>
-                            </ul>
-                            <div class="mt-4 flex items-center">
-                                <input type="checkbox" id="agree_terms" name="agree_terms" required
-                                    class="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500">
-                                <label for="agree_terms" class="ml-2 block text-sm font-medium text-gray-900">
-                                    I agree to the Terms and Conditions listed above.
-                                </label>
+                    <div class="border border-gray-200 rounded-lg p-6 bg-red-50/50">
+                        <h2 class="text-2xl font-bold text-red-800 mb-4 pb-2 border-b border-red-200">Borrower Summary
+                            & Borrow Limits</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 text-gray-700">
+                            <div>
+                                <strong class="block text-sm font-medium text-gray-500">User Name</strong>
+                                <span class="text-xl font-bold text-gray-900">
+                                    <?= $userName ?>
+                                </span>
+                            </div>
+                            <div>
+                                <strong class="block text-sm font-medium text-gray-500">Total Books Requested</strong>
+                                <span class="text-3xl font-extrabold text-green-700">
+                                    <?= $total_requested_copies ?>
+                                </span>
                             </div>
                         </div>
-
-                        <div class="flex justify-end space-x-4 mt-6">
-                            <a href="catalogue.php"
-                                class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition">
-                                Cancel Loan
-                            </a>
-                            <button type="submit"
-                                class="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition shadow-md">
-                                Confirm and Checkout
-                            </button>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4 mt-2">
+                            <div>
+                                <strong class="block text-sm font-medium text-gray-500">User Type: </strong>
+                                <span class="text-lg font-semibold text-gray-800">
+                                    <?= $userTypeName ?>
+                                </span>
+                            </div>
+                            <div>
+                                <strong class="block text-sm font-medium text-gray-500">Borrowing Capacity</strong>
+                                <span class="text-lg font-semibold text-gray-800">
+                                    <?= $current_borrowed_count ?> out of
+                                    <?= $borrow_limit ?> total slots used. <br>
+                                    <span class="text-sm text-gray-600">(<?= $borrow_period ?> days borrow
+                                        period)</span>
+                                </span>
+                            </div>
                         </div>
                     </div>
+
+                    <div class="border border-gray-200 rounded-lg p-6 bg-gray-50">
+                        <h2 class="text-2xl font-bold text-red-800 mb-4 pb-2 border-b border-gray-200">Date Confirmation
+                        </h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <strong class="block text-sm font-medium text-gray-700 mb-2">Expected Pickup Date
+                                </strong>
+                                <input type="date" name="pickup_date" id="pickup_date" value="<?= $pickup_date ?? "" ?>"
+                                    min="<?= $pickup_date ?>"
+                                    class="w-full p-3 border-2 border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 text-lg font-semibold transition duration-150 ease-in-out">
+                            </div>
+                            <div>
+                                <strong class="block text-sm font-medium text-gray-700 mb-2">Expected Return Date
+                                </strong>
+                                <input type="date" name="expected_return_date" id="expected_return_date_display"
+                                    value="<?= $expected_return_date ?? "" ?>" readonly>
+                                <span class="text-xs text-gray-500 block mt-1">Borrow period is
+                                    <?= $borrow_period ?> days.</span>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="border border-gray-200 rounded-lg p-6 bg-white">
+                        <h2 class="text-2xl font-bold text-red-800 mb-6 pb-2 border-b border-gray-200">Items for Borrow
+                        </h2>
+                        <div class="space-y-6">
+                            <?php foreach ($books_to_checkout as $key => $book_data): ?>
+                                <div
+                                    class="flex flex-col sm:flex-row items-start gap-5 p-4 border border-gray-100 rounded-xl bg-gray-50 hover:shadow-md transition duration-200">
+                                    <div
+                                        class="flex-shrink-0 w-20 h-28 shadow-lg rounded-md overflow-hidden bg-gray-200 border-2 border-red-300/50">
+                                        <?php
+                                        if ($book_data['book_cover_dir']) { ?>
+                                            <img src="<?= "../../../" . $book_data['book_cover_dir'] ?>"
+                                                alt="<?= $book_data['book_title'] ?> Cover" class="w-full h-full object-cover">
+                                        <?php } else { ?>
+                                            <div
+                                                class="flex items-center justify-center w-full h-full text-xs text-gray-500 text-center p-1">
+                                                No Cover
+                                            </div>
+                                        <?php } ?>
+                                    </div>
+
+                                    <div class="flex-grow">
+                                        <h3 class="text-xl font-bold text-gray-900 line-clamp-1">
+                                            <?= $book_data['book_title'] ?>
+                                        </h3>
+                                        <p class="text-sm text-gray-600">by <span class="font-medium">
+                                                <?= $book_data['author'] ?>
+                                            </span></p>
+                                        <p class="text-md text-gray-700">
+                                            <strong>Condition:</strong>
+                                            <span class="font-semibold text-red-700">
+                                                <?= $book_data['book_condition'] ?>
+                                            </span>
+                                        </p>
+                                        <p class="text-md text-gray-700 pt-1">
+                                            <strong>Stock:</strong>
+                                            <span class="font-semibold text-gray-700">
+                                                <?= $book_data['max_available'] ?>
+                                            </span>
+                                        </p>
+
+                                        <p class="mt-1">
+                                            <strong class="text-md text-gray-700 mr-2">Total Copies Requested:</strong>
+                                            <?php if ($is_list_checkout): ?>
+                                                <span
+                                                    class="font-extrabold text-lg text-red-800"><?= $book_data['copies_requested'] ?></span>
+                                                <span class="text-xs text-gray-500 ml-2">(Max Allowed:
+                                                    <?= $book_data['max_allowed'] ?>)</span>
+
+                                                <input type="hidden" name="book_requests[<?= $key ?>][bookID]"
+                                                    value="<?= $book_data['bookID'] ?>">
+                                                <input type="hidden" name="book_requests[<?= $key ?>][listID]"
+                                                    value="<?= $book_data['listID'] ?>">
+                                                <input type="hidden" name="book_requests[<?= $key ?>][copies_requested]"
+                                                    value="<?= $book_data['copies_requested'] ?>">
+                                            <?php elseif ($userTypeID == 2): ?>
+                                            <span
+                                                class="font-extrabold text-lg text-red-800"><?= $book_data['copies_requested'] ?></span>
+                                            <span class="text-xs text-gray-500 ml-2">(Max Allowed:
+                                                <?= $book_data['max_allowed'] ?>)</span>
+                                            <input type="hidden" name="bookID" value="<?= $book_data['bookID'] ?>">
+                                            <input type="hidden" name="copies" id="copies_input"
+                                                value="<?= $book_data['copies_requested'] ?>">
+                                        <?php else: // Single checkout, Non-Staff (limited to 1) ?>
+                                            <span class="font-extrabold text-3xl text-red-800"
+                                                id="copies_display"><?= $book_data['copies_requested'] ?></span>
+                                            <span class="text-xs text-gray-500 ml-2">(Max: 1)</span>
+                                            <input type="hidden" name="bookID" value="<?= $book_data['bookID'] ?>">
+                                            <input type="hidden" name="copies" value="<?= $book_data['copies_requested'] ?>">
+                                        <?php endif; ?>
+                                        </p>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+
+
+                    <div class="p-4 border border-red-200 bg-red-50 rounded-lg">
+                        <h3 class="text-xl font-bold text-red-800 mb-3 border-b border-red-200 pb-2">Terms and Conditions
+                        </h3>
+                        <ul class="list-disc ml-5 text-gray-700 space-y-2 text-base">
+                            <li>Borrowed items must be returned on or before the <strong>Expected Return Date</strong>.
+                            </li>
+                            <li><strong>Late Return Penalty:</strong>A fine of <strong class="text-red-700">₱20.00 per
+                                    week</strong> will be incurred for each item returned past the due date.</li>
+                            <li><strong>Damage or Loss:</strong> Borrower is responsible for replacement/repair costs of
+                                damaged or lost books.</li>
+                            <li><strong>Non-Compliance:</strong> May result in the suspension of borrowing privileges.</li>
+                        </ul>
+                        <div class="mt-6 flex items-start">
+                            <input type="checkbox" id="agree_terms" name="agree_terms" required
+                                class="mt-1 h-5 w-5 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer">
+                            <label for="agree_terms" class="ml-3 block text-base font-medium text-gray-900">
+                                I confirm that I have read and agree to the Terms and Conditions listed above.
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                        <a href="<?= $is_list_checkout ? 'myList.php' : 'catalogue.php' ?>"
+                            class="px-8 py-3 bg-gray-200 text-gray-700 font-semibold rounded-full hover:bg-gray-300 transition shadow-md">
+                            Cancel
+                        </a>
+                        <button type="submit"
+                            class="px-8 py-3 bg-green-600 text-white font-semibold rounded-full hover:bg-green-700 transition shadow-lg transform hover:scale-105">
+                            Confirm and Borrow
+                        </button>
+                    </div>
+
                 </div>
             </form>
         <?php endif; ?>
@@ -280,22 +432,19 @@ if ($no_of_copies <= 0 && empty($errors)) {
         document.addEventListener('DOMContentLoaded', function () {
             const pickupDateInput = document.getElementById('pickup_date');
             const expectedreturnDateInput = document.getElementById('expected_return_date_display');
-            const copiesSelectable = document.getElementById('no_of_copies'); // New variable
-            const copiesHiddenInput = document.getElementById('copies_input'); // New variable
-            const maxLoanDays = <?= $borrow_period ?>; // Max days based on user type
+            const copiesSelectable = document.getElementById('no_of_copies');
+            const copiesHiddenInput = document.getElementById('copies_input');
+            const maxBorrowDays = <?= $borrow_period ?>;
 
-            // Update hidden copies input when the selectable input changes (Staff only)
-            if (copiesSelectable) {
+
+            // Update hidden copies input when the selectable input changes (Staff only in single mode)
+            if (copiesSelectable && copiesHiddenInput) {
                 copiesSelectable.addEventListener('input', function () {
+                    // This is used for single book checkout only
                     copiesHiddenInput.value = this.value;
                 });
             }
 
-
-            /**
-             * Converts a Date object to a YYYY-MM-DD string format required by input type="date".
-             * @param {Date} date
-             */
             function formatDateToISO(date) {
                 // Get month and day, ensuring they are zero-padded if single digit
                 const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -303,10 +452,6 @@ if ($no_of_copies <= 0 && empty($errors)) {
                 return `${date.getFullYear()}-${month}-${day}`;
             }
 
-            /**
-             * Calculates the return date based on the chosen pickup date and max loan period.
-             * The result is set in the YYYY-MM-DD format for the date input.
-             */
             function calculateReturnDate() {
                 const pickupDateValue = pickupDateInput.value;
                 if (!pickupDateValue) return;
@@ -315,7 +460,7 @@ if ($no_of_copies <= 0 && empty($errors)) {
                 const date = new Date(pickupDateValue.replace(/-/g, '/')); // Handle cross-browser date parsing
 
                 // Set the date for calculation
-                date.setDate(date.getDate() + maxLoanDays); // Add max loan days
+                date.setDate(date.getDate() + maxBorrowDays); // Add max borrow days
 
                 // Set the value in the date input (which requires YYYY-MM-DD format)
                 expectedreturnDateInput.value = formatDateToISO(date);

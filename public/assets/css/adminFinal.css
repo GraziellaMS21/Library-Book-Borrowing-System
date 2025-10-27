@@ -213,28 +213,6 @@ tbody tr:hover {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.editBtn {
-  background-color: #4caf50;
-}
-
-.deleteBtn {
-  background-color: #f44336;
-}
-
-.viewBtn {
-  background-color: #ffc107;
-  color: #333;
-}
-
-.editBtn:hover,
-.deleteBtn:hover,
-.viewBtn:hover,
-.actionBtn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  opacity: 0.9;
-}
-
 /* ---- GENERAL FORM STYLES ---- */
 label {
   display: block;

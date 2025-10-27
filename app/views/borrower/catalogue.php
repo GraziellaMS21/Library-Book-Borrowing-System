@@ -9,17 +9,61 @@ if (!isset($_SESSION["user_id"])) {
 
 require_once(__DIR__ . "/../../models/manageBook.php");
 require_once(__DIR__ . "/../../models/manageCategory.php");
+require_once(__DIR__ . "/../../models/manageUsers.php");
+require_once(__DIR__ . "/../../models/manageList.php");
 require_once(__DIR__ . "/../../models/manageBorrowDetails.php");
 
 $bookObj = new Book();
 $categoryObj = new Category();
-$borrowObj = new BorrowDetails();
+$userObj = new User();
+$borrowListObj = new BorrowLists();
+$borrowDetailsObj = new BorrowDetails();
 
+//fetch user informatio based on ID
 $userID = $_SESSION["user_id"];
-$borrower = $borrowObj->fetchUser($userID);
-$userTypeID = $borrower["userTypeID"];
-// var_dump($userTypeID);
+$user = $userObj->fetchUser($userID);
+$userTypeID = $user["userTypeID"];
 
+// --- MODAL/STATUS LOGIC ---
+$list_status = $_GET['status'] ?? null;
+$copies_added = (int) ($_GET['copies'] ?? 0);
+$book_id_added = (int) ($_GET['bookID'] ?? 0); // Correctly using bookID
+
+// New parameters for borrow denial errors
+$error_code = $_GET['error_code'] ?? null;
+$current_borrowed_count = (int) ($_GET['count'] ?? 0);
+$borrow_limit = (int) ($_GET['limit'] ?? 0);
+
+// Check for modal open requests
+$current_modal = $_GET['modal'] ?? '';
+$modal_book_id = (int) ($_GET['bookID'] ?? 0);
+$open_modal = '';
+
+if ($current_modal === 'borrow') {
+  $open_modal = 'borrow-modal';
+} elseif ($current_modal === 'list') {
+  $open_modal = 'list-modal';
+}
+
+// Fetch modal data if a modal is requested
+$modal_book = null;
+if ($open_modal && $modal_book_id) {
+  $modal_book = $bookObj->fetchBook($modal_book_id);
+  // If book is found, update available copies for JS validation
+  if ($modal_book) {
+    // --- START NEW LOGIC FOR MODAL AVAILABLE COPIES ---
+    $pending_copies_modal = $borrowDetailsObj->fetchPendingAndApprovedCopiesForBook($modal_book_id);
+    // This is the true number of copies available for a new request/list addition
+    $modal_available_copies = max(0, $modal_book['book_copies'] - $pending_copies_modal); 
+    // --- END NEW LOGIC FOR MODAL AVAILABLE COPIES ---
+
+    $modal_book_title = addslashes(htmlspecialchars($modal_book['book_title']));
+  }
+}
+// -------------------------
+
+
+//fetch categories
 $categories = $bookObj->fetchCategory();
 $categoryID = $_GET['view_category'] ?? null;
 
@@ -53,11 +97,19 @@ if (isset($categoryID)) { //Show all books for the selected category
         'books' => $books,
         'categoryID' => $categoryID,
         'show_view_all' => $show_view_all,
-        'total_count' => $total_count,
+        'total_view' => $total_count,
         'full_view' => false,
       ];
     }
   }
+}
+
+$books_data = $bookObj->fetchBookTitles();
+
+// Convert to an array for JS lookup
+$book_titles_map = [];
+foreach ($books_data as $book) {
+  $book_titles_map[$book['bookID']] = htmlspecialchars($book['book_title']);
 }
 ?>
 
@@ -69,9 +121,55 @@ if (isset($categoryID)) { //Show all books for the selected category
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WMSU Library Catalogue</title>
   <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-  <link rel="stylesheet" href="../../../public/assets/css/borrower.css" />
-  <link rel="stylesheet" href="../../../public/assets/css/header_footer1.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Licorice&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../public/assets/css/borrower1.css" />
+  <link rel="stylesheet" href="../../../public/assets/css/header_footer2.css" />
+  <style>
+    /* Admin modal style fix for borrower page */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+    }
+
+    .close-times {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      color: #aaa;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .close-times:hover,
+    .close-times:focus {
+      color: #000;
+      text-decoration: none;
+      cursor: pointer;
+    }
+  </style>
 </head>
 
 <body class="min-h-screen">
@@ -79,7 +177,7 @@ if (isset($categoryID)) { //Show all books for the selected category
     <?php require_once(__DIR__ . '/../shared/headerBorrower.php'); ?>
 
     <header class="text-center my-10">
-      <h1 class="text-4xl sm:text-5xl font-extrabold">
+      <h1 class="title  text-4xl sm:text-5xl font-extrabold">
         <span class="text-6xl block">Discover</span>
         Library Collection
       </h1>
@@ -105,16 +203,16 @@ if (isset($categoryID)) { //Show all books for the selected category
               &larr; Back to Catalogue
             </a>
           <?php } else { ?>
-            <a href="catalogue.php?view_category=<?= $categoryGroup['categoryID'] ?? 0 ?>"
+            <a href="catalogue.php?view_category=<?= $categoryGroup['categoryID'] ?>"
               class="<?= $categoryGroup['show_view_all'] ? '' : 'hidden' ?> text-red-700 hover:text-red-900 font-semibold transition duration-150">
-              View All (<?= $categoryGroup['total_count'] ?? '' ?>) &rarr;
+              View All (<?= $categoryGroup['total_view'] ?? '' ?>) &rarr;
             </a>
           <?php } ?>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <?php foreach ($categoryGroup['books'] as $book) { ?>
-            <div class="book-card-base">
+            <div class="book-card-base" data-book-id="<?= $book['bookID'] ?>">
               <div class="flex items-start p-4">
                 <div
                   class="flex-shrink-0 w-20 h-32 mr-4 shadow-lg rounded-md overflow-hidden bg-gray-200 border-2 border-gray-100">
@@ -137,7 +235,7 @@ if (isset($categoryID)) { //Show all books for the selected category
                   <p class="text-sm text-gray-700"><strong>Year:</strong>
                     <?= $book['publication_year'] ?></p>
 
-                  <p class="text-sm text-gray-600 mt-2"><strong>Copies:</strong>
+                  <p class="text-sm text-gray-600 mt-2"><strong>Stock:</strong>
                     <?= $book['book_copies'] ?></p>
                   <p class="text-sm text-gray-600"><strong>Condition:</strong>
                     <?= $book['book_condition'] ?></p>
@@ -148,59 +246,107 @@ if (isset($categoryID)) { //Show all books for the selected category
                 <?php
                 $copies = $book['book_copies'] ?? 0;
                 $status = "Available";
-                $status_class = 'text-green-600 bg-green-100';
+                $status_color = 'text-green-600 bg-green-100';
                 $button_disabled = false;
-                $bookTitle = htmlspecialchars($book["book_title"], ENT_QUOTES); // Sanitize for JS string
+                $bookTitle = htmlspecialchars($book["book_title"]); // HTML encode for JS/PHP output
+                $bookID = $book["bookID"]; // Get bookID for the check
 
-                if ($copies <= 0) {
-                  $status = "Borrowed";
-                  $status_class = 'text-blue-600 bg-blue-100';
+                // --- START NEW LOGIC: Available for Request Calculation (affects ALL users) ---
+                $pending_copies_count = $borrowDetailsObj->fetchPendingAndApprovedCopiesForBook($bookID);
+                $available_for_request = max(0, $copies - $pending_copies_count);
+                // --- END NEW LOGIC ---
+            
+                // --- BORROWING LIMIT CHECK START (Non-Staff) ---
+                $current_borrowed_count = 0;
+                $borrow_limit = 0;
+                $final_copies = $available_for_request; // Use the new available count
+                $borrow_denied = false;
+                $error_message_code = '';
+                $max_available = $available_for_request;
+
+                if ($userTypeID != 2) {
+                  // Non-staff specific checks
+                  $borrow_limit = $userObj->fetchUserLimit($user['userTypeID']);
+                  $current_borrowed_count = $borrowDetailsObj->fetchTotalBorrowedBooks($userID);
+
+                  // If user has pending/borrowed copy of *this* book, they are fully disabled
+                  $has_active_pending = $borrowDetailsObj->fetchPendingBooks($userID, $bookID);
+                  $has_active_borrowed = $borrowDetailsObj->fetchBorrowedBooks($userID, $bookID);
+
+                  if ($has_active_pending || $has_active_borrowed) {
+                    $button_disabled = true;
+                    $status = $has_active_pending ? "Request Pending" : "Borrowed";
+                    $status_color = 'text-yellow-600 bg-yellow-100';
+                    // No further borrow denial check needed if disabled by per-book limit
+                  } else {
+                    // Check overall limit vs availability
+                    $max_available_to_borrow = $borrow_limit - $current_borrowed_count;
+                    $final_copies = min($available_for_request, $max_available_to_borrow);
+
+                    if ($final_copies <= 0) {
+                      $borrow_denied = true;
+                      $button_disabled = true; // Disable button immediately
+                      if ($available_for_request <= 0) {
+                        $error_message_code = 'unavailable'; // All copies of this book are currently reserved.
+                      } else {
+                        $error_message_code = 'limit'; // User cannot borrow due to personal limit.
+                      }
+                      $status = "Unavailable";
+                      $status_color = 'text-red-600 bg-red-100';
+                    }
+                  }
+                }
+                // --- BORROWING LIMIT CHECK END ---
+            
+                // If copies are reserved, show status as fully reserved/unavailable
+                if ($available_for_request <= 0 && !$borrow_denied) {
+                  $status = "Fully Reserved";
+                  $status_color = 'text-blue-600 bg-blue-100';
                   $button_disabled = true;
                 }
 
-                // Determine action based on user type (1=Student, 2=Staff, 3=Guest)
+                //for borrow button (Staff uses modal, Non-Staff uses direct redirect or error link)
                 $borrow_action = '';
-                if (!$button_disabled) {
-                  if ($userTypeID == 2) {
-                    // Staff: Show Borrow Modal
-                    $borrow_action = "onclick=\"event.preventDefault(); showBorrowModal({$book['bookID']}, '{$bookTitle}', {$copies})\"";
-                  } else {
-                    // Student/Guest: Direct redirect to confirmation
-                    $borrow_action = "href='confirmation.php?bookID={$book['bookID']}&copies=1'";
-                  }
+                if ($userTypeID == 2) {
+                  // Staff: use URL parameter to open modal
+                  $borrow_action = "href='catalogue.php?modal=borrow&bookID={$bookID}'";
+                } elseif (!$borrow_denied) {
+                  // Non-Staff (allowed): direct link to confirmation.php
+                  $borrow_action = "href='confirmation.php?bookID={$book['bookID']}&copies=1'";
                 } else {
-                  $borrow_action = "onclick=\"event.preventDefault()\"";
+                  // Non-Staff (denied): link to error status page
+                  // We must pass the bookID, the status, and the specific error code.
+                  $borrow_action = "href='catalogue.php?status=borrow_denied&bookID={$bookID}&error_code={$error_message_code}&count={$current_borrowed_count}&limit={$borrow_limit}'";
                 }
 
+                // for add to list button
                 $add_to_list_action = '';
                 if (!$button_disabled) {
                   if ($userTypeID == 2) {
-                    // Staff: Show Add To List Modal (to select copies)
-                    $add_to_list_action = "onclick=\"event.preventDefault(); showAddToListModal({$book['bookID']}, '{$bookTitle}', {$copies})\"";
+                    $add_to_list_action = "href='catalogue.php?modal=list&bookID={$bookID}'";
                   } else {
-                    // Student/Guest: Direct show success modal (assuming 1 copy added to list)
-                    $add_to_list_action = "onclick=\"event.preventDefault(); success('{$bookTitle}', 1)\"";
+                    // Non-staff still uses JS function for direct add-to-list action (no modal)
+                    $add_to_list_action = "onclick=\"event.preventDefault(); addToList({$book['bookID']})\"";
                   }
-                } else {
-                  $add_to_list_action = "onclick=\"event.preventDefault()\"";
                 }
                 ?>
-                <span class="px-3 py-1 text-xs font-semibold rounded-full <?= $status_class ?>">
+
+
+                <span class="px-3 py-1 text-xs font-semibold rounded-full <?= $status_color ?>">
                   <?= $status ?>
                 </span>
 
                 <a <?= $borrow_action ?>
                   class="text-sm font-medium cursor-pointer transition duration-300 px-4 py-2 rounded-full <?= $button_disabled ? 'bg-gray-300 text-gray-600 cursor-not-allowed pointer-events-none' : 'bg-red-800 text-white shadow-md' ?>">
-                  <?= $button_disabled ? 'Unavailable' : '+ Borrow Now' ?>
+                  <?= $button_disabled ? (($has_active_borrowed || $has_active_pending) ? 'Limit 1 Copy' : 'Unavailable') : '+ Borrow Now' ?>
                 </a>
 
-                <button <?= $add_to_list_action ?>
+                <a <?= $add_to_list_action ?>
                   class="text-sm font-medium transition duration-300 px-4 py-2 rounded-full <?= $button_disabled ? 'hidden' : 'bg-red-800 text-white shadow-md' ?>">
                   + Add To List
-                </button>
+                </a>
               </div>
             </div>
-            </a>
           <?php } ?>
         </div>
       </div>
@@ -209,161 +355,190 @@ if (isset($categoryID)) { //Show all books for the selected category
 
   <?php require_once(__DIR__ . '/../shared/footer.php'); ?>
 
-  <div id="borrow-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-md mx-4">
-      <div class="flex justify-between items-center border-b pb-3 mb-4">
-        <h3 class="text-xl font-bold text-red-800">Borrow Copies</h3>
-        <button onclick="hideModal('borrow-modal')" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
-      </div>
+  <!-- BORROW MODAL (STAFF ONLY) -->
+  <div id="borrow-modal" class="modal <?= $open_modal == 'borrow-modal' ? 'open' : '' ?>">
+    <div class="modal-content">
+      <span class="close-times" onclick="closeModalAndRedirect()">&times;</span>
+      <h3 class="text-xl font-bold text-red-800 border-b pb-3 mb-4">Borrow Copies (Staff)</h3>
 
-      <p class="text-gray-700 mb-3">Book: <strong id="modal-borrow-book-title"></strong></p>
+      <p class="text-gray-700 mb-3">Book: <strong id="modal-borrow-book-title">
+          <?= $modal_book_title ?? '' ?>
+        </strong></p>
       <form id="borrow-form" method="GET" action="confirmation.php">
-        <input type="hidden" name="bookID" id="modal-borrow-book-id">
+        <input type="hidden" name="bookID" id="modal-borrow-book-id" value="<?= $modal_book_id ?>">
 
         <div class="mb-4">
           <label for="copies" class="block text-sm font-medium text-gray-700 mb-1">Number of Copies to Borrow:</label>
-          <input type="number" name="copies" id="modal-borrow-copies-input" min="1" required
+          <input type="number" name="copies" id="modal-borrow-copies-input" min="1"
+            value="<?= $modal_available_copies > 0 ? 1 : 0 ?>" required max="<?= $modal_available_copies ?? 0 ?>"
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500"
-            oninput="checkCopiesLimit('modal-borrow-copies-input', 'modal-borrow-submit-btn', 'borrow-copies-error', 'max-borrow-copies')">
+            oninput="checkCopiesLimit('modal-borrow-copies-input', 'modal-borrow-submit-btn', 'borrow-copies-error', '<?= $modal_available_copies ?? 0 ?>')">
           <p id="borrow-copies-error" class="text-sm text-red-600 mt-1 hidden">Cannot borrow more than <span
-              id="max-borrow-copies"></span> copies.</p>
+              id="max-borrow-copies"><?= $modal_available_copies ?? 0 ?></span> copies.</p>
         </div>
 
         <div class="flex justify-end space-x-3">
-          <button type="button" onclick="hideModal('borrow-modal')"
+          <button type="button" onclick="closeModalAndRedirect()"
             class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">Cancel</button>
           <button type="submit" id="modal-borrow-submit-btn"
-            class="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-900 transition">Confirm Borrow</button>
+            class="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-900 transition" <?= ($modal_available_copies ?? 0) > 0 ? '' : 'disabled' ?>>Confirm Borrow</button>
         </div>
       </form>
     </div>
   </div>
 
-  <div id="list-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-md mx-4">
-      <div class="flex justify-between items-center border-b pb-3 mb-4">
-        <h3 class="text-xl font-bold text-red-800">Add to List Copies</h3>
-        <button onclick="hideModal('list-modal')" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
-      </div>
+  <!-- ADD TO LIST MODAL (STAFF ONLY) -->
+  <div id="list-modal" class="modal <?= $open_modal == 'list-modal' ? 'open' : '' ?>">
+    <div class="modal-content">
+      <span class="close-times" onclick="closeModalAndRedirect()">&times;</span>
+      <h3 class="text-xl font-bold text-red-800 border-b pb-3 mb-4">Add to List Copies (Staff)</h3>
 
-      <p class="text-gray-700 mb-3">Book: <strong id="modal-list-book-title"></strong></p>
+      <p class="text-gray-700 mb-3">Book: <strong id="modal-list-book-title">
+          <?= $modal_book_title ?? '' ?>
+        </strong></p>
       <form onsubmit="event.preventDefault(); confirmAddToList()">
-        <input type="hidden" id="modal-list-book-id">
+        <input type="hidden" id="modal-list-book-id" value="<?= $modal_book_id ?>">
 
         <div class="mb-4">
           <label for="list-copies" class="block text-sm font-medium text-gray-700 mb-1">Number of Copies to Add to
             List:</label>
-          <input type="number" name="list-copies" id="modal-list-copies-input" min="1" required
+          <input type="number" name="list-copies" id="modal-list-copies-input" min="1"
+            value="<?= $modal_available_copies > 0 ? 1 : 0 ?>" required max="<?= $modal_available_copies ?? 0 ?>"
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500"
-            oninput="checkCopiesLimit('modal-list-copies-input', 'modal-list-submit-btn', 'list-copies-error', 'max-list-copies')">
+            oninput="checkCopiesLimit('modal-list-copies-input', 'modal-list-submit-btn', 'list-copies-error', '<?= $modal_available_copies ?? 0 ?>')">
           <p id="list-copies-error" class="text-sm text-red-600 mt-1 hidden">Cannot add more than <span
-              id="max-list-copies"></span> copies.</p>
+              id="max-list-copies"><?= $modal_available_copies ?? 0 ?></span> copies.</p>
         </div>
 
         <div class="flex justify-end space-x-3">
-          <button type="button" onclick="hideModal('list-modal')"
+          <button type="button" onclick="closeModalAndRedirect()"
             class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">Cancel</button>
           <button type="submit" id="modal-list-submit-btn"
-            class="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-900 transition">Confirm Add</button>
+            class="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-900 transition" <?= ($modal_available_copies ?? 0) > 0 ? '' : 'disabled' ?>>Confirm Add</button>
         </div>
       </form>
     </div>
   </div>
 
-  <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-md mx-4 text-center">
-      <div class="flex justify-center mb-4">
-        <svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-      </div>
+  <!-- SUCCESS MODAL (Status Redirect) -->
+  <div id="success-modal" class="modal <?= $list_status == 'added' ? 'open' : '' ?>">
+    <div class="modal-content max-w-sm text-center">
+      <span class="close-times" onclick="closeStatusModal()">&times;</span>
       <h3 class="text-xl font-bold text-red-800 mb-2">Success!</h3>
-      <p class="text-gray-700"><span id="success-book-title" class="font-semibold"></span> (<span
-          id="success-no-copies"></span> copies) has been successfully added to your list!</p>
+      <p class="text-gray-700">
+        <span id="success-book-title" class="font-semibold"></span> has been successfully added to your list!
+        You now have <span id="success-total-copies" class="font-bold"></span> copies of that book.
+      </p>
       <div class="mt-6 flex justify-center">
-        <button type="button" onclick="hideModal('success-modal')"
+        <button type="button" onclick="closeStatusModal()"
           class="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-900 transition">Close</button>
       </div>
     </div>
   </div>
+
+  <!-- MESSAGE MODAL (Error/Existing Status Redirect) -->
+  <div id="message-modal" class="modal <?= ($list_status && $list_status != 'added') ? 'open' : '' ?>">
+    <div class="modal-content max-w-xs mx-4">
+      <span class="close-times" onclick="closeStatusModal()">&times;</span>
+      <div class="flex justify-center flex-col pt-4">
+        <span id="book-title" class="font-bold text-center"></span>
+        <p id="message-modal-body" class="mb-4 font-medium text-center text-gray-700"> </p>
+      </div>
+      <div class="flex justify-center">
+        <button onclick="closeStatusModal()"
+          class="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-900 transition text-sm">Dismiss</button>
+      </div>
+    </div>
+  </div>
+
 
 </body>
 
 <script src="../../../public/assets/js/borrower.js"></script>
 
 <script>
-  let maxBorrowCopies = 0;
-  let maxListCopies = 0;
+  // PHP variables dumped for JS use
+  const book_titles_map = <?= json_encode($book_titles_map) ?>;
+  const LIST_STATUS = "<?= $list_status ?>";
+  const COPIES_ADDED = <?= $copies_added ?>; // This variable now holds the TOTAL copies in list
+  const BOOK_ID_ADDED = <?= $book_id_added ?>;
+  const MODAL_BOOK_ID = <?= $modal_book_id ?>;
+  const MODAL_BOOK_TITLE = "<?= $modal_book_title ?? '' ?>";
+  const MODAL_AVAILABLE_COPIES = <?= $modal_available_copies ?? 0 ?>;
+  const ERROR_CODE = "<?= $error_code ?>";
+  const BORROWED_COUNT = <?= $current_borrowed_count ?>;
+  const BORROW_LIMIT = <?= $borrow_limit ?>;
 
-
-  //show borrow modal (Staff only)
-  function showBorrowModal(bookID, title, availableCopies) {
-    maxBorrowCopies = availableCopies;
-    document.getElementById('modal-borrow-book-id').value = bookID;
-    document.getElementById('modal-borrow-book-title').textContent = title;
-    document.getElementById('modal-borrow-copies-input').value = 1;
-    document.getElementById('modal-borrow-copies-input').setAttribute('max', availableCopies);
-    document.getElementById('max-borrow-copies').textContent = availableCopies;
-
-    // Reset error/button state
-    document.getElementById('borrow-copies-error').classList.add('hidden');
-    document.getElementById('modal-borrow-submit-btn').disabled = false;
-
-    document.getElementById('borrow-modal').classList.remove('hidden');
-    document.getElementById('borrow-modal').classList.add('flex');
+  function getBookTitle(bookID) {
+    return book_titles_map[String(bookID)] || 'Unknown Book';
   }
 
-  //show add to list modal (Staff only)
-  function showAddToListModal(bookID, title, availableCopies) {
-    maxListCopies = availableCopies;
-    document.getElementById('modal-list-book-id').value = bookID;
-    document.getElementById('modal-list-book-title').textContent = title;
-    document.getElementById('modal-list-copies-input').value = 1;
-    document.getElementById('modal-list-copies-input').setAttribute('max', availableCopies);
-    document.getElementById('max-list-copies').textContent = availableCopies;
+  // --- NEW MODAL OPENING/CLOSING LOGIC (Admin style) ---
 
-    // Reset error/button state
-    document.getElementById('list-copies-error').classList.add('hidden');
-    document.getElementById('modal-list-submit-btn').disabled = false;
+  // Function to close the primary operational modals (borrow/list) by clearing URL parameters
+  function closeModalAndRedirect() {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete("modal");
+    currentUrl.searchParams.delete("bookID");
 
-    document.getElementById('list-modal').classList.remove('hidden');
-    document.getElementById('list-modal').classList.add('flex');
+    window.location.href = currentUrl.toString();
   }
 
-  // Handle confirmation for Add To List (Staff only)
+  // Function to close the success/error status modals
+  function closeStatusModal() {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete("status");
+    currentUrl.searchParams.delete("copies");
+    currentUrl.searchParams.delete("bookID");
+    currentUrl.searchParams.delete("error_code"); // Clear specific error parameters
+    currentUrl.searchParams.delete("count");
+    currentUrl.searchParams.delete("limit");
+
+    window.location.href = currentUrl.toString();
+  }
+
+  // Close Modal when clicking outside the content area
+  document.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener("click", (e) => {
+      if (e.target.classList.contains("modal")) {
+        // Check if it's an operation modal (borrow/list)
+        if (e.target.id === 'borrow-modal' || e.target.id === 'list-modal') {
+          closeModalAndRedirect();
+        }
+        // Check if it's a status modal (success/message)
+        if (e.target.id === 'success-modal' || e.target.id === 'message-modal') {
+          closeStatusModal();
+        }
+      }
+    });
+  });
+
+  // --- END NEW MODAL LOGIC ---
+
+
+  // Handle direct Add To List for non staff (no modal)
+  function addToList(bookID) {
+    window.location.href = `../../../app/controllers/borrowListController.php?action=add&bookID=${bookID}&copies=1&source=catalogue.php`;
+  }
+
+  // Handle confirmation for Add To List for staff (from modal)
   function confirmAddToList() {
-    const title = document.getElementById('modal-list-book-title').textContent;
-    const copies = document.getElementById('modal-list-copies-input').value;
-    // In a real application, you would perform an AJAX request here to add the book to the list.
-    // For this fix, we simply show the success modal.
-    hideModal('list-modal');
-    success(title, copies);
+    const bookID = document.getElementById('modal-list-book-id').value;
+    const copies = parseInt(document.getElementById('modal-list-copies-input').value);
+
+    // This redirects and triggers a status modal on success/failure
+    window.location.href = `../../../app/controllers/borrowListController.php?action=add&bookID=${bookID}&copies=${copies}&source=catalogue.php`;
   }
 
-  // Show success modal (Used by Student/Guest for direct Add To List, and Staff after confirmAddToList)
-  function success(title, copies) {
-    document.getElementById('success-book-title').textContent = title;
-    document.getElementById('success-no-copies').textContent = copies;
-    document.getElementById('success-modal').classList.remove('hidden');
-    document.getElementById('success-modal').classList.add('flex');
-  }
-
-  //close modal
-  function hideModal(modalID) {
-    document.getElementById(modalID).classList.add('hidden');
-    document.getElementById(modalID).classList.remove('flex'); // Ensure it's fully hidden
-  }
-
-  // Universal function to check copies limit for modals
-  function checkCopiesLimit(inputID, submitBtnID, errorMsgID, maxCopiesSpanID) {
+  // Function to check copies limit for modals (unchanged functionality)
+  function checkCopiesLimit(inputID, submitBtnID, errorMsgID, maxCopiesValue) {
     const input = document.getElementById(inputID);
     const submitBtn = document.getElementById(submitBtnID);
     const errorMsg = document.getElementById(errorMsgID);
-    const maxCopiesValue = parseInt(document.getElementById(maxCopiesSpanID).textContent);
     const requestedCopies = parseInt(input.value);
+    const maxCopies = parseInt(maxCopiesValue);
 
-    if (requestedCopies > maxCopiesValue || requestedCopies < 1 || isNaN(requestedCopies)) {
+    if (requestedCopies > maxCopies || requestedCopies < 1 || isNaN(requestedCopies)) {
       errorMsg.classList.remove('hidden');
       submitBtn.disabled = true;
     } else {
@@ -371,6 +546,51 @@ if (isset($categoryID)) { //Show all books for the selected category
       submitBtn.disabled = false;
     }
   }
-</script>
 
-</html>
+  // Initial check and population for status messages on load
+  document.addEventListener('DOMContentLoaded', function () {
+    if (LIST_STATUS && BOOK_ID_ADDED) {
+      const title = getBookTitle(BOOK_ID_ADDED);
+      const messageModalBody = document.getElementById('message-modal-body');
+
+      // Populate success modal elements if status is 'added'
+      if (LIST_STATUS === 'added') {
+        document.getElementById('success-book-title').textContent = title;
+        // UPDATE: Display the total copies (COPIES_ADDED) in the new location
+        document.getElementById('success-total-copies').textContent = COPIES_ADDED;
+        return;
+      }
+
+      // Populate message modal elements for other statuses (error/existing/denied)
+      document.getElementById('book-title').textContent = title;
+      let message;
+
+      switch (LIST_STATUS) {
+        case 'existing':
+          message = ` is already in your list. (Limit 1 Copy)`;
+          break;
+        case 'error_unavailable':
+          message = 'ERROR: Book copies unavailable or action invalid.';
+          break;
+        case 'error':
+          message = 'ERROR: Action failed. Please try again.';
+          break;
+        case 'borrow_denied':
+          if (ERROR_CODE === 'unavailable') {
+            message = `All copies of this book are currently reserved.`;
+          } else if (ERROR_CODE === 'limit') {
+            // The requested error message, populated dynamically
+            message = `You cannot borrow any more books at this time due to your current borrow status or limit (You have ${BORROWED_COUNT} out of ${BORROW_LIMIT} allowed).`;
+          } else {
+            message = 'Borrowing denied due to system restrictions.';
+          }
+          document.getElementById('book-title').textContent = title;
+          break;
+        default:
+          return;
+      }
+      messageModalBody.textContent = message;
+    }
+  });
+
+</script>

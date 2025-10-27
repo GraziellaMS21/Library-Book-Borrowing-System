@@ -18,8 +18,7 @@ unset($_SESSION["errors"]);
     <title>Log In</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
     <link rel="stylesheet" href="../../../public/assets/css/login.css">
-    <link rel="stylesheet" href="../../../public/assets/css/header_footer.css">
-    <link href="https://fonts.googleapis.com/css2?family=Licorice&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../../public/assets/css/header_footer2.css">
 </head>
 
 <body>

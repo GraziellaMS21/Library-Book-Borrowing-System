@@ -3,10 +3,10 @@
     <nav class="navbar flex justify-between items-center bg-white fixed top-0 left-0 w-full z-10">
         <div class="logo-section flex items-center gap-3">
             <img src="../../../public/assets/images/logo.png" alt="Logo" class="logo">
-            <h2 class="title">WMSU LIBRARY</h2>
+            <h2 class="website-name">WMSU LIBRARY</h2>
         </div>
         <!-- Desktop Navigation Links -->
-        <ul id="nav-menu" class="hidden md:flex nav-links gap-8">
+        <ul id="nav-menu" class="hidden md:flex items-center nav-links gap-8">
             <li><a href="catalogue.php">Catalogue</a></li>
             <li><a href="myBorrowedBooks.php">My Borrowed Books</a></li>
             <li><a href="myList.php">My List</a></li>
@@ -17,7 +17,7 @@
                     class="flex items-center focus:outline-none">Account</button>
                 <!-- Dropdown Content -->
                 <div id="account-dropdown"
-                    class="absolute right-0 mt-3 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-30 hidden">
+                    class="absolute right-0 mt-3 p-4 w-60 bg-white rounded-lg shadow-xl border border-red-900 z-30 hidden">
                     <a href="profile.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Profile</a>
                     <a href="settings.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
                     <div class="border-t border-gray-100 my-1"></div>

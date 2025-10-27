@@ -6,49 +6,39 @@ if (!isset($_SESSION["user_id"])) {
 }
 
 require_once(__DIR__ . "/../../models/manageBorrowDetails.php");
-$borrowObj = new BorrowDetails();
+require_once(__DIR__ . "/../../models/manageUsers.php");
+require_once(__DIR__ . "/../../models/manageList.php");
+
+$borrowListObj = new BorrowLists();
+$userObj = new User();
+
+// fetch user information based on ID
 $userID = $_SESSION["user_id"];
+$user = $userObj->fetchUser($userID);
+$userTypeID = (int) ($user["userTypeID"] ?? 0);
 
-// Fetch user data for limits
-$borrower = $borrowObj->fetchUser($userID);
-$userTypeID = (int) ($borrower["userTypeID"] ?? 1);
-$borrow_limit = (int) ($borrower["borrower_limit"] ?? 1);
+//fetch borrower limit and period
+$borrow_limit = (int) ($user["borrower_limit"] ?? 1);
+$borrow_period = (int) ($user["borrower_period"] ?? 7); // Fetch borrow period
 
-// --- PHP list management (Session-based) has been removed ---
-// The list is now managed entirely in JavaScript using localStorage.
+// Calculate initial dates
+$pickup_date = date("Y-m-d");
+$expected_return_date = date("Y-m-d", strtotime("+$borrow_period days"));
 
-// --- CHECKOUT SUCCESS/ERROR HANDLER ---
+//fetch lists of each user
+$myList = $borrowListObj->fetchAllBorrrowList($userID);
+
+// checkout success
 $checkout_status = $_GET['status'] ?? null;
-$total_copies_success = $_GET['total_copies'] ?? null;
-$clear_list_flag = $_GET['clear_list'] ?? '0';
+$total_copies_success = (int) ($_GET['total_copies'] ?? 0);
 
-$success_message = null;
-$error_message = null;
-
-if ($checkout_status === 'success_checkout' && $total_copies_success > 0) {
-    $success_message = "Successfully requested {$total_copies_success} copies for checkout! They are now in the 'Pending' status.";
-} elseif ($checkout_status === 'partial_success' && $total_copies_success > 0) {
-    $success_message = "Partially requested {$total_copies_success} copies. Some items failed due to restrictions and are still in your list.";
-} elseif ($checkout_status === 'error') {
-     $error_message = "Checkout failed. Please review your selection and try again.";
-}
-
-// PHP is only used here to prevent potential POST data carry-over in the URL
-// when the user updates copies (Staff) or removes an item.
-if (isset($_GET['action']) && $_GET['action'] === 'remove' && isset($_GET['bookID'])) {
-    // This is for redirecting after a removal to clean the URL, but removal is done in JS.
+//for removing a book from list
+if (isset($_GET['action']) && $_GET['action'] === 'remove' && isset($_GET['listID'])) {
     header("Location: myList.php");
     exit;
 }
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" && $userTypeID == 2 && isset($_POST['update_copies_trigger'])) {
-    // This POST is triggered by JS to force a clean redirect after a localStorage update
-    header("Location: myList.php?success=copies_updated");
-    exit;
-}
-
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -57,371 +47,414 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $userTypeID == 2 && isset($_POST['up
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Borrowing List</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/borrower.css" />
-    <link rel="stylesheet" href="../../../public/assets/css/header_footer1.css" />
-    <style>
-        .table-auto-layout {
-            table-layout: auto;
-            width: 100%;
-        }
-
-        .fixed-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-        }
-    </style>
+    <link rel="stylesheet" href="../../../public/assets/css/borrower1.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/header_footer2.css" />
 </head>
 
 <body class="min-h-screen pb-24">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <?php require_once(__DIR__ . '/../shared/headerBorrower.php'); ?>
 
         <header class="text-center my-10">
-            <h1 class="text-4xl sm:text-5xl font-extrabold text-red-800">My List</h1>
-            <p class="text-xl mt-2">Books pending for checkout.</p>
+            <h1 class="title text-4xl sm:text-5xl font-extrabold">My List</h1>
+            <p class="text-xl mt-2">Books Pending for Confirmation</p>
         </header>
 
-        <?php if ($success_message): ?>
-            <div class="max-w-4xl mx-auto bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-                <span class="block sm:inline"><?= $success_message ?></span>
-            </div>
-        <?php endif; ?>
-        <?php if ($error_message): ?>
-            <div class="max-w-4xl mx-auto bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                <span class="block sm:inline"><?= $error_message ?></span>
-            </div>
-        <?php endif; ?>
+        <form id="checkout-form" method="POST" action="confirmation.php?action=list_checkout">
 
-        <?php if ($userID): // Only show the list section if a user is logged in ?>
-            <form id="checkout-form" method="GET" action="confirmation.php">
-                <input type="hidden" name="action" value="list_checkout">
-                <input type="hidden" name="checkout_data_json" id="checkout-data-json" value=""> 
+            <input type="hidden" name="userID" value="<?= $userID ?>">
+            <input type="hidden" id="pickup_date_input" name="pickup_date" value="<?= $pickup_date ?>">
+            <input type="hidden" id="expected_return_date_input" name="expected_return_date"
+                value="<?= $expected_return_date ?>">
 
-                <div class="mb-12 bg-white p-6 rounded-xl shadow-lg overflow-x-auto list-container">
-                    <table class="table-auto-layout text-left whitespace-nowrap">
-                        <thead>
-                            <tr class="text-gray-600 border-b-2 border-red-700">
-                                <th class="py-3 px-2 w-10"></th>
-                                <th class="py-3 px-4" colspan="2">Book</th>
-                                <th class="py-3 px-4">Author</th>
-                                <th class="py-3 px-4">Condition</th>
+
+            <div class="bg-white p-6 rounded-xl shadow-lg overflow-x-auto list-container">
+                <table class="table-auto-layout text-left whitespace-nowrap w-full">
+                    <thead>
+                        <tr class="text-gray-600 border-b-2 border-red-700">
+                            <th class="py-4 px-2"><input type="checkbox" name="select_all" id="select_all"
+                                    class="checkbox"></th>
+                            <th class="py-3 px-4 hidden sm:table-cell">Select All</th>
+                            <th class="py-3 px-4">Book</th>
+                            <th class="py-3 px-4 hidden sm:table-cell">Author</th>
+                            <th class="py-3 px-4 hidden sm:table-cell">Condition</th>
+                            <?php if ($userTypeID != 2) { ?>
+                                <th class="py-3 px-4 w-40">Copies Requested <br><span class="hidden sm:table-cell">(Max:
+                                        1)</span></th>
+                            <?php } else { ?>
                                 <th class="py-3 px-4 w-40">Copies Requested</th>
-                                <th class="py-3 px-4 w-20">Actions</th>
+
+                            <?php } ?>
+                            <th class="py-3 px-4 w-20">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="list-body">
+                        <?php if (empty($myList)) { ?>
+                            <tr id="empty-list-row">
+                                <td colspan="7" class="py-16 text-center text-xl text-gray-500">
+                                    Your list is empty. Add books from the <a href="catalogue.php"
+                                        class="text-red-700 font-semibold">Catalogue</a>!
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody id="list-body">
+                        <?php } else { ?>
+                            <?php foreach ($myList as $list) {
+                                $listID = $list['listID'];
+                                $copiesRequested = $list['no_of_copies'];
+                                $copiesAvailable = $list['book_copies'];
 
-                        </tbody>
-                    </table>
-                </div>
+                                $maxDisplay = ($userTypeID == 2) ? $copiesAvailable : 1;
 
-                <div class="fixed-footer bg-white border-t-2 border-red-700 shadow-2xl p-4">
-                    <div class="max-w-7xl mx-auto flex justify-between items-center">
-                        <p class="text-lg font-bold text-gray-800">Selected Books: <span id="selected-count"
-                                class="text-red-700">0</span></p>
-                        <button type="submit" id="checkout-btn" disabled
-                            class="px-8 py-3 bg-red-800 text-white rounded-lg font-semibold hover:bg-red-700 transition shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed">
-                            Checkout Selected Books
-                        </button>
+                                ?>
+                                <tr class="border-b hover:bg-gray-50" data-list-id="<?= $listID ?>"
+                                    data-book-id="<?= $list['bookID'] ?>" data-copies-requested="<?= $copiesRequested ?>">
+                                    <td class="py-4 px-2">
+                                        <input type="checkbox" name="selected_books[]" value="<?= $listID ?>"
+                                            class="checkbox checkbox-item">
+                                    </td>
+
+                                    <td class="py-4 px-4 hidden sm:table-cell">
+                                        <div class="w-16 h-24 shadow-md rounded-md overflow-hidden bg-gray-200 border">
+                                            <?php if (!empty($list['book_cover_dir'])): ?>
+                                                <img src="../../../<?= $list['book_cover_dir'] ?>" alt="Cover"
+                                                    class="w-full h-full object-cover">
+                                            <?php else: ?>
+                                                <div
+                                                    class="flex items-center justify-center w-full h-full text-xs text-gray-500 text-center p-1">
+                                                    No Cover
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4 text-red-800 font-bold max-w-xs">
+                                        <?= $list['book_title'] ?>
+                                    </td>
+                                    <td class="py-4 px-4 hidden sm:table-cell"><?= $list['author'] ?></td>
+                                    <td class="py-4 px-4 hidden sm:table-cell"><?= $list['book_condition'] ?></td>
+
+                                    <td class="py-4 px-4">
+                                        <div class="flex flex-col items-start space-y-1">
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-extrabold text-xl text-red-800 copies-display">
+                                                    <?= $copiesRequested ?>
+                                                </span>
+                                                <?php if ($userTypeID == 2) { ?>
+                                                    <p>(Stock : <?= $maxDisplay?>)</p>
+                                                <?php } ?>
+
+                                            </div>
+
+                                    <?php if (!empty($userTypeID == 2)): ?>
+                                        <button type="button" onclick="showEditCopiesModal(<?= $listID ?>, '<?= $list['book_title'] ?>', <?= $copiesRequested ?>, <?= $copiesAvailable ?>
+                )" class="text-sm text-blue-600 hover:text-blue-800 font-medium p-1 rounded transition duration-150">
+                                            Edit Copies
+                                        </button>
+                                    <?php endif; ?>
                     </div>
-                </div>
-            </form>
-        <?php else: ?>
-            <div class="text-center py-16 bg-white rounded-xl shadow-lg">
-                <p class="text-xl text-gray-500">Please log in to view your list.</p>
-            </div>
-        <?php endif; ?>
+                    </td>
+
+                    <td class="py-4 px-4">
+                        <a href="../../../app/controllers/borrowListController.php?action=remove&listID=<?= $listID ?>"
+                            class="text-red-600 hover:text-red-800 text-sm font-medium">
+                            Remove
+                        </a>
+                    </td>
+                    </tr>
+                    <input type="hidden" name="list_data[<?= $listID ?>][bookID]" value="<?= $list['bookID'] ?>">
+                    <input type="hidden" name="list_data[<?= $listID ?>][listID]" value="<?= $listID ?>">
+                    <input type="hidden" name="list_data[<?= $listID ?>][book_title]" value="<?= $list['book_title'] ?>">
+                    <input type="hidden" name="list_data[<?= $listID ?>][author]" value="<?= $list['author'] ?>">
+                    <input type="hidden" name="list_data[<?= $listID ?>][book_condition]"
+                        value="<?= $list['book_condition'] ?>">
+                    <input type="hidden" name="list_data[<?= $listID ?>][book_copies]" value="<?= $list['book_copies'] ?>">
+                    <input type="hidden" name="list_data[<?= $listID ?>][book_cover_dir]"
+                        value="<?= $list['book_cover_dir'] ?>">
+                    <input type="hidden" name="list_data[<?= $listID ?>][copies_requested]"
+                        class="copies-requested-input-<?= $listID ?>" value="<?= $copiesRequested ?>">
+                <?php }
+                            ; ?>
+            <?php } ?>
+            </tbody>
+            </table>
+    </div>
+
+    <div class="list-footer z-50">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+            <p class="text-lg font-bold text-gray-800">Selected Books: <span id="selected-count"
+                    class="text-red-700">0</span></p>
+
+            <button type="submit" id="checkout-btn" disabled
+                class="px-8 py-3 bg-red-800 text-white rounded-lg font-semibold hover:bg-red-700 transition shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed w-full md:w-auto">
+                Confirm Selected Books
+            </button>
+        </div>
+    </div>
+    </form>
     </div>
 
     <?php require_once(__DIR__ . '/../shared/footer.php'); ?>
 
-    <script>
-        // --- Core Variables ---
-        let myList = {}; // Global variable to hold the list loaded from localStorage
-        const userID = <?= $userID ?>;
-        const userTypeID = <?= $userTypeID ?>;
-        const borrowLimit = <?= $borrow_limit ?>;
-        const listBody = document.getElementById('list-body');
-        const checkoutForm = document.getElementById('checkout-form');
-        const checkoutDataJsonInput = document.getElementById('checkout-data-json');
-        const selectedCountSpan = document.getElementById('selected-count');
-        const checkoutBtn = document.getElementById('checkout-btn');
-        const listContainer = document.querySelector('.list-container');
+    <div id="copy-edit-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-md mx-4">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-xl font-bold text-red-800">Edit Copies for: <strong id="modal-edit-book-title"></strong>
+                </h3>
+                <button onclick="closeModal('copy-edit-modal')"
+                    class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
 
+            <form onsubmit="event.preventDefault(); submitCopiesUpdate()">
+                <input type="hidden" id="modal-edit-list-id">
 
-        // --- Local Storage Functions ---
+                <div class="mb-4">
+                    <label for="modal-edit-copies-input" class="block text-sm font-medium text-gray-700 mb-1">Number of
+                        Copies to Borrow:</label>
+                    <input type="number" id="modal-edit-copies-input" min="1" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500"
+                        oninput="validateCopies()">
+                    <p id="edit-copies-error" class="text-sm text-red-600 mt-1 hidden">Cannot borrow more than <span
+                            id="max-edit-copies-display"></span> copies.</p>
+                    <span id="max-edit-copies" class="hidden"></span>
+                </div>
 
-        /**
-         * Generates a unique key for the user's list in localStorage.
-         * This prevents one user from seeing another user's list.
-         */
-        function getPersistentListKey() {
-            return `user_borrow_list_${userID}`;
-        }
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('copy-edit-modal')"
+                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">Cancel</button>
+                    <button type="button" id="modal-edit-submit-btn" onclick="submitCopiesUpdate()"
+                        class="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-900 transition">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        /**
-         * Loads the book list from the user's Local Storage key.
-         */
-        function loadMyList() {
-            const key = getPersistentListKey();
-            try {
-                // Get the data from localStorage and parse it. If null, use an empty object.
-                myList = JSON.parse(localStorage.getItem(key)) || {};
-            } catch (e) {
-                console.error("Error loading list from localStorage:", e);
-                myList = {}; // Reset list on error
-            }
-        }
-
-        /**
-         * Saves the current in-memory list object back to Local Storage.
-         */
-        function saveMyList() {
-            const key = getPersistentListKey();
-            // Stringify the JavaScript object before saving it.
-            localStorage.setItem(key, JSON.stringify(myList));
-        }
-        
-        /**
-         * Clears the entire list from Local Storage.
-         */
-        function clearMyList() {
-            localStorage.removeItem(getPersistentListKey());
-            myList = {}; // Also clear in-memory list
-        }
-
-        // --- List Manipulation Functions ---
-
-        /**
-         * Removes a book from the list and re-renders the table.
-         */
-        function removeBook(bookID) {
-            // bookID must be converted to string for object key lookup
-            const idString = String(bookID); 
-            if (confirm("Are you sure you want to remove this book from your list?")) {
-                delete myList[idString];
-                saveMyList();
-                renderList(); // Re-render the table
-            }
-        }
-
-        /**
-         * Updates the number of copies requested for a book (Staff only).
-         */
-        function handleCopiesUpdate(bookID, inputElement) {
-            // bookID must be converted to string for object key lookup
-            const idString = String(bookID); 
-            let newCopies = parseInt(inputElement.value);
-            const maxAvailable = myList[idString].copies_available;
-
-            // Simple validation to ensure copies are within limits
-            if (isNaN(newCopies) || newCopies < 1) {
-                newCopies = 1;
-            } else if (newCopies > maxAvailable) {
-                newCopies = maxAvailable;
-            }
-
-            // Update input element visually and update the global list object
-            inputElement.value = newCopies;
-            myList[idString].copies_requested = newCopies;
-            saveMyList();
-            updateCheckoutState(); // Update selected count/button state just in case
-        }
-
-        /**
-         * Renders the current list object to the HTML table.
-         */
-        function renderList() {
-            listBody.innerHTML = ''; // Clear existing rows
-
-            if (Object.keys(myList).length === 0) {
-                // If the list is empty, show a friendly message
-                const emptyMessageHtml = `
-                    <div class="text-center py-16">
-                        <p class="text-xl text-gray-500">Your list is empty. Add books from the <a href="catalogue.php" class="text-red-700 font-semibold">Catalogue</a>!</p>
-                    </div>`;
-                
-                // If the table container exists, replace its content with the message
-                if (listContainer) {
-                    listContainer.classList.remove('overflow-x-auto', 'p-6'); // Clean up styling
-                    listContainer.classList.add('py-0');
-                    listContainer.innerHTML = emptyMessageHtml;
-                }
-                
-                checkoutBtn.disabled = true;
-                selectedCountSpan.textContent = '0';
-                return;
-            }
-            
-            // If the list is not empty, ensure the container styling is correct
-            if (listContainer && listContainer.querySelector('table') === null) {
-                 listContainer.classList.add('overflow-x-auto', 'p-6');
-                 listContainer.classList.remove('py-0');
-                 // Re-inserting the table is handled by the overall structure, just ensure the container looks right
-            }
-            
-
-            Object.values(myList).forEach(book => {
-                const row = document.createElement('tr');
-                row.className = 'border-b hover:bg-gray-50';
-
-                // Conditional rendering for the Copies Requested cell
-                const copiesCell = userTypeID === 2 ?
-                    // Staff: Editable input field
-                    `
-                    <div class="flex items-center space-x-2">
-                        <input type="number" name="copies_${book.bookID}" value="${book.copies_requested}"
-                            min="1" max="${book.copies_available}"
-                            onchange="handleCopiesUpdate(${book.bookID}, this)"
-                            oninput="handleCopiesUpdate(${book.bookID}, this)"
-                            data-book-id="${book.bookID}"
-                            class="w-20 p-2 border border-gray-300 rounded-md shadow-sm text-center staff-copies-input">
-                    </div>
-                    <span class="text-sm text-gray-500 block">(Max: ${book.copies_available})</span>
-                    ` :
-                    // Non-staff (Student/Guest): Fixed 1 copy
-                    `
-                    <span class="font-extrabold text-xl text-red-800">1</span>
-                    <span class="text-sm text-gray-500 block">(Max: 1)</span>
-                    <input type="hidden" name="copies_${book.bookID}" value="1">
-                    `;
-
-                // Book Cover
-                const coverHtml = book.cover_dir ?
-                    `<img src="../../../${book.cover_dir}" alt="Cover" class="w-full h-full object-cover">` :
-                    `<div class="flex items-center justify-center w-full h-full text-xs text-gray-500 text-center p-1">No Cover</div>`;
-
-                // Build the table row content
-                row.innerHTML = `
-                    <td class="py-4 px-2">
-                        <input type="checkbox" name="selected_books[]" value="${book.bookID}" 
-                            checked
-                            class="h-5 w-5 text-red-600 border-gray-300 rounded focus:ring-red-500 checkbox-item">
-                    </td>
-                    <td class="py-4 px-4">
-                        <div class="w-16 h-24 shadow-md rounded-md overflow-hidden bg-gray-200 border">
-                            ${coverHtml}
-                        </div>
-                    </td>
-                    <td class="py-4 px-4 text-red-800 font-bold max-w-xs">${book.title}</td>
-                    <td class="py-4 px-4">${book.author}</td>
-                    <td class="py-4 px-4">${book.condition}</td>
-                    <td class="py-4 px-4">
-                        ${copiesCell}
-                    </td>
-                    <td class="py-4 px-4">
-                        <a href="#" onclick="event.preventDefault(); removeBook(${book.bookID})" class="text-red-600 hover:text-red-800 text-sm font-medium">
-                            Remove
-                        </a>
-                    </td>
-                `;
-                listBody.appendChild(row);
-            });
-
-            // Re-attach event listeners for checkboxes after rendering
-            document.querySelectorAll('.checkbox-item').forEach(checkbox => {
-                checkbox.addEventListener('change', updateCheckoutState);
-            });
-            updateCheckoutState();
-        }
-
-        /**
-         * Updates the selected count display and enables/disables the checkout button.
-         */
-        function updateCheckoutState() {
-            const checkboxes = document.querySelectorAll('.checkbox-item');
-            let selectedCount = 0;
-            checkboxes.forEach(checkbox => {
-                if (checkbox.checked) {
-                    selectedCount++;
-                }
-            });
-
-            selectedCountSpan.textContent = selectedCount;
-
-            // Enable the button only if at least one book is selected
-            checkoutBtn.disabled = selectedCount === 0;
-        }
-
-        /**
-         * Prepares the form data for submission to confirmation.php.
-         * It packages the selected books and their requested copies into a JSON string.
-         */
-        checkoutForm.addEventListener('submit', function (e) {
-            e.preventDefault(); // Prevent default GET submission for now
-
-            const selectedBooks = {};
-            const checkboxes = document.querySelectorAll('.checkbox-item:checked');
-            let selectedCount = checkboxes.length;
-
-            if (selectedCount === 0) {
-                alert("Please select at least one book to checkout.");
-                return;
-            }
-
-            checkboxes.forEach(checkbox => {
-                const bookID = String(checkbox.value); // Use string to match myList keys
-                const book = myList[bookID];
-                
-                // Only include checked items from the list
-                if (book) {
-                    // Get the final copies requested, which is stored in myList
-                    const copies = book.copies_requested;
-
-                    // Add all necessary data for confirmation.php validation
-                    selectedBooks[bookID] = {
-                        ...book,
-                        copies_requested: copies
-                    };
-                }
-            });
-            
-            // Check again in case items were checked but removed from the list manually
-            if (Object.keys(selectedBooks).length === 0) {
-                 alert("Please select at least one valid book to checkout.");
-                 return;
-            }
-
-            // Set the JSON data to be processed by confirmation.php
-            checkoutDataJsonInput.value = JSON.stringify(selectedBooks);
-
-            // Construct the final URL for the GET request
-            const url = new URL(checkoutForm.action);
-            url.searchParams.set('action', 'list_checkout');
-            url.searchParams.set('list_source', 'localstorage');
-            
-            // NOTE: The JSON string must be URL-encoded for safety in a GET request
-            url.searchParams.set('checkout_data_json', encodeURIComponent(checkoutDataJsonInput.value));
-
-            // Optional: for confirmation.php to check if any books were selected
-            url.searchParams.set('selected_books', Object.keys(selectedBooks).join(',')); 
-
-            // Final step: Redirect the browser to the confirmation page with the prepared URL
-            window.location.href = url.toString();
-        });
-
-        // --- Initialization ---
-        document.addEventListener('DOMContentLoaded', function () {
-            // Check for success and clear list if necessary
-            const urlParams = new URLSearchParams(window.location.search);
-            const status = urlParams.get('status');
-            const clearList = urlParams.get('clear_list');
-
-            loadMyList();
-
-            // Clear list ONLY if successful checkout AND it came from the list (flag is '1')
-            if (status === 'success_checkout' && clearList === '1') {
-                clearMyList();
-                // Strip the URL parameters to prevent re-clearing and re-displaying message on refresh
-                history.replaceState({}, document.title, "myList.php?status=success_checkout&total_copies=" + urlParams.get('total_copies'));
-            }
-            
-            renderList();
-        });
-    </script>
+    <div id="message-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-xs mx-4">
+            <p id="message-modal-body" class="mb-4 text-center font-medium text-gray-700"></p>
+            <div class="flex justify-center">
+                <button onclick="closeModal('message-modal')"
+                    class="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-900 transition text-sm">Dismiss</button>
+            </div>
+        </div>
+    </div>
 </body>
+
+<script src="../../../public/assets/js/borrower.js"></script>
+
+<script>
+    const checkout_status = "<?= $checkout_status ?>";
+    const total_copies_success = <?= $total_copies_success ?>;
+    const maxLoanDays = <?= $borrow_period ?>;
+
+    const checkoutForm = document.getElementById('checkout-form');
+    const selectedCountSpan = document.getElementById('selected-count');
+    const checkoutBtn = document.getElementById('checkout-btn');
+    const selectAllBtn = document.getElementById('select_all');
+    const copiesInput = document.getElementById('modal-edit-copies-input');
+    const submitBtn = document.getElementById('modal-edit-submit-btn');
+    const errorMsg = document.getElementById('edit-copies-error');
+    const maxCopiesDisplay = document.getElementById('max-edit-copies-display');
+    const maxCopiesHidden = document.getElementById('max-edit-copies');
+    const messageModalBody = document.getElementById('message-modal-body');
+
+    // Date inputs
+    const pickupDateDisplay = document.getElementById('pickup_date_display');
+    const expectedReturnDateDisplay = document.getElementById('expected_return_date_display');
+    const pickupDateHiddenInput = document.getElementById('pickup_date_input');
+    const expectedReturnDateHiddenInput = document.getElementById('expected_return_date_input');
+
+
+    //open modal
+    function openModal(modalID) {
+        document.getElementById(modalID).classList.remove('hidden');
+        document.getElementById(modalID).classList.add('flex');
+    }
+
+    //close modal
+    function closeModal(modalID) {
+        document.getElementById(modalID).classList.add('hidden');
+        document.getElementById(modalID).classList.remove('flex');
+    }
+
+    //modal to show messages (either success or fail)
+    function showMessageModal(status, copies) {
+        let message;
+
+        switch (status) {
+            case 'success_checkout':
+                message = `SUCCESS: Requested ${copies} copies. Now in 'Pending' status.`;
+                break;
+            case 'partial_success':
+                message = `PARTIAL SUCCESS: Requested ${copies} copies. Some items failed.`;
+                break;
+            case 'removed':
+                message = 'SUCCESS: Book removed from your list.';
+                break;
+            case 'edit':
+                message = 'SUCCESS: No. of Copies has been updated.';
+                break;
+            case 'error':
+                message = 'ERROR: Action failed. Please try again.';
+                break;
+            default:
+                return; // Do nothing if status is not recognized
+        }
+
+        messageModalBody.textContent = message;
+        openModal('message-modal');
+    }
+
+
+    function validateCopies() {
+        const maxAvailable = parseInt(maxCopiesHidden.textContent);
+        const requestedCopies = parseInt(copiesInput.value);
+
+        if (requestedCopies > maxAvailable || requestedCopies < 1 || isNaN(requestedCopies)) {
+            maxCopiesDisplay.textContent = maxAvailable;
+            errorMsg.classList.remove('hidden');
+            submitBtn.disabled = true;
+        } else {
+            errorMsg.classList.add('hidden');
+            submitBtn.disabled = false;
+        }
+    }
+
+    function showEditCopiesModal(listID, title, currentCopies, maxAvailable) {
+        document.getElementById('modal-edit-list-id').value = listID;
+        document.getElementById('modal-edit-book-title').textContent = title;
+        copiesInput.value = currentCopies;
+
+        maxCopiesHidden.textContent = maxAvailable;
+        errorMsg.classList.add('hidden');
+        submitBtn.disabled = false;
+
+        openModal('copy-edit-modal');
+    }
+
+
+    function submitCopiesUpdate() {
+        validateCopies();
+        if (document.getElementById('modal-edit-submit-btn').disabled) return;
+
+        const listID = document.getElementById('modal-edit-list-id').value;
+        const newCopies = parseInt(copiesInput.value);
+
+        // Update the hidden input in the form to reflect the change immediately
+        document.querySelector(`.copies-requested-input-${listID}`).value = newCopies;
+
+        // Redirect to controller to update the database
+        window.location.href = `../../../app/controllers/borrowListController.php?action=edit&listID=${listID}&copies=${newCopies}`;
+
+        closeModal('copy-edit-modal');
+    }
+
+    function updateCheckoutState() {
+        const selectedCount = document.querySelectorAll('.checkbox-item:checked').length;
+        selectedCountSpan.textContent = selectedCount;
+
+        const listIsEmpty = document.getElementById('empty-list-row') !== null;
+        checkoutBtn.disabled = listIsEmpty || (selectedCount === 0);
+
+        // Disable/Enable the corresponding hidden inputs for form submission
+        document.querySelectorAll('.checkbox-item').forEach(checkbox => {
+            const listID = checkbox.value;
+            const isChecked = checkbox.checked;
+
+            // Find all related hidden inputs for this list item
+            document.querySelectorAll(`input[name^="list_data[${listID}]"]`).forEach(input => {
+                input.disabled = !isChecked;
+            });
+        });
+    }
+
+    function formatDate(date) {
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        return `${date.getFullYear()}-${month}-${day}`;
+    }
+
+    /**
+     * Calculates the return date based on the chosen pickup date and max loan period, and updates the form inputs.
+     */
+    function calculateAndSetDates() {
+        const pickupDateValue = pickupDateDisplay.value;
+        if (!pickupDateValue) return;
+
+        // 1. Update Hidden Pickup Date Input
+        pickupDateHiddenInput.value = pickupDateValue;
+
+        // 2. Calculate Expected Return Date
+        const date = new Date(pickupDateValue.replace(/-/g, '/'));
+        date.setDate(date.getDate() + maxLoanDays);
+        const returnDateISO = formatDate(date);
+
+        // 3. Update Display and Hidden Return Date Inputs
+        expectedReturnDateDisplay.value = returnDateISO;
+        expectedReturnDateHiddenInput.value = returnDateISO;
+    }
+
+
+    // Form submission validation (Modified for confirmation.php redirection)
+    checkoutForm.addEventListener('submit', function (e) {
+        const selectedCount = document.querySelectorAll('.checkbox-item:checked').length;
+        if (selectedCount === 0) {
+            e.preventDefault();
+            messageModalBody.textContent = "Please select at least one book to checkout.";
+            openModal('message-modal');
+            return;
+        }
+
+        // Final check on dates
+        if (!pickupDateHiddenInput.value || !expectedReturnDateHiddenInput.value) {
+            e.preventDefault();
+            messageModalBody.textContent = "Please select a valid Pickup Date.";
+            openModal('message-modal');
+            return;
+        }
+    });
+
+    // --- Initialization ---
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.checkbox-item').forEach(checkbox => {
+            checkbox.addEventListener('change', updateCheckoutState);
+        });
+        copiesInput.addEventListener('input', validateCopies);
+
+        // Add listeners for date changes
+        pickupDateDisplay.addEventListener('change', calculateAndSetDates);
+
+        // Set maximum pickup date (e.g., today + 7 days)
+        const today = new Date();
+        const maxPickupDate = new Date();
+        maxPickupDate.setDate(today.getDate() + 7);
+        pickupDateDisplay.setAttribute('max', formatDate(maxPickupDate));
+
+        // Initial setup
+        calculateAndSetDates();
+        updateCheckoutState();
+
+        // CHECKOUT/REMOVAL MESSAGE DISPLAY
+        if (checkout_status) {
+            showMessageModal(checkout_status, total_copies_success);
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectAll = document.getElementById('select_all');
+        const items = document.querySelectorAll('.checkbox-item');
+
+        // Toggle all checkboxes when "Select All" is clicked
+        selectAll.addEventListener('change', function () {
+            items.forEach(item => item.checked = selectAll.checked);
+            updateCheckoutState();
+        });
+
+        // Update "Select All" checkbox based on individual items
+        items.forEach(item => {
+            item.addEventListener('change', function () {
+                selectAll.checked = Array.from(items).every(i => i.checked);
+                updateCheckoutState();
+            });
+        });
+    });
+</script>
 
 </html>

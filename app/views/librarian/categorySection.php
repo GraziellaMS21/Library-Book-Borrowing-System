@@ -90,9 +90,9 @@ $categories = $categoryObj->viewCategory();
                                 <td><?= $no++ ?></td>
                                 <td><?= $cat["category_name"] ?></td>
                                 <td class="action text-center">
-                                    <a class="editBtn"
+                                    <a class="editBtn bg-blue-500 hover:bg-blue-600"
                                         href="categorySection.php?modal=edit&id=<?= $cat['categoryID'] ?>">Edit</a>
-                                    <a class="deleteBtn"
+                                    <a class="deleteBtn bg-red-500 hover:bg-red-600"
                                         href="categorySection.php?modal=delete&id=<?= $cat['categoryID'] ?>">
                                         Delete
                                     </a>
