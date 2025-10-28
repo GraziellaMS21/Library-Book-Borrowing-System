@@ -55,13 +55,13 @@ class BorrowDetails extends Database
 
         $where_clauses = [];
         $params = [];
-        
+
         // Filter by borrow_status for 'Returned', otherwise use borrow_request_status
         if ($statusFilter == 'Returned') {
-             $where_clauses[] = "bd.borrow_status = :statusFilter";
-             $params[":statusFilter"] = $statusFilter;
+            $where_clauses[] = "bd.borrow_status = :statusFilter";
+            $params[":statusFilter"] = $statusFilter;
         } elseif ($statusFilter != "") {
-             // Used for 'Pending', 'Approved' (Pickup)
+            // Used for 'Pending', 'Approved' (Pickup)
             $where_clauses[] = "bd.borrow_request_status = :statusFilter";
             $params[":statusFilter"] = $statusFilter;
         }
@@ -92,7 +92,7 @@ class BorrowDetails extends Database
             return null;
         }
     }
-    
+
     // FUNCTION FOR CURRENTLY BORROWED TAB
     public function viewActiveBorrowDetails($search = "")
     {
@@ -338,7 +338,7 @@ class BorrowDetails extends Database
         } else
             return 0;
     }
-    
+
     // NEW FUNCTION: Fetch the total number of copies tied up in PENDING or APPROVED requests for a specific book.
     public function fetchPendingAndApprovedCopiesForBook($bookID)
     {
@@ -350,7 +350,7 @@ class BorrowDetails extends Database
 
         $query = $this->connect()->prepare($sql);
         $query->bindParam(':bookID', $bookID);
-        
+
         $record = NULL;
         if ($query->execute()) {
             $record = $query->fetch();
@@ -364,14 +364,15 @@ class BorrowDetails extends Database
     }
 
 
-    public function updateStatus($borrowID)
+    public function updateBorrowDetails($borrowID, $borrow_status, $borrow_request_status, $return_date)
     {
-        $sql = "UPDATE borrowing_details SET borrow_request_status = :borrow_request_status, borrow_status = :borrow_status WHERE borrowID = :borrowID";
+        $sql = "UPDATE borrowing_details SET borrow_request_status = :borrow_request_status, borrow_status = :borrow_status, return_date = :return_date WHERE borrowID = :borrowID";
         $query = $this->connect()->prepare($sql);
 
-        $query->bindParam(":borrow_request_status", $this->borrow_request_status);
-        $query->bindParam(":borrow_status", $this->borrow_status);
+        $query->bindParam(":borrow_request_status", $borrow_request_status);
+        $query->bindParam(":borrow_status", $borrow_status);
         $query->bindParam(":borrowID", $borrowID);
+        $query->bindParam(":return_date", $return_date);
         return $query->execute();
     }
 
@@ -409,10 +410,15 @@ class BorrowDetails extends Database
         $exec_params = [$userID];
 
         if (is_array($status_filter)) {
-            // Example: ['Pending', 'Approved']
+            // This array comes from the 'returned' tab, and includes: ['Returned', 'Rejected', 'Cancelled']
+            // It must check statuses in BOTH borrow_status AND borrow_request_status.
             $placeholders = implode(',', array_fill(0, count($status_filter), '?'));
-            $sql .= " AND bd.borrow_request_status IN ({$placeholders})";
-            $exec_params = array_merge($exec_params, $status_filter);
+
+            // --- FIX: Use OR to check for the statuses in EITHER of the columns ---
+            $sql .= " AND (bd.borrow_request_status IN ({$placeholders}) OR bd.borrow_status IN ({$placeholders}))";
+
+            // The array must be added twice to $exec_params to match the two sets of placeholders
+            $exec_params = array_merge($exec_params, $status_filter, $status_filter);
 
         } elseif ($status_filter === 'Fined') {
             // Show all records with unpaid fines
@@ -420,7 +426,8 @@ class BorrowDetails extends Database
             $exec_params[] = 'Unpaid';
 
         } elseif ($status_filter === 'Returned') {
-            // Returned books (based on borrow_status)
+            // This case is no longer needed since 'returned' is now handled by the array check above.
+            // I recommend removing this block to prevent confusion, but for safety in the original structure:
             $sql .= " AND bd.borrow_status = ?";
             $exec_params[] = 'Returned';
 
@@ -430,7 +437,7 @@ class BorrowDetails extends Database
             $exec_params[] = 'Borrowed';
 
         } else {
-            // Default: show by request status
+            // Default (or 'Pending' in your original code): show by request status
             $sql .= " AND bd.borrow_request_status = ?";
             $exec_params[] = $status_filter;
         }
@@ -443,22 +450,22 @@ class BorrowDetails extends Database
         return $query->fetchAll();
     }
 
-  public function updateFineDetails($borrowID, $fine_amount, $fine_reason, $fine_status)
-{
-    $sql = "UPDATE borrowing_details
+    public function updateFineDetails($borrowID, $fine_amount, $fine_reason, $fine_status)
+    {
+        $sql = "UPDATE borrowing_details
             SET fine_amount = :fine_amount,
                 fine_reason = :fine_reason,
                 fine_status = :fine_status
             WHERE borrowID = :borrowID";
 
-    $query = $this->connect()->prepare($sql);
-    $query->bindParam(":fine_amount", $fine_amount);
-    $query->bindParam(":fine_reason", $fine_reason);
-    $query->bindParam(":fine_status", $fine_status);
-    $query->bindParam(":borrowID", $borrowID);
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(":fine_amount", $fine_amount);
+        $query->bindParam(":fine_reason", $fine_reason);
+        $query->bindParam(":fine_status", $fine_status);
+        $query->bindParam(":borrowID", $borrowID);
 
-    return $query->execute();
-}
+        return $query->execute();
+    }
 
 
 }

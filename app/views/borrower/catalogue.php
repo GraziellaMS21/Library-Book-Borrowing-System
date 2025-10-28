@@ -54,7 +54,7 @@ if ($open_modal && $modal_book_id) {
     // --- START NEW LOGIC FOR MODAL AVAILABLE COPIES ---
     $pending_copies_modal = $borrowDetailsObj->fetchPendingAndApprovedCopiesForBook($modal_book_id);
     // This is the true number of copies available for a new request/list addition
-    $modal_available_copies = max(0, $modal_book['book_copies'] - $pending_copies_modal); 
+    $modal_available_copies = max(0, $modal_book['book_copies'] - $pending_copies_modal);
     // --- END NEW LOGIC FOR MODAL AVAILABLE COPIES ---
 
     $modal_book_title = addslashes(htmlspecialchars($modal_book['book_title']));
@@ -211,7 +211,12 @@ foreach ($books_data as $book) {
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <?php foreach ($categoryGroup['books'] as $book) { ?>
+          <?php foreach ($categoryGroup['books'] as $book) {
+            // --- FIX: Initialize variables used in the button logic outside the userTypeID check ---
+            $has_active_pending = false;
+            $has_active_borrowed = false;
+            // --- END FIX ---
+            ?>
             <div class="book-card-base" data-book-id="<?= $book['bookID'] ?>">
               <div class="flex items-start p-4">
                 <div
@@ -229,9 +234,9 @@ foreach ($books_data as $book) {
                 </div>
 
                 <div class="flex-grow leading-tight">
-                  <h3 class="text-xl font-bold text-red-800 mb-1 truncate leading-tight"><a
+                  <h3 class="text-xl font-bold text-red-800 mb-1 break-words"><a
                       href="viewBook.php?bookID=<?= $book["bookID"] ?>"><?= $book['book_title'] ?></a></h3>
-                  <p class="text-sm text-gray-700"><strong>Author:</strong> <?= $book['author'] ?></p>
+                  <p class="text-sm text-gray-700 break-words"><strong>Author:</strong> <?= $book['author'] ?></p>
                   <p class="text-sm text-gray-700"><strong>Year:</strong>
                     <?= $book['publication_year'] ?></p>
 
@@ -250,7 +255,7 @@ foreach ($books_data as $book) {
                 $button_disabled = false;
                 $bookTitle = htmlspecialchars($book["book_title"]); // HTML encode for JS/PHP output
                 $bookID = $book["bookID"]; // Get bookID for the check
-
+            
                 // --- START NEW LOGIC: Available for Request Calculation (affects ALL users) ---
                 $pending_copies_count = $borrowDetailsObj->fetchPendingAndApprovedCopiesForBook($bookID);
                 $available_for_request = max(0, $copies - $pending_copies_count);
@@ -342,7 +347,7 @@ foreach ($books_data as $book) {
                 </a>
 
                 <a <?= $add_to_list_action ?>
-                  class="text-sm font-medium transition duration-300 px-4 py-2 rounded-full <?= $button_disabled ? 'hidden' : 'bg-red-800 text-white shadow-md' ?>">
+                  class="text-sm font-medium transition duration-300 cursor-pointer px-4 py-2 rounded-full <?= $button_disabled ? 'hidden' : 'bg-red-800 text-white shadow-md' ?>">
                   + Add To List
                 </a>
               </div>
@@ -355,7 +360,6 @@ foreach ($books_data as $book) {
 
   <?php require_once(__DIR__ . '/../shared/footer.php'); ?>
 
-  <!-- BORROW MODAL (STAFF ONLY) -->
   <div id="borrow-modal" class="modal <?= $open_modal == 'borrow-modal' ? 'open' : '' ?>">
     <div class="modal-content">
       <span class="close-times" onclick="closeModalAndRedirect()">&times;</span>
@@ -387,7 +391,6 @@ foreach ($books_data as $book) {
     </div>
   </div>
 
-  <!-- ADD TO LIST MODAL (STAFF ONLY) -->
   <div id="list-modal" class="modal <?= $open_modal == 'list-modal' ? 'open' : '' ?>">
     <div class="modal-content">
       <span class="close-times" onclick="closeModalAndRedirect()">&times;</span>
@@ -420,7 +423,6 @@ foreach ($books_data as $book) {
     </div>
   </div>
 
-  <!-- SUCCESS MODAL (Status Redirect) -->
   <div id="success-modal" class="modal <?= $list_status == 'added' ? 'open' : '' ?>">
     <div class="modal-content max-w-sm text-center">
       <span class="close-times" onclick="closeStatusModal()">&times;</span>
@@ -436,7 +438,6 @@ foreach ($books_data as $book) {
     </div>
   </div>
 
-  <!-- MESSAGE MODAL (Error/Existing Status Redirect) -->
   <div id="message-modal" class="modal <?= ($list_status && $list_status != 'added') ? 'open' : '' ?>">
     <div class="modal-content max-w-xs mx-4">
       <span class="close-times" onclick="closeStatusModal()">&times;</span>

@@ -227,12 +227,63 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             header("Location: ../../app/views/borrower/confirmation.php?bookID={$bookID_post}&copies={$no_of_copies}");
             exit;
         }
+
+        // Removed the unnecessary `elseif ($action === 'cancel')` block here since cancellation is a GET request
+        // The original block contained incomplete/misplaced librarian logic.
+
     }
 
 } else {
-    // --- GET Logic for DELETE, ACCEPT, REJECT, PICKUP, RETURN (Status Updates) ---
+    // --- GET Logic for DELETE, ACCEPT, REJECT, PICKUP, RETURN, and CANCEL (Status Updates) ---
+
+    // --- NEW BORROWER CANCEL LOGIC ---
+    if ($action === 'cancel' && $borrowID) {
+
+        // 1. Fetch current detail to check status (optional but good for validation)
+        $detail = $borrowObj->fetchBorrowDetail($borrowID);
+        $current_tab = $_GET['tab'] ?? 'pending'; // Get the tab to return to
+
+        // The borrower can only cancel a request that is 'Pending' or 'Approved' (before pickup)
+        if ($detail && ($detail['borrow_request_status'] === 'Pending' || $detail['borrow_request_status'] === 'Approved')) {
+
+            // 2. Set status to 'Cancelled'
+            $borrow_request_status = "Cancelled";
+            $borrow_status = NULL;
+            $return_date = NULL;
+            // 3. Perform update
+            if ($borrowObj->updateBorrowDetails($borrowID, $borrow_status, $borrow_request_status, $return_date)) {
+                if ($detail['borrow_request_status'] === 'Approved') {
+                    $book_id_to_update = $detail['bookID'];
+                    $copies_to_move = $detail['no_of_copies'];
+
+                    $bookObj->incrementBookCopies($book_id_to_update, $copies_to_move);
+                }
+
+                // 6. Redirect back to the user's borrowed books page with a success flag
+                header("Location: ../../app/views/borrower/myBorrowedBooks.php?tab=pending&success=cancelled");
+                exit;
+            } else {
+                $_SESSION["errors"] = ["general" => "Failed to update loan status to Cancelled."];
+                header("Location: ../../app/views/borrower/myBorrowedBooks.php?tab={$current_tab}");
+                exit;
+            }
+        } elseif ($detail && $detail['borrow_request_status'] === 'Cancelled') {
+            // For the 'Done' button on an already cancelled item (for cleanup/hiding)
+            // You can implement logic to soft-delete or hide it from the 'Pending' view here if needed.
+            // For now, let's just send them back.
+            header("Location: ../../app/views/borrower/myBorrowedBooks.php?tab=pending");
+            exit;
+
+        } else {
+            $_SESSION["errors"] = ["general" => "Loan request not found or cannot be cancelled at this status."];
+            header("Location: ../../app/views/borrower/myBorrowedBooks.php?tab={$current_tab}");
+            exit;
+        }
+    }
+    // --- END NEW BORROWER CANCEL LOGIC ---
+
+    // Redirect to the appropriate controller for status updates (Librarian actions)
     if (in_array($action, ['delete', 'accept', 'reject', 'pickup', 'return']) && $borrowID) {
-        // Redirect to the appropriate controller for status updates
         header("Location: borrowDetailsController.php?action={$action}&id={$borrowID}");
         exit;
     }

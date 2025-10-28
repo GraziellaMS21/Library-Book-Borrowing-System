@@ -11,7 +11,6 @@ $errors = [];
 
 $action = $_GET["action"] ?? null;
 $borrowID = $_POST["borrowID"] ?? $_GET["id"] ?? null;
-// IMPORTANT: Use the tab from GET if POST is not set (e.g., for GET status updates)
 $current_tab = trim(htmlspecialchars($_POST["current_tab"] ?? $_GET["tab"] ?? 'currently_borrowed'));
 
 // --- Fine Calculation Helper Function ---
@@ -140,9 +139,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $errors["general"] = "Failed to edit detail due to a database error.";
             }
         } elseif ($action === 'return' && $borrowID) {
-            // New logic for POST submission from returnBookModal
-
-            // 1. Fetch current details to fill missing data needed for return
             $current_detail = $borrowObj->fetchBorrowDetail($borrowID);
             if (!$current_detail) {
                 $errors['general'] = "Cannot find loan detail to process return.";
@@ -157,7 +153,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             // 2. Set all required return fields (as requested)
             $borrowObj->return_date = date("Y-m-d");
-            $borrowObj->borrow_request_status = 'Approved';
+            $borrowObj->borrow_request_status = NULL;
             $borrowObj->borrow_status = 'Returned';
 
             // 3. Calculate Fine (This updates fine_amount, fine_reason, fine_status on $borrowObj)
