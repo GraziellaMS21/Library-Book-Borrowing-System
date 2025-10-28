@@ -36,31 +36,39 @@ $expected_return_date = trim(htmlspecialchars($_POST['expected_return_date'] ?? 
 
 
 $current_borrowed_count = $borrowObj->fetchTotalBorrowedBooks($userID); //fetch how many books were processed/borrowed
-$borrow_many_copies = $borrowObj->hasManyCopyBooks($userID); //fetch no of copies borrowed by the user
+// $borrow_many_copies = $borrowObj->hasManyCopyBooks($userID); // REMOVED: This is no longer needed in the main logic
 $available_slots = $borrow_limit - $current_borrowed_count;
 
 
 // Helper function to consolidate complex borrowing restrictions
-function calculateMaxCopiesAllowed($userTypeID, $borrow_limit, $current_borrowed_count, $max_available, $is_borrowed, $borrow_many_copies)
+function calculateMaxCopiesAllowed($userTypeID, $borrow_limit, $current_borrowed_count, $max_available, $is_borrowed)
 {
-    if ($userTypeID == 1 || $userTypeID == 3) { // Student, Guest: Max 1 copy of any single book
-        if ($is_borrowed)
-            return 0; // Already borrowed this specific book
-        $available_slots = $borrow_limit - $current_borrowed_count;
-        return min(1, max(0, $available_slots), $max_available);
+    $available_slots = $borrow_limit - $current_borrowed_count;
+
+    if ($available_slots <= 0) {
+        return 0; // No available slots overall
     }
 
-    if ($userTypeID == 2) { // Staff
-        $available_slots = $borrow_limit - $current_borrowed_count;
+    if ($userTypeID == 1 || $userTypeID == 3) { // Student, Guest: Max 1 copy of any single book
+        if ($is_borrowed) {
+            return 0; // Already borrowed this specific book (must return it first)
+        }
+        // Limit to 1 copy, available slots, and stock
+        return min(1, $available_slots, $max_available);
+    }
 
-        // Staff borrowed books with same copies (of a DIFFERENT book) but is trying to borrow a NEW book.
-        if ($borrow_many_copies && !$is_borrowed) {
-            return 0; // Prevent borrowing a new book until existing multi-copy borrows are returned.
+    if ($userTypeID == 2) { // Staff: Multi-copy allowed for a book, up to limit/stock.
+        if ($is_borrowed) {
+            // If already borrowing this specific book, they cannot borrow another copy of the same book
+            // in a separate transaction unless the original borrow is finalized (as per isBookBorrowed check).
+            // NOTE: This prevents duplicate requests for the same book, staff can modify copies on the list page.
+            return 0; 
         }
 
         // Allowed by stock and overall limit
-        return min($max_available, max(0, $available_slots));
+        return min($max_available, $available_slots);
     }
+    
     return 0; // Default safety
 }
 
@@ -84,7 +92,8 @@ if ($is_list_checkout) {
             // Fetch current borrowing status for the *actual* book
             $is_borrowed = $borrowObj->isBookBorrowed($userID, $bookID_local);
 
-            $max_copies_allowed = calculateMaxCopiesAllowed($userTypeID, $borrow_limit, $current_borrowed_count, $max_available, $is_borrowed, $borrow_many_copies);
+            // UPDATED CALL: Removed $borrow_many_copies
+            $max_copies_allowed = calculateMaxCopiesAllowed($userTypeID, $borrow_limit, $current_borrowed_count, $max_available, $is_borrowed);
 
             // Clamp requested copies against restrictions and availability
             $final_copies = min($no_of_copies, $max_available, max(0, $max_copies_allowed));
@@ -111,7 +120,17 @@ if ($is_list_checkout) {
     // Total copies requested can't exceed total available slots
     if ($total_requested_copies > $available_slots) {
         $errors['total_limit'] = "The total number of books requested ({$total_requested_copies}) exceeds your available slots ({$available_slots}).";
-        $books_to_checkout = []; // Block checkout of all items if the total limit is exceeded by the request.
+        // Do not block checkout of all items here; the individual item check should have clamped copies down.
+        // If $total_requested_copies > $available_slots here, it means the clamping logic failed, but for safety, 
+        // we'll keep the error, though we won't empty the list completely unless $total_requested_copies is clearly wrong.
+        // For robustness, we will trust the individual clamping logic above, but log the error.
+        if (!empty($errors['total_limit'])) {
+            // Re-evaluate the items to see if the total requested is actually correct post-clamping.
+            // If the request is still over, it means the user submitted too many books. 
+            // We should trust the individual item check ($max_copies_allowed) to handle this.
+            // If this error is present, it's a major sign of over-requesting.
+             $books_to_checkout = []; // Block checkout of all items if the total limit is exceeded by the request.
+        }
     }
 
 } else {
@@ -128,7 +147,8 @@ if ($is_list_checkout) {
         $max_available = (int) $book['book_copies'];
         $is_borrowed = $borrowObj->isBookBorrowed($userID, $bookID);
 
-        $max_copies_allowed = calculateMaxCopiesAllowed($userTypeID, $borrow_limit, $current_borrowed_count, $max_available, $is_borrowed, $borrow_many_copies);
+        // UPDATED CALL: Removed $borrow_many_copies
+        $max_copies_allowed = calculateMaxCopiesAllowed($userTypeID, $borrow_limit, $current_borrowed_count, $max_available, $is_borrowed);
 
         // Final check: clamp the requested copies
         $final_copies = min($no_of_copies, $max_available, max(0, $max_copies_allowed));

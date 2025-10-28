@@ -59,7 +59,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'remove' && isset($_GET['listI
             <h1 class="title text-4xl sm:text-5xl font-extrabold">My List</h1>
             <p class="text-xl mt-2">Books Pending for Confirmation</p>
         </header>
-
         <form id="checkout-form" method="POST" action="confirmation.php?action=list_checkout">
 
             <input type="hidden" name="userID" value="<?= $userID ?>">
@@ -256,8 +255,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'remove' && isset($_GET['listI
     const messageModalBody = document.getElementById('message-modal-body');
 
     // Date inputs
-    const pickupDateDisplay = document.getElementById('pickup_date_display');
-    const expectedReturnDateDisplay = document.getElementById('expected_return_date_display');
+    const pickupDateDisplay = document.getElementById('pickup_date_display'); // NEW ID
+    const expectedReturnDateDisplay = document.getElementById('expected_return_date_display'); // Not used on this page
     const pickupDateHiddenInput = document.getElementById('pickup_date_input');
     const expectedReturnDateHiddenInput = document.getElementById('expected_return_date_input');
 
@@ -386,8 +385,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'remove' && isset($_GET['listI
         date.setDate(date.getDate() + maxLoanDays);
         const returnDateISO = formatDate(date);
 
-        // 3. Update Display and Hidden Return Date Inputs
-        expectedReturnDateDisplay.value = returnDateISO;
+        // 3. Update Hidden Return Date Inputs
         expectedReturnDateHiddenInput.value = returnDateISO;
     }
 
@@ -419,13 +417,14 @@ if (isset($_GET['action']) && $_GET['action'] === 'remove' && isset($_GET['listI
         copiesInput.addEventListener('input', validateCopies);
 
         // Add listeners for date changes
-        pickupDateDisplay.addEventListener('change', calculateAndSetDates);
+        const pickupDateInput = document.getElementById('pickup_date_display'); // Reference the new input
+        pickupDateInput.addEventListener('change', calculateAndSetDates);
 
         // Set maximum pickup date (e.g., today + 7 days)
         const today = new Date();
         const maxPickupDate = new Date();
         maxPickupDate.setDate(today.getDate() + 7);
-        pickupDateDisplay.setAttribute('max', formatDate(maxPickupDate));
+        pickupDateInput.setAttribute('max', formatDate(maxPickupDate));
 
         // Initial setup
         calculateAndSetDates();

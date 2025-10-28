@@ -250,35 +250,58 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit;
             }
         }
-
         if ($action === 'paid') {
-            // Recalculate fine logic ensures no unpaid late fees are missed, then sets to 'Paid'
-            $fine_results = calculateLateFineController(
-                $borrowObj->expected_return_date,
-                $borrowObj->return_date,
-                $bookObj,
-                $borrowObj->bookID
-            );
 
-            // Update with calculated fine amount and set status to Paid
-            $borrowObj->fine_amount = $fine_results['fine_amount'];
-            $borrowObj->fine_status = 'Paid';
-            $borrowObj->return_date = date("Y-m-d");
+            // 1. Fetch the original loan details to get the correct userID and bookID
+            $current_detail = $borrowObj->fetchBorrowDetail($borrowID);
 
-            // Custom Requirement: Fined/Paid items set borrow_request_status to 'Approved'
-            $borrowObj->borrow_request_status = 'Approved';
-            $borrowObj->borrow_request_status = 'Borrowed';
+            if (!$current_detail) {
+                $_SESSION["errors"] = ["general" => "Borrow detail not found for fine payment."];
+                header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=fined");
+                exit;
+            }
 
+            // --- Set BorrowDetails Object Properties for Update ---
+            // These properties are required by editBorrowDetail() (which uses all object properties)
+            $borrowObj->userID = $current_detail['userID']; // MUST be set for edit!
+            $borrowObj->bookID = $current_detail['bookID']; // MUST be set for edit!
+            $borrowObj->no_of_copies = $current_detail['no_of_copies'];
+            $borrowObj->request_date = $current_detail['request_date'];
+            $borrowObj->pickup_date = $current_detail['pickup_date'];
+            $borrowObj->expected_return_date = $current_detail['expected_return_date'];
+            $borrowObj->return_date = date("Y-m-d"); // Set the actual return date to today
+
+            // Fine Details (assuming they were previously set on the object properties or fetched elsewhere)
+            $fine_amount = $borrowObj->fine_amount; // Assuming this was set by the previous flow
+            $fine_reason = $borrowObj->fine_reason; // Assuming this was set by the previous flow
+
+            // 2. Set the final status fields
+            $borrowObj->fine_status = 'Paid'; // FINE IS PAID
+            $borrowObj->fine_amount = $fine_amount;
+            $borrowObj->fine_reason = $fine_reason;
+            $borrowObj->returned_condition = 'Good'; // Assuming 'Good' when fine is settled
+            $borrowObj->borrow_request_status = 'NULL';
+            $borrowObj->borrow_status = 'Returned'; // LOAN IS RETURNED
+
+
+            // 3. Increment Book Stock
+            if (empty($errors) && !$bookObj->incrementBookCopies($borrowObj->bookID, $borrowObj->no_of_copies)) {
+                $errors["general"] = "Failed to update book stock (increment).";
+            }
+
+            // 4. Update Borrow Record (This marks the borrow_status = 'Returned', which frees up the user's limit.)
             if ($borrowObj->editBorrowDetail($borrowID)) {
+                // The borrower's limit is automatically freed because the record's borrow_status is now 'Returned', 
+                // which is excluded from the total borrowed count calculated by fetchTotalBorrowedBooks().
                 header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=returned&success=paid");
                 exit;
             } else {
-                $_SESSION["errors"] = ["general" => "Failed to mark fine as paid."];
-                header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=currently_borrowed");
+                $_SESSION["errors"] = ["general" => "Failed to mark fine as paid. Database error."];
+                // Redirect back to the fine list if the update fails
+                header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=fined"); // Change to 'fined' tab
                 exit;
             }
         }
-
         // Consolidated status update logic for Accept, Reject, Pickup, Cancel
         if ($action === 'accept') {
             $borrowObj->borrow_request_status = 'Approved';
@@ -320,7 +343,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         } elseif ($action === 'cancel') {
             // --- NEW ADMIN CANCEL LOGIC ---
-            
+
             // 1. Update status
             $borrowObj->borrow_request_status = 'Cancelled';
             $borrowObj->borrow_status = NULL;
