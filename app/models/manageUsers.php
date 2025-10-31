@@ -86,6 +86,26 @@ class User extends Database
             return null;
         }
     }
+    
+    // NEW FUNCTION: Count total borrowers (users with role 'Borrower' and status 'Approved')
+    public function countTotalBorrowers()
+    {
+        $sql = "SELECT COUNT(userID) AS total_borrowers FROM users WHERE role = 'Borrower' AND user_status = 'Approved'";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result['total_borrowers'] ?? 0;
+    }
+
+    // NEW FUNCTION: Count pending user registrations
+    public function countPendingUsers()
+    {
+        $sql = "SELECT COUNT(userID) AS total_pending FROM users WHERE user_status = 'Pending' AND role = 'Borrower'";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result['total_pending'] ?? 0;
+    }
 
     public function fetchUser($userID)
     {
@@ -211,6 +231,3 @@ class User extends Database
         return $query->execute();
     }
 }
-
-// $Obj = new User();
-// var_dump($Obj->fetchUserLimit(2));

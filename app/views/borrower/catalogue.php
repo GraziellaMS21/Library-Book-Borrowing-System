@@ -66,28 +66,46 @@ if ($open_modal && $modal_book_id) {
 //fetch categories
 $categories = $bookObj->fetchCategory();
 $categoryID = $_GET['view_category'] ?? null;
+$search = isset($_GET['search']) ? trim($_GET['search']) : "";
 
 $booksByCategory = [];
-if (isset($categoryID)) { //Show all books for the selected category
-  // fetch ALL books for the selected category
-  $categoryBooks = $bookObj->viewBook(null, $categoryID);
-  $category = $categoryObj->fetchCategory($categoryID);
-  if (!empty($categoryBooks)) {
-    $booksByCategory[] = [
-      'category_name' => $category["category_name"],
-      'books' => $categoryBooks,
-      'full_view' => true,
-    ];
-  }
-} else { // Show All Categories and display at least 3 books;
+
+if (!empty($search) || ($categoryID !== null && $categoryID !== "")) {
+    // --- SEARCH/FILTER MODE (Similar to booksSection.php) ---
+    // If a search term is present OR a specific category is selected, use viewBook
+    
+    $filteredBooks = $bookObj->viewBookBorrower($search, $categoryID); 
+
+    // Determine the title for the search/filter results block
+    if (!empty($search) && $categoryID) {
+        $category = $categoryObj->fetchCategory($categoryID);
+        $category_name = "Results in " . $category["category_name"] . " for \"" . htmlspecialchars($search) . "\"";
+    } elseif (!empty($search)) {
+        $category_name = "Search Results for \"" . htmlspecialchars($search) . "\"";
+    } elseif ($categoryID) {
+        $category = $categoryObj->fetchCategory($categoryID);
+        $category_name = $category["category_name"];
+    }
+
+    if (!empty($filteredBooks) || !empty($search)) { // Always show block if searching/filtering
+        $booksByCategory[] = [
+            'category_name' => $category_name,
+            'books' => $filteredBooks,
+            'full_view' => true, // Treat search/filter results as a full view
+        ];
+    }
+
+} else { 
+  // --- DEFAULT CATALOGUE VIEW MODE (No Search Term, All Categories selected) ---
+  // Show All Categories and display at least 3 books;
   foreach ($categories as $category) {
-    $categoryID = $category['categoryID'];
+    $currentCategoryID = $category['categoryID'];
     // Fetch the limited books for the display grid
-    $books = $bookObj->showThreeBooks($categoryID);
+    $books = $bookObj->showThreeBooks($currentCategoryID);
 
     if (!empty($books)) {
       // Get the total count for the 'View All' link
-      $total_count = $bookObj->countBooksByCategory($categoryID);
+      $total_count = $bookObj->countBooksByCategory($currentCategoryID);
 
       // Show "View All" button when there are more than three
       $show_view_all = ($total_count > 3);
@@ -95,7 +113,7 @@ if (isset($categoryID)) { //Show all books for the selected category
       $booksByCategory[] = [
         'category_name' => $category['category_name'],
         'books' => $books,
-        'categoryID' => $categoryID,
+        'categoryID' => $currentCategoryID,
         'show_view_all' => $show_view_all,
         'total_view' => $total_count,
         'full_view' => false,
@@ -103,7 +121,6 @@ if (isset($categoryID)) { //Show all books for the selected category
     }
   }
 }
-
 $books_data = $bookObj->fetchBookTitles();
 
 // Convert to an array for JS lookup
@@ -169,6 +186,56 @@ foreach ($books_data as $book) {
       text-decoration: none;
       cursor: pointer;
     }
+
+    /* search */
+
+    /* ---- SEARCH ---- */
+    .search {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .search input,
+    .search select {
+      border: 2px solid #ccc;
+      border-radius: 0.5rem;
+      padding: 0.6rem 1rem;
+      outline: none;
+      transition: border 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .search input {
+      font-size: 1rem;
+      width: 60%;
+    }
+
+    .search select {
+      width: 30% !important;
+    }
+
+    .search input:focus,
+    .search select:focus {
+      border-color: #931c19;
+      box-shadow: 0 0 0 3px rgba(147, 28, 25, 0.2);
+    }
+
+    .search button {
+      padding: 0.6rem 1.2rem;
+      font-weight: 500;
+      border-radius: 0.5rem;
+      background-color: #931c19;
+      color: white;
+      border: none;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+      cursor: pointer;
+      width: 10%;
+    }
+
+    .search button:hover {
+      background-color: #610101;
+      transform: translateY(-1px);
+    }
   </style>
 </head>
 
@@ -189,6 +256,20 @@ foreach ($books_data as $book) {
         <p class="text-xl text-gray-500">The library catalogue is currently empty. Check back soon!</p>
       </div>
     <?php } ?>
+
+    <form method="GET" class="search">
+      <input type="text" name="search" placeholder="Search book title..." value="<?= $search ?>">
+      <select name="view_category" id="category">
+        <option value="">All Categories</option>
+        <?php foreach ($categories as $cat): ?>
+          <option value="<?= $cat["categoryID"] ?>" <?= $categoryID == $cat["categoryID"] ? 'selected' : '' ?>>
+            <?= $cat["category_name"] ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
+      <button type="submit" class="bg-red-800 text-white rounded-lg px-4 py-2">Search</button>
+    </form>
+
 
     <?php foreach ($booksByCategory as $categoryGroup) { ?>
       <div class="mb-12 bg-white p-6 rounded-xl shadow-lg">
@@ -212,10 +293,8 @@ foreach ($books_data as $book) {
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <?php foreach ($categoryGroup['books'] as $book) {
-            // --- FIX: Initialize variables used in the button logic outside the userTypeID check ---
             $has_active_pending = false;
             $has_active_borrowed = false;
-            // --- END FIX ---
             ?>
             <div class="book-card-base" data-book-id="<?= $book['bookID'] ?>">
               <div class="flex items-start p-4">

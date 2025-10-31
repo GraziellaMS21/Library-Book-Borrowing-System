@@ -25,9 +25,9 @@ $book = null;
 $list_status = $_GET['status'] ?? null;
 $copies_added = (int) ($_GET['copies'] ?? 0);
 
-// Check for modal open requests
+// Check for modal open requests (only staff uses these for multi-copy borrowing/listing)
 $current_modal = $_GET['modal'] ?? '';
-$modal_book_id = $bookID; // Modal always refers to the book being viewed
+$modal_book_id = $bookID;
 $open_modal = '';
 
 $modal_book_title = '';
@@ -151,8 +151,7 @@ $modal_available_copies = $copies;
 
             <div class="flex flex-col md:flex-row gap-8">
                 <div class="flex-shrink-0 w-full md:w-1/3 max-w-sm mx-auto md:mx-0">
-                    <div
-                        class="w-full h-96 shadow-2xl rounded-lg overflow-hidden bg-gray-200 border-4 border-gray-100">
+                    <div class="w-full h-96 shadow-2xl rounded-lg overflow-hidden bg-gray-200 border-4 border-gray-100">
                         <?php
                         if ($book_cover_dir) { ?>
                             <img src="<?= "../../../" . $book_cover_dir ?>" alt="<?= $book_title ?> Cover"
@@ -196,26 +195,28 @@ $modal_available_copies = $copies;
                                 $button_disabled = true;
                             }
 
-                            //for borrow button (Staff now redirects to URL with modal param)
+                            // --- Borrow Button Logic ---
                             $borrow_action = '';
-                            if (!$button_disabled) {
-                                // for staff, use URL parameter to open modal
-                                if ($userTypeID == 2) {
-                                    $borrow_action = "href='viewBook.php?bookID={$bookID}&modal=borrow'";
-                                } else {
-                                    // for non-staff, immediately add 1 copy
-                                    $borrow_action = "href='confirmation.php?bookID={$book['bookID']}&copies=1'";
-                                }
+                            if ($userTypeID == 2) {
+                                // Staff: use URL parameter to open modal
+                                $borrow_action = "href='catalogue.php?modal=borrow&bookID={$bookID}'";
+                            } elseif (!$borrow_denied) {
+                                // Non-Staff (allowed): direct link to confirmation.php
+                                $borrow_action = "href='confirmation.php?bookID={$book['bookID']}&copies=1'";
+                            } else {
+                                // Non-Staff (denied): link to error status page
+                                // We must pass the bookID, the status, and the specific error code.
+                                $borrow_action = "href='catalogue.php?status=borrow_denied&bookID={$bookID}&error_code={$error_message_code}&count={$current_borrowed_count}&limit={$borrow_limit}'";
                             }
 
-                            // for add to list button (Staff now redirects to URL with modal param)
+
+                            // --- Add to List Button Logic ---
                             $add_to_list_action = '';
                             if (!$button_disabled) {
                                 if ($userTypeID == 2) {
-                                    // for staff, show modal to choose number of copies
-                                    $add_to_list_action = "href='viewBook.php?bookID={$bookID}&modal=list'";
+                                    $add_to_list_action = "href='catalogue.php?modal=list&bookID={$bookID}'";
                                 } else {
-                                    // for non-staff, immediately add 1 copy by redirecting to controller
+                                    // Non-staff still uses JS function for direct add-to-list action (no modal)
                                     $add_to_list_action = "onclick=\"event.preventDefault(); addToList({$book['bookID']})\"";
                                 }
                             }
@@ -227,12 +228,12 @@ $modal_available_copies = $copies;
                             </span>
 
                             <a <?= $borrow_action ?>
-                                class="text-sm font-medium cursor-pointer transition duration-300 px-4 py-2 rounded-full <?= $button_disabled ? 'bg-gray-300 text-gray-600 cursor-not-allowed pointer-events-none' : 'bg-red-800 text-white shadow-md' ?>">
+                                class="text-sm font-medium cursor-pointer transition duration-300 px-4 py-2 rounded-full <?= $button_disabled ? 'bg-gray-300 text-gray-600 cursor-not-allowed pointer-events-none' : 'bg-red-800 text-white shadow-md hover:bg-red-900' ?>">
                                 <?= $button_disabled ? 'Unavailable' : '+ Borrow Now' ?>
                             </a>
 
                             <a <?= $add_to_list_action ?>
-                                class="text-sm font-medium transition duration-300 px-4 py-2 rounded-full <?= $button_disabled ? 'hidden' : 'bg-red-800 text-white shadow-md' ?>">
+                                class="text-sm font-medium transition duration-300 px-4 py-2 rounded-full <?= $button_disabled ? 'hidden' : 'bg-red-800 text-white shadow-md hover:bg-red-900' ?>">
                                 + Add To List
                             </a>
                         </div>
@@ -241,18 +242,19 @@ $modal_available_copies = $copies;
             </div>
         </div>
 
-        <?php require_once(__DIR__ . '/../shared/footer.php'); ?>
-
-        <!-- BORROW MODAL (STAFF ONLY) -->
+        <!-- BORROW MODAL (STAFF/ADMIN ONLY) -->
         <div id="borrow-modal" class="modal <?= $open_modal == 'borrow-modal' ? 'open' : '' ?>">
             <div class="modal-content">
                 <span class="close-times" onclick="closeModalAndRedirect()">&times;</span>
-                <h3 class="text-xl font-bold text-red-800 border-b pb-3 mb-4">Borrow Copies (Staff)</h3>
+                <h3 class="text-xl font-bold text-red-800 border-b pb-3 mb-4">Borrow Copies (Staff/Admin)</h3>
 
                 <p class="text-gray-700 mb-3">Book: <strong id="modal-borrow-book-title">
                         <?= $modal_book_title ?>
                     </strong></p>
-                <form id="borrow-form" method="GET" action="confirmation.php">
+                <!-- NOTE: Action points to the controller for actual borrow logic -->
+                <form id="borrow-form" method="GET" action="../../../app/controllers/borrowBookController.php">
+                    <input type="hidden" name="action" value="borrow">
+                    <input type="hidden" name="source" value="viewBook.php">
                     <input type="hidden" name="bookID" id="modal-borrow-book-id" value="<?= $modal_book_id ?>">
 
                     <div class="mb-4">
@@ -279,16 +281,17 @@ $modal_available_copies = $copies;
             </div>
         </div>
 
-        <!-- ADD TO LIST MODAL (STAFF ONLY) -->
+        <!-- ADD TO LIST MODAL (STAFF/ADMIN ONLY) -->
         <div id="list-modal" class="modal <?= $open_modal == 'list-modal' ? 'open' : '' ?>">
             <div class="modal-content">
                 <span class="close-times" onclick="closeModalAndRedirect()">&times;</span>
-                <h3 class="text-xl font-bold text-red-800 border-b pb-3 mb-4">Add to List Copies (Staff)</h3>
+                <h3 class="text-xl font-bold text-red-800 border-b pb-3 mb-4">Add to List Copies (Staff/Admin)</h3>
 
                 <p class="text-gray-700 mb-3">Book: <strong id="modal-list-book-title">
                         <?= $modal_book_title ?>
                     </strong></p>
-                <form onsubmit="event.preventDefault(); confirmAddToList()">
+                <!-- NOTE: Action points to controller for list logic -->
+                <form id="list-form" onsubmit="event.preventDefault(); confirmAddToList()">
                     <input type="hidden" id="modal-list-book-id" value="<?= $modal_book_id ?>">
 
                     <div class="mb-4">
@@ -330,8 +333,7 @@ $modal_available_copies = $copies;
         </div>
 
         <!-- MESSAGE MODAL (Error/Existing Status Redirect) -->
-        <div id="message-modal"
-            class="modal <?= ($list_status && $list_status != 'added') ? 'open' : '' ?>">
+        <div id="message-modal" class="modal <?= ($list_status && $list_status != 'added') ? 'open' : '' ?>">
             <div class="modal-content max-w-xs mx-4">
                 <span class="close-times" onclick="closeStatusModal()">&times;</span>
                 <div class="flex justify-center flex-col pt-4">
@@ -345,10 +347,8 @@ $modal_available_copies = $copies;
             </div>
         </div>
     </div>
-
-
 </body>
-
+<?php require_once(__DIR__ . '/../shared/footer.php'); ?>
 <script src="../../../public/assets/js/borrower.js"></script>
 
 <script>
@@ -359,25 +359,16 @@ $modal_available_copies = $copies;
     const CURRENT_BOOK_TITLE = "<?= $js_book_title ?>";
     const MODAL_AVAILABLE_COPIES = <?= $modal_available_copies ?>;
 
-
-    // --- NEW MODAL OPENING/CLOSING LOGIC (Admin style) ---
-
-    // Function to close the primary operational modals (borrow/list) by clearing URL parameters
     function closeModalAndRedirect() {
         const currentUrl = new URL(window.location.href);
         currentUrl.searchParams.delete("modal");
-        // bookID is left as it is the current page view ID
-        
         window.location.href = currentUrl.toString();
     }
 
-    // Function to close the success/error status modals
     function closeStatusModal() {
         const currentUrl = new URL(window.location.href);
         currentUrl.searchParams.delete("status");
         currentUrl.searchParams.delete("copies");
-        // bookID is left as it is the current page view ID
-
         window.location.href = currentUrl.toString();
     }
 
@@ -396,15 +387,6 @@ $modal_available_copies = $copies;
             }
         });
     });
-
-    // --- END NEW MODAL LOGIC ---
-
-
-    // Non-staff "Add to List" handler (no modal)
-    function addToList(bookID) {
-        // Direct redirect to controller
-        window.location.href = `../../../app/controllers/borrowListController.php?action=add&bookID=${bookID}&copies=1&source=viewBook.php`;
-    }
 
     // Handle confirmation for Add To List for staff (from modal)
     function confirmAddToList() {
@@ -456,7 +438,7 @@ $modal_available_copies = $copies;
                     message = ` is already in your list. (Limit 1 Copy)`;
                     break;
                 case 'borrowed':
-                    message = ` is being processed/`;
+                    message = ` is currently borrowed or requested. (Limit 1 Copy)`;
                     break;
                 case 'error_unavailable':
                     message = 'ERROR: Book copies unavailable or action invalid.';

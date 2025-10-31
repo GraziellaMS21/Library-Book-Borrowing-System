@@ -24,7 +24,7 @@ $userID = $_SESSION["user_id"];
 $user = $userObj->fetchUser($userID);
 $userTypeID = $user["userTypeID"];
 
-$userName = $user ? $user["lName"] . " " . $user["fName"] : 'Borrower Name Not Found';
+$userName = $user ? $user["lName"] . ", " . $user["fName"] : 'Borrower Name Not Found';
 //fetch user_type infos
 $userTypeName = $user["type_name"];
 $borrow_limit = (int) ($user["borrower_limit"] ?? 1);
@@ -35,12 +35,11 @@ $pickup_date = trim(htmlspecialchars($_POST['pickup_date'] ?? date("Y-m-d")));
 $expected_return_date = trim(htmlspecialchars($_POST['expected_return_date'] ?? date("Y-m-d", strtotime("+$borrow_period days"))));
 
 
-$current_borrowed_count = $borrowObj->fetchTotalBorrowedBooks($userID); //fetch how many books were processed/borrowed
-// $borrow_many_copies = $borrowObj->hasManyCopyBooks($userID); // REMOVED: This is no longer needed in the main logic
+$current_borrowed_count = $borrowObj->fetchTotalBorrowedBooks($userID); 
 $available_slots = $borrow_limit - $current_borrowed_count;
 
 
-// Helper function to consolidate complex borrowing restrictions
+// Borrowing restrictions 
 function calculateMaxCopiesAllowed($userTypeID, $borrow_limit, $current_borrowed_count, $max_available, $is_borrowed)
 {
     $available_slots = $borrow_limit - $current_borrowed_count;
@@ -57,11 +56,8 @@ function calculateMaxCopiesAllowed($userTypeID, $borrow_limit, $current_borrowed
         return min(1, $available_slots, $max_available);
     }
 
-    if ($userTypeID == 2) { // Staff: Multi-copy allowed for a book, up to limit/stock.
+    if ($userTypeID == 2) {
         if ($is_borrowed) {
-            // If already borrowing this specific book, they cannot borrow another copy of the same book
-            // in a separate transaction unless the original borrow is finalized (as per isBookBorrowed check).
-            // NOTE: This prevents duplicate requests for the same book, staff can modify copies on the list page.
             return 0; 
         }
 
@@ -73,12 +69,12 @@ function calculateMaxCopiesAllowed($userTypeID, $borrow_limit, $current_borrowed
 }
 
 
-// --- Handle List Borrow vs. Single Borrow ---
+
 $books_to_checkout = [];
 $total_requested_copies = 0;
-
+// For Multiple list borrow
 if ($is_list_checkout) {
-    // 1. Process List Data received from myList.php POST
+    // Process List Data received from myList.php POST
     $list_items_post = $_POST['list_data'] ?? [];
 
     if (empty($list_items_post)) {
@@ -92,7 +88,7 @@ if ($is_list_checkout) {
             // Fetch current borrowing status for the *actual* book
             $is_borrowed = $borrowObj->isBookBorrowed($userID, $bookID_local);
 
-            // UPDATED CALL: Removed $borrow_many_copies
+            // Removed $borrow_many_copies
             $max_copies_allowed = calculateMaxCopiesAllowed($userTypeID, $borrow_limit, $current_borrowed_count, $max_available, $is_borrowed);
 
             // Clamp requested copies against restrictions and availability
@@ -112,7 +108,7 @@ if ($is_list_checkout) {
                 ];
                 $total_requested_copies += $final_copies;
             } else {
-                $errors['list_restriction_' . $bookID_local] = "Cannot borrow '{$item['book_title']}' (ID: {$listID}) due to borrowing limits, multi-copy restriction, or unavailability.";
+                $errors['list_restriction_' . $bookID_local] = "Cannot borrow '{$item['book_title']}' due to borrowing limits, multi-copy restriction, or unavailability.";
             }
         }
     }
@@ -120,21 +116,13 @@ if ($is_list_checkout) {
     // Total copies requested can't exceed total available slots
     if ($total_requested_copies > $available_slots) {
         $errors['total_limit'] = "The total number of books requested ({$total_requested_copies}) exceeds your available slots ({$available_slots}).";
-        // Do not block checkout of all items here; the individual item check should have clamped copies down.
-        // If $total_requested_copies > $available_slots here, it means the clamping logic failed, but for safety, 
-        // we'll keep the error, though we won't empty the list completely unless $total_requested_copies is clearly wrong.
-        // For robustness, we will trust the individual clamping logic above, but log the error.
         if (!empty($errors['total_limit'])) {
-            // Re-evaluate the items to see if the total requested is actually correct post-clamping.
-            // If the request is still over, it means the user submitted too many books. 
-            // We should trust the individual item check ($max_copies_allowed) to handle this.
-            // If this error is present, it's a major sign of over-requesting.
-             $books_to_checkout = []; // Block checkout of all items if the total limit is exceeded by the request.
+             $books_to_checkout = [];
         }
     }
 
 } else {
-    // --- Single Book Borrow (Original Logic) ---
+    // Single Book Borrow 
     $no_of_copies = (int) ($_GET['copies'] ?? 1);
 
     if ($bookID) {
@@ -168,7 +156,7 @@ if ($is_list_checkout) {
         } else {
             // Book is valid for checkout
             $books_to_checkout[$bookID] = [
-                'listID' => 0, // Not from a list
+                'listID' => 0,
                 'bookID' => $bookID,
                 'book_title' => $book['book_title'],
                 'author' => $book['author'],
@@ -200,7 +188,6 @@ if (empty($books_to_checkout) && empty($errors)) {
     <link rel="stylesheet" href="../../../public/assets/css/borrower1.css" />
     <link rel="stylesheet" href="../../../public/assets/css/header_footer2.css" />
     <style>
-        /* Custom styles to make the readonly date input look like regular text */
         #expected_return_date_display {
             -webkit-appearance: none;
             -moz-appearance: none;
@@ -414,7 +401,7 @@ if (empty($books_to_checkout) && empty($errors)) {
                         <ul class="list-disc ml-5 text-gray-700 space-y-2 text-base">
                             <li>Borrowed items must be returned on or before the <strong>Expected Return Date</strong>.
                             </li>
-                            <li><strong>Late Return Penalty:</strong>A fine of <strong class="text-red-700">₱20.00 per
+                            <li><strong>Late Return Penalty:</strong> A fine of <strong class="text-red-700">₱20.00 per
                                     week</strong> will be incurred for each item returned past the due date.</li>
                             <li><strong>Damage or Loss:</strong> Borrower is responsible for replacement/repair costs of
                                 damaged or lost books.</li>
@@ -489,7 +476,7 @@ if (empty($books_to_checkout) && empty($errors)) {
             // --- Original Max Pickup Date Logic (Kept for Context) ---
             const today = new Date();
             const maxPickupDate = new Date();
-            maxPickupDate.setDate(today.getDate() + 7); // Allow pickup up to 7 days in the future
+            maxPickupDate.setDate(today.getDate() + 2); // Allow pickup up to 3 days in the future
 
             const maxDateString = formatDateToISO(maxPickupDate); // Use the new function
             pickupDateInput.setAttribute('max', maxDateString);

@@ -1,5 +1,6 @@
 <?php
 session_start();
+date_default_timezone_set('Asia/Manila');
 require_once(__DIR__ . "/../models/manageBorrowDetails.php");
 require_once(__DIR__ . "/../models/manageBook.php");
 require_once(__DIR__ . "/../models/manageUsers.php");

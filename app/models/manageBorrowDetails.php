@@ -21,8 +21,8 @@ class BorrowDetails extends Database
 
     public function addBorrowDetail()
     {
-        $sql = "INSERT INTO borrowing_details (userID, bookID, no_of_copies, request_date, pickup_date, expected_return_date, returned_condition, borrow_request_status, borrow_status, fine_amount, fine_reason, fine_status)
-                VALUES (:userID, :bookID, :no_of_copies, :request_date, :pickup_date, :expected_return_date, :returned_condition, :borrow_request_status, :borrow_status, :fine_amount, :fine_reason, :fine_status)";
+        $sql = "INSERT INTO borrowing_details (userID, bookID, no_of_copies, request_date, pickup_date, return_date, expected_return_date, returned_condition, borrow_request_status, borrow_status, fine_amount, fine_reason, fine_status)
+                VALUES (:userID, :bookID, :no_of_copies, :request_date, :pickup_date, :return_date, :expected_return_date, :returned_condition, :borrow_request_status, :borrow_status, :fine_amount, :fine_reason, :fine_status)";
         $query = $this->connect()->prepare($sql);
 
         $query->bindParam(":userID", $this->userID);
@@ -30,6 +30,7 @@ class BorrowDetails extends Database
         $query->bindParam(":no_of_copies", $this->no_of_copies);
         $query->bindParam(":request_date", $this->request_date);
         $query->bindParam(":pickup_date", $this->pickup_date);
+        $query->bindParam(":return_date", $this->return_date);
         $query->bindParam(":expected_return_date", $this->expected_return_date);
         $query->bindParam(":returned_condition", $this->returned_condition);
         $query->bindParam(":borrow_request_status", $this->borrow_request_status);
@@ -40,7 +41,6 @@ class BorrowDetails extends Database
 
         return $query->execute();
     }
-
     public function viewBorrowDetails($search = "", $statusFilter = "")
     {
         $sql = "SELECT 
@@ -67,10 +67,12 @@ class BorrowDetails extends Database
         }
 
         if ($search != "") {
+            // Search functionality is correctly implemented here using the :search placeholder
             $where_clauses[] = " (bd.borrowID LIKE CONCAT('%', :search, '%') 
                                 OR u.fName LIKE CONCAT('%', :search, '%')
                                 OR u.lName LIKE CONCAT('%', :search, '%')
                                 OR b.book_title LIKE CONCAT('%', :search, '%'))";
+            // The search term is added to the parameters array
             $params[":search"] = $search;
         }
 
@@ -82,15 +84,41 @@ class BorrowDetails extends Database
 
         $query = $this->connect()->prepare($sql);
 
+        // *** Refinement: Using bindValue for safer parameter binding in a loop ***
         foreach ($params as $key => $value) {
-            $query->bindParam($key, $value);
+            $query->bindValue($key, $value);
         }
 
         if ($query->execute()) {
             return $query->fetchAll();
         } else {
+            // In a real application, you should log the error: $query->errorInfo();
+            error_log("Database query failed for viewBorrowDetails.");
             return null;
         }
+    }
+
+    // NEW FUNCTION: Count total pending requests (request status 'Pending')
+    public function countPendingRequests()
+    {
+        $sql = "SELECT SUM(no_of_copies) AS total_pending FROM borrowing_details WHERE borrow_request_status = 'Pending'";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result['total_pending'] ?? 0;
+    }
+
+    // NEW FUNCTION: Count total overdue books (borrow status 'Borrowed' and expected_return_date is past)
+    public function countOverdueBooks()
+    {
+        $sql = "SELECT SUM(no_of_copies) AS total_overdue 
+                FROM borrowing_details 
+                WHERE borrow_status = 'Borrowed' 
+                AND expected_return_date < CURDATE()";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result['total_overdue'] ?? 0;
     }
 
     // FUNCTION FOR CURRENTLY BORROWED TAB

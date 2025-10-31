@@ -252,7 +252,7 @@ $all_books = $bookObj->viewBook();
                         <table class="text-xs">
                             <?php if ($current_tab == 'pending'): ?>
                                 <tr>
-                                    <th>ID</th>
+                                    <th>No</th>
                                     <th>User Name</th>
                                     <th>Book Title</th>
                                     <th>Copies</th>
@@ -264,7 +264,7 @@ $all_books = $bookObj->viewBook();
                                 </tr>
                             <?php elseif ($current_tab == 'pickup'): ?>
                                 <tr>
-                                    <th>ID</th>
+                                    <th>No</th>
                                     <th>User Name</th>
                                     <th>Book Title</th>
                                     <th>Copies</th>
@@ -276,7 +276,7 @@ $all_books = $bookObj->viewBook();
                                 </tr>
                             <?php elseif ($current_tab == 'currently_borrowed'): ?>
                                 <tr>
-                                    <th>ID</th>
+                                    <th>No</th>
                                     <th>User Name</th>
                                     <th>Book Title</th>
                                     <th>Copies</th>
@@ -288,7 +288,7 @@ $all_books = $bookObj->viewBook();
                                 </tr>
                             <?php elseif ($current_tab == 'returned'): ?>
                                 <tr>
-                                    <th>ID</th>
+                                    <th>No</th>
                                     <th>User Name</th>
                                     <th>Book Title</th>
                                     <th>Copies</th>
@@ -300,7 +300,7 @@ $all_books = $bookObj->viewBook();
                                 </tr>
                             <?php elseif ($current_tab == 'cancelled' || $current_tab == 'rejected'): // ADDED CANCELLED/REJECTED HEADER ?>
                                 <tr>
-                                    <th>ID</th>
+                                    <th>No</th>
                                     <th>User Name</th>
                                     <th>Book Title</th>
                                     <th>Copies</th>
@@ -320,14 +320,15 @@ $all_books = $bookObj->viewBook();
                                     </td>
                                 </tr>
                             <?php else:
+                            $no = 1;
                                 foreach ($details as $detail) {
-                                    $fullName = htmlspecialchars($detail["lName"] . " " . $detail["fName"]);
+                                    $fullName = htmlspecialchars($detail["lName"] . ", " . $detail["fName"]);
                                     $bookTitle = htmlspecialchars($detail["book_title"]);
                                     $borrowID = $detail["borrowID"];
                                     $userID = $detail['userID'];
                                     ?>
                                     <tr>
-                                        <td><?= $borrowID ?></td>
+                                        <td><?= $no++; ?></td>
                                         <td><?= $fullName ?></td>
                                         <td><?= $bookTitle ?></td>
 

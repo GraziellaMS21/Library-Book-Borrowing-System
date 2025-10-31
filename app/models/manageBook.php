@@ -84,6 +84,16 @@ class Book extends Database
             return null;
         }
     }
+    
+    // NEW FUNCTION: Count total books
+    public function countTotalBooks()
+    {
+        $sql = "SELECT SUM(book_copies) AS total_books FROM books";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result['total_books'] ?? 0;
+    }
 
     public function fetchCategory()
     {
@@ -246,5 +256,54 @@ class Book extends Database
         $query->bindParam(":quantity", $quantity);
         $query->bindParam(":bookID", $bookID);
         return $query->execute();
+    }
+
+    // REPLACE the existing public function viewBook... in manageBook.php
+
+    public function viewBookBorrower($search = "", $category = "")
+    {
+        $sql = "SELECT b.*, c.category_name
+                FROM books b 
+                JOIN category c ON b.categoryID = c.categoryID";
+
+        $conditions = [];
+        $params = [];
+
+        // If search term is provided, filter by book_title OR author
+        if ($search != "") {
+            $conditions[] = "b.book_title LIKE :search OR b.author LIKE :search";
+            // The search parameter will be bound later with wildcards
+        }
+        
+        // If category is provided, filter by categoryID
+        if ($category != "") {
+            $conditions[] = "c.categoryID = :category";
+            $params[":category"] = $category;
+        }
+
+        // Combine conditions if they exist
+        if (!empty($conditions)) {
+            $sql .= " WHERE " . implode(" AND ", $conditions);
+        }
+        
+        $sql .= " ORDER BY b.book_title ASC";
+
+        $query = $this->connect()->prepare($sql);
+
+        // Bind parameters
+        if ($search != "") {
+            // Use '%' for LIKE matching
+            $search_term = '%' . $search . '%';
+            $query->bindParam(":search", $search_term);
+        }
+        if ($category != "") {
+            $query->bindParam(":category", $params[":category"]);
+        }
+
+        if ($query->execute()) {
+            return $query->fetchAll();
+        } else {
+            return null;
+        }
     }
 }
