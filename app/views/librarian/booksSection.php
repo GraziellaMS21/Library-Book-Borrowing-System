@@ -9,15 +9,21 @@ require_once(__DIR__ . "/../../models/manageBook.php");
 $bookObj = new Book();
 $category = $bookObj->fetchCategory();
 
+//retrieves old data and errors
 $old = $_SESSION["old"] ?? [];
 $errors = $_SESSION["errors"] ?? [];
 
+// Clear the session variables related to form errors/old data for new session
 unset($_SESSION["old"], $_SESSION["errors"]);
 
+//retrieves the current modal and id or success modal
 $current_modal = $_GET['modal'] ?? '';
 $book_id = (int) ($_GET['id'] ?? 0);
+$success_modal = $_GET['success'] ?? '';
+
 $open_modal = '';
 
+//open CRUD modals
 if ($current_modal === 'add') {
     $open_modal = 'addBookModal';
 } elseif ($current_modal === 'edit') {
@@ -28,8 +34,17 @@ if ($current_modal === 'add') {
     $open_modal = 'deleteConfirmModal';
 }
 
-$modal_book = [];
+//open Success Modals
+if ($success_modal === "add") {
+    $success_message = "Adding";
+} elseif ($success_modal === "edit") {
+    $success_message = "Editing";
+} elseif ($success_modal === "delete") {
+    $success_message = "Deleting";
+}
 
+//Loading information to modals
+$modal_book = [];
 if ($open_modal == 'editBookModal' || $open_modal == 'viewDetailsModal' || $open_modal == 'deleteConfirmModal') {
     if ($open_modal == 'editBookModal' && !empty($old)) {
         // Populate from session data if there were errors
@@ -41,14 +56,13 @@ if ($open_modal == 'editBookModal' || $open_modal == 'viewDetailsModal' || $open
         $modal_book['book_cover_name'] = $modal_book['existing_cover_name'] ?? $db_data['book_cover_name'];
         $modal_book['book_cover_dir'] = $modal_book['existing_cover_dir'] ?? $db_data['book_cover_dir'];
 
-    } else {
-        // Fetch fresh data from DB
+    } else { //view
         $modal_book = $bookObj->fetchBook(bookID: $book_id) ?: [];
     }
-    if ($open_modal != 'viewDetailsModal') {
+    if ($open_modal != 'viewDetailsModal') { //delete
         $modal_book['bookID'] = $book_id;
     }
-} elseif ($open_modal == 'addBookModal') {
+} elseif ($open_modal == 'addBookModal') { //add
     $modal_book = $old;
 }
 
@@ -136,11 +150,13 @@ $books = $bookObj->viewBook($search, $categoryID);
                                     <td><?= $book["status"] ?></td>
                                     <td class="action text-center">
                                         <a class="editBtn bg-blue-500 hover:bg-blue-600"
-                                        href="booksSection.php?modal=edit&id=<?= $book['bookID'] ?>">Edit</a>
-                                        <a class="deleteBtn  bg-red-500 hover:bg-red-600" href="booksSection.php?modal=delete&id=<?= $book['bookID'] ?>">
+                                            href="booksSection.php?modal=edit&id=<?= $book['bookID'] ?>">Edit</a>
+                                        <a class="deleteBtn  bg-red-500 hover:bg-red-600"
+                                            href="booksSection.php?modal=delete&id=<?= $book['bookID'] ?>">
                                             Delete
                                         </a>
-                                        <a class="viewBtn bg-gray-500 hover:bg-gray-600 text-white " href="booksSection.php?modal=view&id=<?= $book['bookID'] ?>">View</a>
+                                        <a class="viewBtn bg-gray-500 hover:bg-gray-600 text-white "
+                                            href="booksSection.php?modal=view&id=<?= $book['bookID'] ?>">View</a>
                                     </td>
                                 </tr>
                                 <?php
@@ -234,7 +250,7 @@ $books = $bookObj->viewBook($search, $categoryID);
                     <select name="book_condition" id="add_book_condition">
                         <option value="">---Select Option---</option>
                         <?php
-                        $condition_options = ["Good", "Damaged", "Lost"];
+                        $condition_options = ["Good", "Fair", "Damaged", "Lost"];
                         foreach ($condition_options as $option) {
                             $selected = (($modal_book["book_condition"] ?? '') == $option) ? "selected" : "";
                             echo "<option value='{$option}' {$selected}>{$option}</option>";
@@ -402,8 +418,6 @@ $books = $bookObj->viewBook($search, $categoryID);
 
                 <p><strong>Condition:</strong> <?= $modal_book['book_condition'] ?? 'N/A' ?></p>
                 <p><strong>Date Added:</strong> <?= $modal_book['date_added'] ?? 'N/A' ?></p>
-
-                <!-- NEW: Display Replacement Cost -->
                 <p><strong>Replacement Cost:</strong> <span
                         class="font-semibold">₱<?= number_format($modal_book['replacement_cost'] ?? 400.00, 2) ?></span>
                 </p>
@@ -440,8 +454,22 @@ $books = $bookObj->viewBook($search, $categoryID);
         </div>
     </div>
 
+    <div id="success-modal" class="modal <?= $success_modal ? 'open' : '' ?>">
+        <div class="modal-content max-w-sm text-center">
+            <span class="close close-times" data-modal="success-modal">&times;</span>
+            <h3 class="text-xl font-bold text-red-800 mb-2">Success!</h3>
+            <p class="text-gray-700">
+                <?= $success_message ?> Book Success!
+            </p>
+            <button type="button" data-modal="success-modal"
+                class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">
+                Close
+            </button>
+        </div>
+    </div>
+
 
 </body>
-<script src="../../../public/assets/js/admin.js"></script>
+<script src="../../../public/assets/js/modal.js"></script>
 
 </html>

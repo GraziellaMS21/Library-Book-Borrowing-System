@@ -10,16 +10,15 @@ $bookID = $_POST["bookID"] ?? $_GET["id"] ?? null;
 $upload_dir = __DIR__ . "/../../public/uploads/book_cover_images/";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $book["book_title"] = trim(htmlspecialchars($_POST["book_title"] ?? ''));
-    $book["author"] = trim(htmlspecialchars($_POST["author"] ?? ''));
-    $book["categoryID"] = trim(htmlspecialchars($_POST["categoryID"] ?? ''));
-    $book["publication_name"] = trim(htmlspecialchars($_POST["publication_name"] ?? ''));
-    $book["publication_year"] = trim(htmlspecialchars($_POST["publication_year"] ?? ''));
-    $book["ISBN"] = trim(htmlspecialchars($_POST["ISBN"] ?? ''));
-    $book["book_copies"] = trim(htmlspecialchars($_POST["book_copies"] ?? ''));
-    $book["book_condition"] = trim(htmlspecialchars($_POST["book_condition"] ?? ''));
-    // NEW: Replacement Cost
-    $book["replacement_cost"] = trim(htmlspecialchars($_POST["replacement_cost"] ?? 400.00));
+    $book["book_title"] = trim(htmlspecialchars($_POST["book_title"]));
+    $book["author"] = trim(htmlspecialchars($_POST["author"]));
+    $book["categoryID"] = trim(htmlspecialchars($_POST["categoryID"]));
+    $book["publication_name"] = trim(htmlspecialchars($_POST["publication_name"]));
+    $book["publication_year"] = trim(htmlspecialchars($_POST["publication_year"]));
+    $book["ISBN"] = trim(htmlspecialchars($_POST["ISBN"]));
+    $book["book_copies"] = trim(htmlspecialchars($_POST["book_copies"]));
+    $book["book_condition"] = trim(htmlspecialchars($_POST["book_condition"]));
+    $book["replacement_cost"] = trim(htmlspecialchars($_POST["replacement_cost"]));
 
     if (empty($book["author"])) {
         $errors["author"] = "Author is required";

@@ -1,10 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   const closeBtns = document.querySelectorAll(".close");
-  const modals = document.querySelectorAll(".modal");
 
-  const openModal = (modal) => {
-    modal.style.display = "flex";
-  };
 
   const closeModalAndRedirect = () => {
     const currentUrl = new URL(window.location.href);
@@ -15,14 +11,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
       window.location.href = currentUrl.toString();
     }
-  };
+    
+    if (currentUrl.searchParams.has("success")) {
+      currentUrl.searchParams.delete("success");
 
-  // Function to visually hide the modal (used for outside click only if we don't redirect)
-  const closeModalVisual = (modal) => {
-    modal.style.display = "none";
-    modal.classList.remove("open");
+      window.location.href = currentUrl.toString();
+    }
   };
-
   // Close Modal using closeBtn
   closeBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -32,21 +27,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   //Close Modal when clicking outside
   window.addEventListener("click", (e) => {
-    if (e.target.classList.contains("modal")) {
-      // We use visual closing here, as forcing a redirect on a window click
-      // can be jarring, though it might still be re-opened by PHP on the next action.
-      // For *this* specific architecture, we should still redirect for consistency
-      // since PHP controls the open state.
+    if (e.target.classList.contains("modal" || "success")) {
       closeModalAndRedirect();
     }
   });
-
-  // Since the modals are opened by PHP adding the 'open' class and setting 'display: flex'
-  // (likely in the CSS for .modal.open), we need to ensure the modals are visually present
-  // if the 'open' class is applied on load. However, the PHP conditional rendering handles this.
-
-  // We are removing the redundant openModal and closeModalVisual functions for the
-  // explicit close action and enforcing a redirect for consistent state management.
 });
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -94,6 +78,4 @@ document.addEventListener("DOMContentLoaded", () => {
       closeModalAndRedirect(currentTab);
     }
   });
-
-  // ... (any other logic you might have)
 });

@@ -11,21 +11,18 @@ $action = $_POST['action'] ?? $_GET['action'] ?? '';
 $categoryID = $_POST["categoryID"] ?? $_GET["id"] ?? null;
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-
     $category["category_name"] = trim(htmlspecialchars($_POST["category_name"] ?? ''));
-
-    // Common validation
     if (empty($category["category_name"])) {
         $errors["category_name"] = "Category Name is required.";
     }
 
-    if ($action === 'add') {
-        if (empty($errors) && $categoryObj->isCategoryExist($category["category_name"], null)) {
-            $errors["category_name"] = "Category Name already exists.";
-        }
+    if (empty($errors) && $categoryObj->isCategoryExist($category["category_name"], null)) {
+        $errors["category_name"] = "Category Name already exists.";
+    }
 
+    $categoryObj->category_name = $category["category_name"];
+    if ($action === 'add') {
         if (empty(array_filter($errors))) {
-            $categoryObj->category_name = $category["category_name"];
             if ($categoryObj->addCategory()) {
                 header("Location: ../../app/views/librarian/categorySection.php?success=add");
                 exit;
@@ -42,10 +39,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             exit;
         }
     } elseif ($action === 'edit' && $categoryID) {
-        if (empty($errors) && $categoryObj->isCategoryExist($category["category_name"], $categoryID)) {
-            $errors["category_name"] = "Category Name already exists.";
-        }
-
         if (empty(array_filter($errors))) {
             $categoryObj->category_name = $category["category_name"];
 

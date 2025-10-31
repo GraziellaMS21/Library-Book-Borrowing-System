@@ -7,9 +7,7 @@ $errors = [];
 $userTypes = $userObj->fetchUserTypes();
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
-
 $userID = $_POST["userID"] ?? $_GET["id"] ?? null;
-
 $currentTab = $_POST['tab'] ?? $_GET['tab'] ?? 'approved';
 
 $upload_dir = __DIR__ . "/../../public/uploads/id_images/";
@@ -99,7 +97,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $user['existing_image_dir'] = $new_image_dir;
                 $user['existing_image_name'] = $new_image_name;
                 $_SESSION["old"] = $user;
-                header("Location: ../../app/views/librarian/usersSection.php?modal=edit&id={$userID}&tab={$currentTab}");
+                header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}&modal=edit&id={$userID}");
                 exit;
             }
         } else {
@@ -107,7 +105,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $user['existing_image_name'] = $new_image_name;
             $_SESSION["errors"] = $errors;
             $_SESSION["old"] = $user;
-            header("Location: ../../app/views/librarian/usersSection.php?modal=edit&id={$userID}&tab={$currentTab}");
+            header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}&modal=edit&id={$userID}");
             exit;
         }
     }
@@ -168,7 +166,7 @@ if ($action === 'delete' && $userID) {
         exit;
     } else {
         $_SESSION["errors"] = ["db_error" => "Failed to delete user."];
-        header("Location: ../../app/views/librarian/usersSection.php?modal=delete&id={$userID}&tab={$currentTab}");
+        header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}&modal=delete&id={$userID}");
         exit;
     }
 }

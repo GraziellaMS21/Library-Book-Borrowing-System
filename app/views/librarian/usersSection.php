@@ -24,7 +24,6 @@ $current_tab = $_GET['tab'] ?? 'pending';
 
 // Load User Data for Modals
 $modal_user = [];
-
 if ($current_modal === 'edit') {
     $open_modal = 'editUserModal';
 } elseif ($current_modal === 'view') {
@@ -35,16 +34,16 @@ if ($current_modal === 'edit') {
     $open_modal = 'deleteConfirmUserModal';
 }
 
-if ($open_modal == 'editUserModal' || $open_modal == 'viewDetailsUserModal' || $open_modal == 'blockConfirmUserModal' || $open_modal == 'deleteConfirmUserModal') {
+if (!empty($open_modal)) {
     if ($open_modal == 'editUserModal' && !empty($old)) {
         $modal_user = $old;
-    } else {
+    } else { //view
         $modal_user = $userObj->fetchUser($user_id) ?: [];
     }
-    if ($open_modal != 'viewDetailsUserModal') {
+    if ($open_modal != 'viewDetailsUserModal') { //delete 
         $modal_user['userID'] = $user_id;
     }
-    if (empty($modal_user['status']) && !empty($user_id)) {
+    if (empty($modal_user['status']) && !empty($user_id)) { //block
         $data = $userObj->fetchUser($user_id);
         $modal_user['status'] = $data['status'] ?? 'N/A';
     }
@@ -176,67 +175,67 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                                         <td class="action text-center">
 
                                             <?php if ($current_tab == 'pending'): ?>
-                                                <a href="../../../app/controllers/userController.php?action=approveReject&id=<?= $user['userID'] ?>&status=Approved&tab=<?= $current_tab ?>"
+                                                <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=approveReject&id=<?= $user['userID'] ?>&status=Approved"
                                                     class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1">
                                                     Approve
                                                 </a>
-                                                <a href="../../../app/controllers/userController.php?action=approveReject&id=<?= $user['userID'] ?>&status=Rejected&tab=<?= $current_tab ?>"
+                                                <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=approveReject&id=<?= $user['userID'] ?>&status=Rejected"
                                                     class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1">
                                                     Reject
                                                 </a>
                                                 <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?modal=view&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">
                                                     View
                                                 </a>
 
                                             <?php elseif ($current_tab == 'approved'): ?>
                                                 <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?modal=edit&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">Edit</a>
+                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=edit&id=<?= $user['userID'] ?>">Edit</a>
 
                                                 <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?modal=view&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">
                                                     View
                                                 </a>
 
                                                 <a class="actionBtn bg-amber-500 hover:bg-amber-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?modal=block&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=block&id=<?= $user['userID'] ?>">
                                                     Block
                                                 </a>
 
                                                 <a class="actionBtn  bg-red-500 hover:bg-red-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?modal=delete&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=delete&id=<?= $user['userID'] ?>">
                                                     Delete
                                                 </a>
 
                                             <?php elseif ($current_tab == 'blocked'): ?>
                                                 <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1"
-                                                    href="../../../app/controllers/userController.php?action=unblock&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=unblock&id=<?= $user['userID'] ?>">
                                                     Unblock
                                                 </a>
 
                                                 <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?modal=view&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">
                                                     View
                                                 </a>
 
                                                 <a class="actionBtn  bg-red-500 hover:bg-red-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?modal=delete&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=delete&id=<?= $user['userID'] ?>">
                                                     Delete
                                                 </a>
 
                                             <?php else: ?>
-                                                <a href="../../../app/controllers/userController.php?action=approveReject&id=<?= $user['userID'] ?>&status=Approved&tab=<?= $current_tab ?>"
+                                                <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=approveReject&id=<?= $user['userID'] ?>&status=Approved"
                                                     class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1">
                                                     Approve
                                                 </a>
 
                                                 <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?modal=view&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">
                                                     View
                                                 </a>
 
                                                 <a class="actionBtn  bg-red-500 hover:bg-red-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?modal=delete&id=<?= $user['userID'] ?>&tab=<?= $current_tab ?>">
+                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=delete&id=<?= $user['userID'] ?>">
                                                     Delete
                                                 </a>
                                             <?php endif; ?>
@@ -259,7 +258,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
             <span class="close close-times" data-modal="editUserModal" data-tab="<?= $current_tab ?>">&times;</span>
             <h2 class="text-2xl font-bold mb-4">Edit User</h2>
             <form id="editUserForm"
-                action="../../../app/controllers/userController.php?action=edit&id=<?= $modal_user['userID'] ?? $user_id ?>&tab=<?= $current_tab ?>"
+                action="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=edit&id=<?= $modal_user['userID'] ?? $user_id ?>"
                 method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="userID" value="<?= $modal_user['userID'] ?? $user_id ?>">
                 <input type="hidden" name="existing_image_name" value="<?= $modal_user["imageID_name"] ?? "" ?>">
@@ -409,7 +408,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                     class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">
                     Cancel
                 </button>
-                <a href="../../../app/controllers/userController.php?action=block&id=<?= $modal_user['userID'] ?? $user_id ?>&tab=<?= $current_tab ?>"
+                <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=block&id=<?= $modal_user['userID'] ?? $user_id ?>"
                     class="bg-yellow-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-yellow-700 cursor-pointer">
                     Confirm Block
                 </a>
@@ -433,7 +432,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                     class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">
                     Cancel
                 </button>
-                <a href="../../../app/controllers/userController.php?action=delete&id=<?= $modal_user['userID'] ?? $user_id ?>&tab=<?= $current_tab ?>"
+                <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=delete&id=<?= $modal_user['userID'] ?? $user_id ?>"
                     class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 cursor-pointer">
                     Confirm Delete
                 </a>
@@ -441,8 +440,22 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
         </div>
     </div>
 
+    <div id="success-modal" class="modal <?= $success_modal ? 'open' : '' ?>">
+        <div class="modal-content max-w-sm text-center">
+            <span class="close close-times" data-modal="success-modal">&times;</span>
+            <h3 class="text-xl font-bold text-red-800 mb-2">Success!</h3>
+            <p class="text-gray-700">
+                <?= $success_message ?> Book Success!
+            </p>
+            <button type="button" data-modal="success-modal"
+                class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">
+                Close
+            </button>
+        </div>
+    </div>
+
 
 </body>
-<script src="../../../public/assets/js/admin.js"></script>
+<script src="../../../public/assets/js/modal.js"></script>
 
 </html>

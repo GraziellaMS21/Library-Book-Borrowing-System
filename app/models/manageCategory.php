@@ -25,6 +25,27 @@ class Category extends Database
             return null;
     }
 
+    public function editCategory($cid)
+    {
+        $sql = "UPDATE category SET category_name = :category_name WHERE categoryID = :categoryID";
+
+        $query = $this->connect()->prepare($sql);
+
+        $query->bindParam(":category_name", $this->category_name);
+        $query->bindParam(":categoryID", $cid);
+        return $query->execute();
+    }
+
+    public function deleteCategory($cid)
+    {
+        $sql = "DELETE FROM category WHERE categoryID = :id";
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(":id", $cid);
+        return $query->execute();
+    }
+
+
+    // ==== HELPER FUNCTIONS ====
     public function fetchCategory($categoryID)
     {
         $sql = "SELECT * FROM category WHERE categoryID = :categoryID";
@@ -58,24 +79,5 @@ class Category extends Database
             return true;
         } else
             return false;
-    }
-
-    public function editCategory($cid)
-    {
-        $sql = "UPDATE category SET category_name = :category_name WHERE categoryID = :categoryID";
-
-        $query = $this->connect()->prepare($sql);
-
-        $query->bindParam(":category_name", $this->category_name);
-        $query->bindParam(":categoryID", $cid);
-        return $query->execute();
-    }
-
-    public function deleteCategory($cid)
-    {
-        $sql = "DELETE FROM category WHERE categoryID = :id";
-        $query = $this->connect()->prepare($sql);
-        $query->bindParam(":id", $cid);
-        return $query->execute();
     }
 }

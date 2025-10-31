@@ -15,7 +15,7 @@ class Book extends Database
     public $date_added = "";
     public $book_cover_name = "";
     public $book_cover_dir = "";
-    public $replacement_cost = 400.00; // NEW: Default replacement cost
+    public $replacement_cost = "";
 
     protected $db;
     public function addBook()
@@ -35,34 +35,32 @@ class Book extends Database
         $query->bindParam(":date_added", $this->date_added);
         $query->bindParam(":book_cover_name", $this->book_cover_name);
         $query->bindParam(":book_cover_dir", $this->book_cover_dir);
-        $query->bindParam(":replacement_cost", $this->replacement_cost); // NEW BINDING
-
+        $query->bindParam(":replacement_cost", $this->replacement_cost);
         return $query->execute();
     }
 
     public function viewBook($search = "", $category = "")
     {
-        // SQL query logic remains the same, but select replacement_cost
-        if ($search != "" && $category != "") {
+        if ($search != "" && $category != "") { //both search and category exists
             $sql = "SELECT b.*, c.category_name
                 FROM books b 
                 JOIN category c ON b.categoryID = c.categoryID
                 WHERE b.book_title LIKE CONCAT('%', :search, '%') 
                   AND c.categoryID = :category
                 ORDER BY b.book_title ASC";
-        } else if ($search != "") {
+        } else if ($search != "") { // only search of books or category exist
             $sql = "SELECT b.*, c.category_name
                 FROM books b 
                 JOIN category c ON b.categoryID = c.categoryID
                 WHERE b.book_title LIKE CONCAT('%', :search, '%')
                 ORDER BY b.book_title ASC";
-        } else if ($category != "") {
+        } else if ($category != "") { //searching for books by category
             $sql = "SELECT b.*, c.category_name
                 FROM books b 
                 JOIN category c ON b.categoryID = c.categoryID
                 WHERE c.categoryID = :category
                 ORDER BY b.book_title ASC";
-        } else {
+        } else { //general search
             $sql = "SELECT b.*, c.category_name
                 FROM books b 
                 JOIN category c ON b.categoryID = c.categoryID
@@ -84,85 +82,27 @@ class Book extends Database
             return null;
         }
     }
-    
-    // NEW FUNCTION: Count total books
-    public function countTotalBooks()
+
+    public function deleteBook($pid)
     {
-        $sql = "SELECT SUM(book_copies) AS total_books FROM books";
+        $book = $this->fetchBook($pid);
+
+        $sql = "DELETE FROM books WHERE bookID = :id";
         $query = $this->connect()->prepare($sql);
-        $query->execute();
-        $result = $query->fetch(PDO::FETCH_ASSOC);
-        return $result['total_books'] ?? 0;
-    }
+        $query->bindParam(":id", $pid);
+        $result = $query->execute();
 
-    public function fetchCategory()
-    {
-        $sql = "SELECT * FROM category";
-        $query = $this->connect()->prepare($sql);
-        if ($query->execute()) {
-            return $query->fetchAll();
-        } else
-            return null;
-    }
-
-    public function fetchBook($bookID)
-    {
-        // Select replacement_cost
-        $sql = "SELECT books.*, category.category_name FROM books JOIN category ON books.categoryID = category.categoryID WHERE bookID = :bookID";
-        $query = $this->connect()->prepare($sql);
-        $query->bindParam(':bookID', $bookID);
-        $query->execute();
-        return $query->fetch();
-    }
-
-    public function fetchBookTitles()
-    {
-        $sql = "SELECT bookID, book_title FROM books";
-        $query = $this->connect()->prepare($sql);
-        $query->execute();
-        return $query->fetchAll();
-    }
-
-
-    // NEW: Function to get just the replacement cost
-    public function fetchBookReplacementCost($bookID)
-    {
-        $sql = "SELECT replacement_cost FROM books WHERE bookID = :bookID";
-        $query = $this->connect()->prepare($sql);
-        $query->bindParam(':bookID', $bookID);
-        $query->execute();
-        $result = $query->fetchColumn();
-        // Ensure a valid number is returned, default to the 400 base if NULL
-        return $result !== false ? (float) $result : 400.00;
-    }
-
-    public function isTitleExist($book_title, $bookID = "")
-    {
-        if ($bookID) {
-            $sql = "SELECT COUNT(bookID) as total_books FROM books  WHERE book_title = :book_title AND bookID <> :bookID";
-        } else {
-            $sql = "SELECT COUNT(bookID) as total_books FROM books WHERE book_title = :book_title";
+        if ($result && $book && !empty($book['book_cover_dir'])) {
+            $absolute_path = __DIR__ . "/../../" . $book['book_cover_dir'];
+            if (file_exists($absolute_path)) {
+                @unlink($absolute_path);
+            }
         }
-        $query = $this->connect()->prepare($sql);
-        $record = NULL;
-
-        $query->bindParam(":book_title", $book_title);
-        if ($bookID) {
-            $query->bindParam(":bookID", $bookID);
-        }
-        if ($query->execute()) {
-            $record = $query->fetch();
-        }
-
-        if ($record["total_books"] > 0) {
-            return true;
-        } else
-            return false;
+        return $result;
     }
 
-    public function editBook($pid, $update_image = false, $old_cover_dir = null)
+    public function editBook($pid, $update_image = false)
     {
-        // Add replacement_cost to the UPDATE query
         $sql = "UPDATE books SET book_title = :book_title,  author = :author,  categoryID = :categoryID, publication_name = :publication_name,  publication_year = :publication_year,  ISBN = :ISBN, book_copies = :book_copies, book_condition = :book_condition, replacement_cost = :replacement_cost";
 
         if ($update_image) {
@@ -192,22 +132,68 @@ class Book extends Database
         return $query->execute();
     }
 
-    public function deleteBook($pid)
+    //====HELPER FUNCTIONS====
+    public function countTotalBooks()
     {
-        $book = $this->fetchBook($pid);
-
-        $sql = "DELETE FROM books WHERE bookID = :id";
+        $sql = "SELECT SUM(book_copies) AS total_books FROM books";
         $query = $this->connect()->prepare($sql);
-        $query->bindParam(":id", $pid);
-        $result = $query->execute();
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result['total_books'] ?? 0;
+    }
 
-        if ($result && $book && !empty($book['book_cover_dir'])) {
-            $absolute_path = __DIR__ . "/../../" . $book['book_cover_dir'];
-            if (file_exists($absolute_path)) {
-                @unlink($absolute_path);
-            }
+    public function fetchCategory()
+    {
+        $sql = "SELECT * FROM category";
+        $query = $this->connect()->prepare($sql);
+        if ($query->execute()) {
+            return $query->fetchAll();
+        } else
+            return null;
+    }
+
+    public function fetchBook($bookID)
+    {
+        $sql = "SELECT books.*, category.category_name FROM books JOIN category ON books.categoryID = category.categoryID WHERE bookID = :bookID";
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(':bookID', $bookID);
+        $query->execute();
+        return $query->fetch();
+    }
+
+    public function fetchBookTitles()
+    {
+        $sql = "SELECT bookID, book_title FROM books";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        return $query->fetchAll();
+    }
+
+    public function isTitleExist($book_title, $bookID = "")
+    {
+        if ($bookID) {
+            $sql = "SELECT COUNT(bookID) as total_books FROM books  WHERE book_title = :book_title AND bookID <> :bookID";
+        } else {
+            $sql = "SELECT COUNT(bookID) as total_books FROM books WHERE book_title = :book_title";
         }
-        return $result;
+
+        $query = $this->connect()->prepare($sql);
+        $record = NULL;
+
+        $query->bindParam(":book_title", $book_title);
+
+        if ($bookID) {
+            $query->bindParam(":bookID", $bookID);
+        }
+
+        if ($query->execute()) {
+            $record = $query->fetch();
+        }
+
+        if ($record["total_books"] > 0) {
+            return true;
+        } else
+            return false;
     }
 
     public function showThreeBooks($categoryID)
@@ -235,8 +221,11 @@ class Book extends Database
         $sql = "SELECT COUNT(*) AS total FROM books WHERE categoryID = :categoryID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(':categoryID', $categoryID);
+        $result = NULL;
+
         $query->execute();
         $result = $query->fetch();
+
         return $result['total'] ?? 0;
     }
 
@@ -246,6 +235,7 @@ class Book extends Database
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":quantity", $quantity);
         $query->bindParam(":bookID", $bookID);
+        
         return $query->execute();
     }
 
@@ -255,55 +245,7 @@ class Book extends Database
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":quantity", $quantity);
         $query->bindParam(":bookID", $bookID);
+
         return $query->execute();
-    }
-
-    // REPLACE the existing public function viewBook... in manageBook.php
-
-    public function viewBookBorrower($search = "", $category = "")
-    {
-        $sql = "SELECT b.*, c.category_name
-                FROM books b 
-                JOIN category c ON b.categoryID = c.categoryID";
-
-        $conditions = [];
-        $params = [];
-
-        // If search term is provided, filter by book_title OR author
-        if ($search != "") {
-            $conditions[] = "b.book_title LIKE :search OR b.author LIKE :search";
-            // The search parameter will be bound later with wildcards
-        }
-        
-        // If category is provided, filter by categoryID
-        if ($category != "") {
-            $conditions[] = "c.categoryID = :category";
-            $params[":category"] = $category;
-        }
-
-        // Combine conditions if they exist
-        if (!empty($conditions)) {
-            $sql .= " WHERE " . implode(" AND ", $conditions);
-        }
-        
-        $sql .= " ORDER BY b.book_title ASC";
-
-        $query = $this->connect()->prepare($sql);
-
-        // Bind parameters
-        if ($search != "") {
-            // Use '%' for LIKE matching
-            $search_term = '%' . $search . '%';
-            $query->bindParam(":search", $search_term);
-        }
-        if ($category != "") {
-            $query->bindParam(":category", $params[":category"]);
-        }
-
-        if ($query->execute()) {
-            return $query->fetchAll();
-        } else {
-            return null;
-        }
     }
 }
