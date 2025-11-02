@@ -15,7 +15,7 @@ class User extends Database
     public $userTypeID = "";
     public $date_registered = "";
     public $role = "";
-    public $user_status = "";
+    public $registration_status = "";
 
     protected $db;
 
@@ -40,7 +40,7 @@ class User extends Database
                 $dbStatus = 'Pending';
             }
 
-            $whereConditions[] = "u.user_status = :statusFilter";
+            $whereConditions[] = "u.registration_status = :statusFilter";
         }
 
         if ($search != "") {
@@ -90,7 +90,7 @@ class User extends Database
     // NEW FUNCTION: Count total borrowers (users with role 'Borrower' and status 'Approved')
     public function countTotalBorrowers()
     {
-        $sql = "SELECT COUNT(userID) AS total_borrowers FROM users WHERE role = 'Borrower' AND user_status = 'Approved'";
+        $sql = "SELECT COUNT(userID) AS total_borrowers FROM users WHERE role = 'Borrower' AND registration_status = 'Approved'";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         $result = $query->fetch(PDO::FETCH_ASSOC);
@@ -100,7 +100,7 @@ class User extends Database
     // NEW FUNCTION: Count pending user registrations
     public function countPendingUsers()
     {
-        $sql = "SELECT COUNT(userID) AS total_pending FROM users WHERE user_status = 'Pending' AND role = 'Borrower'";
+        $sql = "SELECT COUNT(userID) AS total_pending FROM users WHERE registration_status = 'Pending' AND role = 'Borrower'";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         $result = $query->fetch(PDO::FETCH_ASSOC);
@@ -205,7 +205,7 @@ class User extends Database
 
     public function approveRejectUser($userID, $newStatus)
     {
-        $sql = "UPDATE users SET user_status = :newStatus WHERE userID = :userID";
+        $sql = "UPDATE users SET registration_status = :newStatus WHERE userID = :userID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":newStatus", $newStatus);
         $query->bindParam(":userID", $userID);
@@ -222,7 +222,7 @@ class User extends Database
 
     public function updateUserStatus($userID, $newStatus)
     {
-        $sql = "UPDATE users SET user_status = :newStatus WHERE userID = :userID";
+        $sql = "UPDATE users SET registration_status = :newStatus WHERE userID = :userID";
         $query = $this->connect()->prepare($sql);
 
         $query->bindParam(":newStatus", $newStatus);

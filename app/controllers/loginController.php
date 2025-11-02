@@ -23,17 +23,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if (is_array($result)) {
             // User found and password correct. Now check status.
-            if ($result["user_status"] === "Pending") {
+            if ($result["registration_status"] === "Pending") {
                 header("Location: ../../app/views/borrower/login.php?status=pending");
                 exit;
-            } elseif ($result["user_status"] === "Rejected") {
+            } elseif ($result["registration_status"] === "Rejected") {
                 header("Location: ../../app/views/borrower/login.php?status=rejected");
                 exit;
-            } elseif ($result["user_status"] === "Blocked") {
+            } elseif ($result["registration_status"] === "Blocked") {
                 // Redirect Blocked users to blocked page as requested
                 header("Location: ../../app/views/borrower/blockedPage.php");
                 exit;
-            } elseif ($result["user_status"] === "Approved") {
+            } elseif ($result["registration_status"] === "Approved") {
                 // Proceed with successful login only if status is Approved
                 $_SESSION["user_id"] = $result["userID"];
                 $_SESSION["email"] = $result["email"];
@@ -49,7 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     exit;
                 }
             } else {
-                // Should not happen if user_status is properly enforced (Approved, Pending, Blocked)
+                // Should not happen if registration_status is properly enforced (Approved, Pending, Blocked)
                 $errors["invalid"] = "Invalid User Status. Please contact support.";
             }
 

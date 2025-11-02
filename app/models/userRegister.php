@@ -16,14 +16,14 @@ class Register extends Database
     public $userTypeID = "";
     public $date_registered = "";
     public $role = "";
-    public $user_status = "Pending";
+    public $registration_status = "Pending";
 
     protected $db;
 
     public function addUser()
     {
-        $sql = "INSERT INTO users (lName, fName, middleIn, id_number, college_department, imageID_name, imageID_dir, contact_no, email, password, role, userTypeID, date_registered, user_status) 
-                VALUES (:lName, :fName, :middleIn, :id_number, :college_department, :imageID_name, :imageID_dir, :contact_no, :email, :password, :role, :userTypeID, :date_registered, :user_status)";
+        $sql = "INSERT INTO users (lName, fName, middleIn, id_number, college_department, imageID_name, imageID_dir, contact_no, email, password, role, userTypeID, date_registered, registration_status) 
+                VALUES (:lName, :fName, :middleIn, :id_number, :college_department, :imageID_name, :imageID_dir, :contact_no, :email, :password, :role, :userTypeID, :date_registered, :registration_status)";
 
         $query = $this->connect()->prepare($sql);
 
@@ -39,12 +39,12 @@ class Register extends Database
         $query->bindParam(":password", $this->password);
 
         $role = 'Borrower';
-        $this->user_status = "Pending";
+        $this->registration_status = "Pending";
 
         $query->bindParam(":role", $role);
         $query->bindParam(":userTypeID", $this->userTypeID);
         $query->bindParam(":date_registered", $this->date_registered);
-        $query->bindParam(":user_status", $this->user_status);
+        $query->bindParam(":registration_status", $this->registration_status);
 
         return $query->execute();
     }

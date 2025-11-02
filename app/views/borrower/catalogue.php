@@ -74,7 +74,7 @@ if (!empty($search) || ($categoryID !== null && $categoryID !== "")) {
     // --- SEARCH/FILTER MODE (Similar to booksSection.php) ---
     // If a search term is present OR a specific category is selected, use viewBook
     
-    $filteredBooks = $bookObj->viewBookBorrowe($search, $categoryID); 
+    $filteredBooks = $bookObj->viewBook($search, $categoryID); 
 
     // Determine the title for the search/filter results block
     if (!empty($search) && $categoryID) {

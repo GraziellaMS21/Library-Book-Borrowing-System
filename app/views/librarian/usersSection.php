@@ -378,8 +378,8 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                 <p><strong>Role:</strong> <?= $modal_user['role'] ?? 'N/A' ?></p>
                 <p><strong>College/Department:</strong> <?= $modal_user['college_department'] ?? 'N/A' ?></p>
 
-                <p><strong>Status:</strong> <span
-                        class="font-bold text-red-800"><?= $modal_user['status'] ?? 'N/A' ?></span></p>
+                <p><strong>Account Status:</strong> <span
+                        class="font-bold text-red-800"><?= $modal_user['account_status'] ?? 'N/A' ?></span></p>
 
                 <p><strong>Date Registered:</strong>
                     <?= $modal_user['date_registered'] ?? 'N/A' ?>
