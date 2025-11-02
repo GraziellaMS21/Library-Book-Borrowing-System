@@ -41,64 +41,77 @@ class BorrowDetails extends Database
 
         return $query->execute();
     }
+
     public function viewBorrowDetails($search = "", $statusFilter = "")
     {
+        $whereConditions = [];
+        $dbStatus = "";
+        $statusColumn = "";
+
         $sql = "SELECT 
-                    bd.*, 
-                    u.fName, 
-                    u.lName, 
-                    b.book_title,
-                    b.book_condition AS current_book_condition
-                FROM borrowing_details bd
-                JOIN users u ON bd.userID = u.userID
-                JOIN books b ON bd.bookID = b.bookID";
+                bd.*, 
+                u.fName, 
+                u.lName, 
+                b.book_title,
+                b.book_condition
+            FROM borrowing_details bd
+            JOIN users u ON bd.userID = u.userID
+            JOIN books b ON bd.bookID = b.bookID";
 
-        $where_clauses = [];
-        $params = [];
+        if ($statusFilter != "") {
+            // --- CORRECTED MAPPING LOGIC ---
+            // 'Borrowed' and 'Returned' use the borrow_status column
+            if ($statusFilter == 'borrowed') {
+                $statusColumn = "bd.borrow_status";
+                $dbStatus = 'Borrowed';
+            } elseif ($statusFilter == 'returned') {
+                $statusColumn = "bd.borrow_status";
+                $dbStatus = 'Returned';
+            } else {
+                // 'Pending', 'Approved', 'Cancelled', 'Rejected' use borrow_request_status
+                $statusColumn = "bd.borrow_request_status";
+                $dbStatus = ucfirst($statusFilter); // Converts 'pending' to 'Pending'
+                // --- NEW FIX: Exclude 'Borrowed' status for Approved tab ---
+                if ($statusFilter == 'approved') {
+                    $whereConditions[] = "bd.borrow_status IS NULL"; // Only show approved requests not yet fulfilled (i.e. not in 'Borrowed')
+                }
+            }
 
-        // Filter by borrow_status for 'Returned', otherwise use borrow_request_status
-        if ($statusFilter == 'Returned') {
-            $where_clauses[] = "bd.borrow_status = :statusFilter";
-            $params[":statusFilter"] = $statusFilter;
-        } elseif ($statusFilter != "") {
-            // Used for 'Pending', 'Approved' (Pickup)
-            $where_clauses[] = "bd.borrow_request_status = :statusFilter";
-            $params[":statusFilter"] = $statusFilter;
+            // Add the condition using the dynamically determined column
+            $whereConditions[] = "{$statusColumn} = :statusFilter";
         }
 
+        // Search conditions
         if ($search != "") {
-            // Search functionality is correctly implemented here using the :search placeholder
-            $where_clauses[] = " (bd.borrowID LIKE CONCAT('%', :search, '%') 
+            $whereConditions[] = " (bd.borrowID LIKE CONCAT('%', :search, '%') 
                                 OR u.fName LIKE CONCAT('%', :search, '%')
                                 OR u.lName LIKE CONCAT('%', :search, '%')
                                 OR b.book_title LIKE CONCAT('%', :search, '%'))";
-            // The search term is added to the parameters array
-            $params[":search"] = $search;
         }
 
-        if (!empty($where_clauses)) {
-            $sql .= " WHERE " . implode(' AND ', $where_clauses);
+        if (!empty($whereConditions)) {
+            $sql .= " WHERE " . implode(" AND ", $whereConditions);
         }
 
         $sql .= " ORDER BY bd.borrowID DESC";
 
         $query = $this->connect()->prepare($sql);
 
-        // *** Refinement: Using bindValue for safer parameter binding in a loop ***
-        foreach ($params as $key => $value) {
-            $query->bindValue($key, $value);
+        if ($search != "") {
+            $query->bindParam(":search", $search);
+        }
+
+        if ($statusFilter != "") {
+            $query->bindParam(":statusFilter", $dbStatus);
         }
 
         if ($query->execute()) {
             return $query->fetchAll();
         } else {
-            // In a real application, you should log the error: $query->errorInfo();
-            error_log("Database query failed for viewBorrowDetails.");
             return null;
         }
     }
 
-    // NEW FUNCTION: Count total pending requests (request status 'Pending')
     public function countPendingRequests()
     {
         $sql = "SELECT SUM(no_of_copies) AS total_pending FROM borrowing_details WHERE borrow_request_status = 'Pending'";
@@ -108,7 +121,6 @@ class BorrowDetails extends Database
         return $result['total_pending'] ?? 0;
     }
 
-    // NEW FUNCTION: Count total overdue books (borrow status 'Borrowed' and expected_return_date is past)
     public function countOverdueBooks()
     {
         $sql = "SELECT SUM(no_of_copies) AS total_overdue 
@@ -129,7 +141,7 @@ class BorrowDetails extends Database
                     u.fName, 
                     u.lName, 
                     b.book_title,
-                    b.book_condition AS current_book_condition
+                    b.book_condition
                 FROM borrowing_details bd
                 JOIN users u ON bd.userID = u.userID
                 JOIN books b ON bd.bookID = b.bookID
@@ -167,7 +179,7 @@ class BorrowDetails extends Database
                 u.fName, 
                 u.lName, 
                 b.book_title,
-                b.book_condition AS current_book_condition
+                b.book_condition
             FROM borrowing_details bd
             JOIN users u ON bd.userID = u.userID
             JOIN books b ON bd.bookID = b.bookID
@@ -419,7 +431,7 @@ class BorrowDetails extends Database
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":borrowID", $borrowID);
         if ($query->execute()) {
-            return $query->fetch();
+            return $query->fetch(PDO::FETCH_ASSOC); // Ensure FETCH_ASSOC for consistency
         } else
             return null;
     }
