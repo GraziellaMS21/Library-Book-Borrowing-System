@@ -7,11 +7,9 @@ if (!isset($_SESSION["user_id"])) {
 
 require_once(__DIR__ . "/../../models/manageBorrowDetails.php");
 require_once(__DIR__ . "/../../models/manageUsers.php");
-require_once(__DIR__ . "/../../models/manageBook.php"); 
 
 $borrowObj = new BorrowDetails();
 $userObj = new User();
-$bookObj = new Book();
 
 //fetch user
 $userID = $_SESSION["user_id"];
@@ -19,97 +17,42 @@ $user = $userObj->fetchUser($userID);
 
 $active_tab = $_GET['tab'] ?? 'pending';
 
-$borrowed_books_raw = [];
+// --- FIX 1: Refined $status_filter to only include statuses relevant for each tab ---
+$status_filter = match ($active_tab) {
+    'pending' => ['Pending', 'Approved'], // Only pending and approved requests
+    'borrowed' => 'Borrowed',
+    'returned' => ['Returned', 'Rejected', 'Cancelled'], // All history statuses
+    'fined' => 'Fined',
+    default => 'Pending',
+};
+
+$borrowed_books_raw = $borrowObj->fetchUserBorrowDetails($userID, $status_filter);
+
 $borrowed_books = [];
-
+//Includes the borrows per tab
 if ($active_tab === 'returned') {
-    $returned_books = $borrowObj->fetchUserBorrowDetails($userID, 'Returned');
-    $rejected_requests = $borrowObj->fetchUserBorrowDetails($userID, 'Rejected');
-    $cancelled_requests = $borrowObj->fetchUserBorrowDetails($userID, 'Cancelled');
+    // History tab groups
+    $returned_books = array_filter($borrowed_books_raw, fn($book) => $book['borrow_status'] === 'Returned');
+    // Note: Rejected and Cancelled use borrow_request_status
+    $rejected_requests = array_filter($borrowed_books_raw, fn($book) => $book['borrow_request_status'] === 'Rejected');
+    $cancelled_requests = array_filter($borrowed_books_raw, fn($book) => $book['borrow_request_status'] === 'Cancelled');
 
+    // The main variable for the loop will be an array containing all three groups
     $borrowed_books = [
         'Returned' => $returned_books,
         'Rejected' => $rejected_requests,
         'Cancelled' => $cancelled_requests,
     ];
 } elseif ($active_tab === 'pending') {
-    $borrowed_books_raw = $borrowObj->fetchUserBorrowDetails($userID, 'Pending');
 
-    $pending_requests = array_filter($borrowed_books_raw, fn($borrow) => $borrow['borrow_request_status'] === 'Pending');
-    //Approved requests that have NOT been borrowed yet
-    $approved_requests = array_filter($borrowed_books_raw, fn($borrow) => $borrow['borrow_request_status'] === 'Approved' && $borrow['borrow_status'] !== 'Borrowed');
+    $pending_requests = array_filter($borrowed_books_raw, fn($book) => $book['borrow_request_status'] === 'Pending');
+    $approved_requests = array_filter($borrowed_books_raw, fn($book) => $book['borrow_request_status'] === 'Approved' && $book['borrow_status'] !== 'Borrowed');
+    $borrowed_books = array_merge($pending_requests, $approved_requests);
 
-    $rejected = $borrowObj->fetchUserBorrowDetails($userID, 'Rejected');
-    $cancelled = $borrowObj->fetchUserBorrowDetails($userID, 'Cancelled');
-    $rejected_requests = array_filter($rejected, fn($borrow) => $borrow['borrow_request_status'] === 'Rejected' && $borrow['borrower_notified'] == 0);
-
-
-    $cancelled_requests = array_filter($cancelled, fn($borrow) => $borrow['borrow_request_status'] === 'Cancelled' && $borrow['borrower_notified'] == 0);
-
-
-    $borrowed_books = array_merge($pending_requests, $approved_requests, $rejected_requests, $cancelled_requests);
-
-} elseif ($active_tab === 'unpaid') {
-    // Fetch books with unpaid fines
-    $borrowed_books_raw = $borrowObj->fetchUserBorrowDetails($userID, 'unpaid');
-    $borrowed_books = $borrowed_books_raw;
 } else {
-    // For 'borrowed' tab
-    $borrowed_books_raw = $borrowObj->fetchUserBorrowDetails($userID, $active_tab);
     $borrowed_books = $borrowed_books_raw;
 }
-
-$borrowed_books_with_fines = [];
-
-$tabs_for_fine_check = ['borrowed', 'unpaid'];
-if (in_array($active_tab, $tabs_for_fine_check) && !empty($borrowed_books)) {
-    foreach ($borrowed_books as $detail) {
-        $db_update_required = false;
-        
-        // Only check for overdue fine calculation on 'Borrowed' loans that haven't been returned
-        if ($detail['borrow_status'] === 'Borrowed' && $detail['return_date'] === null) {
-        
-            $full_detail = $borrowObj->fetchBorrowDetail($detail['borrowID']);
-
-            // Calculate fine based on today's date
-            $fine_results = $borrowObj->calculateFinalFine(
-                $detail['expected_return_date'], 
-                date("Y-m-d"), // Today's date for comparison
-                $bookObj, 
-                $detail['bookID']
-            );
-
-            // Check if a new or higher fine is calculated
-            if ($fine_results['fine_amount'] > $detail['fine_amount']) {
-                $detail['fine_amount'] = $fine_results['fine_amount'];
-                $detail['fine_reason'] = $fine_results['fine_reason'];
-                $detail['fine_status'] = $fine_results['fine_status'];
-
-                $db_update_required = true;
-            }
-        }
-        
-        // If a higher fine was calculated or if the fine_status changed due to lateness, update the DB
-        if ($db_update_required) {
-            $borrowObj->updateFineDetails(
-                $detail['borrowID'],
-                $detail['fine_amount'],
-                $detail['fine_reason'],
-                $detail['fine_status']
-            );
-            // If we're on the unpaid tab, and we just updated the fine, re-filter it later
-        }
-        $borrowed_books_with_fines[] = $detail;
-    }
-    // Replace the raw list with the one potentially updated with new fines
-    $borrowed_books = $borrowed_books_with_fines;
-}
-
-// If we are on the unpaid tab, filter out any loans that were updated but whose fine_status is no longer 'Unpaid'
-if ($active_tab === 'unpaid') {
-    $borrowed_books = array_filter($borrowed_books, fn($book) => $book['fine_status'] === 'Unpaid');
-}
-
+// Helper function to display the correct status class
 function getStatusClass($status)
 {
     return match ($status) {
@@ -118,8 +61,6 @@ function getStatusClass($status)
         'Borrowed' => 'bg-green-100 text-green-800',
         'Rejected', 'Cancelled' => 'bg-red-100 text-red-800',
         'Returned' => 'bg-blue-100 text-blue-800',
-        'Unpaid' => 'bg-red-200 text-red-800 font-bold', // New for Fine Status
-        'Paid' => 'bg-green-200 text-green-800', // New for Fine Status
         default => 'bg-gray-100 text-gray-800',
     };
 }
@@ -127,10 +68,10 @@ function getStatusClass($status)
 function getTabTitle($tab)
 {
     return match ($tab) {
-        'pending' => 'Pending & Approved Requests',
+        'pending' => 'Pending, Approved & Cancelled Requests',
         'borrowed' => 'Currently Borrowed Books',
-        'returned' => 'Book Loan History',
-        'unpaid' => 'Unpaid Fines', // New tab title
+        'returned' => 'Book Loan History', // Changed title to be more general
+        'fined' => 'Unpaid Fines',
         default => 'Loan Status',
     };
 }
@@ -139,6 +80,7 @@ $borrow_limit = (int) ($user["borrower_limit"] ?? 1);
 $current_borrowed_count = $borrowObj->fetchTotalBorrowedBooks($userID); //fetch how many books were processed/borrowed
 $available_slots = $borrow_limit - $current_borrowed_count;
 
+// Handle success messages after actions (e.g., cancel)
 $success_message = '';
 if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
     $success_message = 'Your borrow request has been successfully cancelled.';
@@ -180,7 +122,7 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                     <a href="?tab=pending" class="<?= $active_tab == 'pending' ? 'active' : '' ?>">Requests</a>
                     <a href="?tab=borrowed" class="<?= $active_tab == 'borrowed' ? 'active' : '' ?>">Currently
                         Borrowed</a>
-                    <a href="?tab=unpaid" class="<?= $active_tab == 'unpaid' ? 'active' : '' ?>">Fines</a>
+                    <a href="?tab=fined" class="<?= $active_tab == 'fined' ? 'active' : '' ?>">Fines</a>
                     <a href="?tab=returned" class="<?= $active_tab == 'returned' ? 'active' : '' ?>">History</a>
 
                 </nav>
@@ -268,8 +210,8 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
 
                                     <?php if ($active_tab == 'pending'): ?>
                                         <th class="py-3 px-4 hidden md:table-cell">Request Date</th>
-                                        <th class="py-3 px-4 hidden md:table-cell">PickUp Date</th>
-                                        <th class="py-3 px-4 hidden lg:table-cell">Exp. Return Date</th>
+                                        <th class="py-3 px-4">PickUp Date</th>
+                                        <th class="py-3 px-4">Exp. Return Date</th>
                                         <th class="py-3 px-4">Status</th>
                                         <th class="py-3 px-4 w-20">Actions</th>
 
@@ -278,24 +220,23 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                         <th class="py-3 px-4">Fine Amount</th>
                                         <th class="py-3 px-4 hidden lg:table-cell">Fine Reason</th>
 
-                                    <?php elseif ($active_tab == 'unpaid'): ?>
-                                        <th class="py-3 px-4 hidden md:table-cell">Request Date</th>
-                                        <th class="py-3 px-4">Fine Reason</th>
+                                    <?php elseif ($active_tab == 'fined'): ?>
+                                        <th class="py-3 px-4 hidden md:table-cell">Exp. Return Date</th>
                                         <th class="py-3 px-4">Fine Amount</th>
                                         <th class="py-3 px-4">Fine Status</th>
-                                        <th class="py-3 px-4 w-20">Action</th>
+                                        <th class="py-3 px-4">Fine Reason</th>
 
 
                                     <?php elseif ($active_tab == 'returned'): ?>
                                         <?php if ($section_name === 'Returned'): ?>
                                             <th class="py-3 px-4 hidden md:table-cell">Return Date</th>
                                             <th class="py-3 px-4 hidden lg:table-cell">Returned Condition</th>
-                                            <th class="py-3 px-4">Fine Reason</th>
                                             <th class="py-3 px-4">Fine Amount</th>
                                             <th class="py-3 px-4">Fine Status</th>
-                                        <?php else: ?>
+                                        <?php else: // Rejected or Cancelled ?>
                                             <th class="py-3 px-4 hidden md:table-cell">Request Date</th>
                                             <th class="py-3 px-4">Status</th>
+                                            <th class="py-3 px-4">Processed Date</th>
                                         <?php endif; ?>
 
                                         <th class="py-3 px-4 w-20">Details</th>
@@ -321,13 +262,13 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                                         </div>
                                                     <?php endif; ?>
                                                 </div>
-                                                <span class="break-words whitespace-normal overflow-hidden">
+                                                <span class="break-words whitespace-normal overflow-hidden text-ellipsis">
                                                     <?= htmlspecialchars($book['book_title']) ?>
                                                 </span>
                                             </div>
                                         </td>
 
-                                        <td class="py-4 px-4 hidden sm:table-cell text-gray-700 whitespace-normal">
+                                        <td class="py-4 px-4 hidden sm:table-cell text-gray-700">
                                             <?= htmlspecialchars($book['author']) ?>
                                         </td>
 
@@ -344,7 +285,7 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                                 <?= date('M d, Y', strtotime($book['pickup_date'])) ?>
                                                 <br>
                                             </td>
-                                            <td class="py-4 px-4 hidden lg:table-cell text-sm">
+                                            <td class="py-4 px-4 hidden md:table-cell text-sm">
                                                 <?= date('M d, Y', strtotime($book['expected_return_date'])) ?>
                                                 <br>
                                             </td>
@@ -353,33 +294,23 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                                     class="px-3 py-1 text-xs font-semibold rounded-full <?= getStatusClass($book['borrow_request_status']) ?>">
                                                     <?= htmlspecialchars($book['borrow_request_status']) ?>
                                                 </span>
-                                                <span class="text-gray-500"><?php if ($book['borrow_request_status'] === "Approved") {
-                                                    echo "<br>(Ready for Pick-Up)";
-                                                }
-                                                ?>
-                                                </span>
                                             </td>
-
                                             <td class="py-4 px-4">
                                                 <?php if ($book['borrow_request_status'] == 'Pending' || $book['borrow_request_status'] == 'Approved'): ?>
                                                     <a class="px-2 py-1 rounded text-white bg-red-800 hover:bg-red-900 text-sm font-medium"
                                                         href="../../../app/controllers/borrowBookController.php?action=cancel&id=<?= $book['borrowID'] ?>">
                                                         Cancel
                                                     </a>
-                                                <?php elseif ($book['borrow_request_status'] == 'Rejected' && $book['borrower_notified'] == 0): ?>
-                                                    <a class="px-2 py-1 rounded text-white bg-green-600 hover:bg-green-700 text-sm font-medium"
-                                                        href="../../../app/controllers/borrowBookController.php?action=mark_as_read&id=<?= $book['borrowID'] ?>&tab=pending">
-                                                        Mark as Read
-                                                    </a>
-                                                <?php elseif ($book['borrow_request_status'] == 'Cancelled' && $book['borrower_notified'] == 0): ?>
-                                                    <a class="px-2 py-1 rounded text-white bg-green-600 hover:bg-green-700 text-sm font-medium"
-                                                        href="../../../app/controllers/borrowBookController.php?action=mark_as_read&id=<?= $book['borrowID'] ?>&tab=pending">
-                                                        Mark as Read
+                                                <?php elseif ($book['borrow_request_status'] == 'Cancelled'): ?>
+                                                    <a class="px-2 py-1 rounded text-white bg-red-800 hover:bg-red-900 text-sm font-medium"
+                                                        href="../../../app/controllers/borrowBookController.php?action=cancel&id=<?= $book['borrowID'] ?>">
+                                                        Done
                                                     </a>
                                                 <?php else: ?>
                                                     <span class="text-gray-400 text-sm">N/A</span>
                                                 <?php endif; ?>
                                             </td>
+
                                         <?php elseif ($active_tab == 'borrowed'): ?>
                                             <td class="py-4 px-4 hidden md:table-cell text-sm">
                                                 <span
@@ -401,27 +332,22 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                                 <?= htmlspecialchars($book['fine_reason'] ?? 'N/A') ?>
                                             </td>
 
-                                        <?php elseif ($active_tab == 'unpaid'): ?>
+                                        <?php elseif ($active_tab == 'fined'): ?>
                                             <td class="py-4 px-4 hidden md:table-cell text-sm">
-                                                <?= date('M d, Y', strtotime($book['request_date'])) ?>
+                                                <span class="font-semibold text-red-600">
+                                                    <?= date('M d, Y', strtotime($book['expected_return_date'])) ?>
+                                                </span>
                                             </td>
-                                            <td class="py-4 px-4 text-sm font-bold">
-                                                <span class="text-red-800">₱<?= number_format($book['fine_amount'], 2) ?></span>
+                                            <td class="py-4 px-4 text-sm font-bold text-red-800">
+                                                ₱<?= number_format($book['fine_amount'], 2) ?>
                                             </td>
                                             <td class="py-4 px-4 text-sm">
-                                                <span
-                                                    class="px-3 py-1 text-xs font-semibold rounded-full <?= getStatusClass($book['fine_status']) ?>">
-                                                    <?= htmlspecialchars($book['fine_status'] ?? 'N/A') ?>
+                                                <span class="font-semibold text-red-600">
+                                                    <?= htmlspecialchars($book['fine_status'] ?? 'Unpaid') ?>
                                                 </span>
                                             </td>
                                             <td class="py-4 px-4 text-xs">
                                                 <?= htmlspecialchars($book['fine_reason'] ?? 'N/A') ?>
-                                            </td>
-                                            <td class="py-4 px-4">
-                                                <button
-                                                    class="px-2 py-1 rounded text-white bg-green-600 hover:bg-green-700 text-sm font-medium">
-                                                    Pay Fine
-                                                </button>
                                             </td>
 
                                         <?php elseif ($active_tab == 'returned'): ?>
@@ -432,10 +358,6 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                                 <td class="py-4 px-4 hidden lg:table-cell text-sm">
                                                     <?= htmlspecialchars($book['returned_condition'] ?? 'N/A') ?>
                                                 </td>
-
-                                                <td class="py-4 px-4 hidden lg:table-cell text-xs">
-                                                    <?= htmlspecialchars($book['fine_reason'] ?? 'N/A') ?>
-                                                </td>
                                                 <td class="py-4 px-4 text-sm">
                                                     <span
                                                         class="font-bold <?= ($book['fine_amount'] > 0) ? 'text-red-700' : 'text-gray-500' ?>">
@@ -443,7 +365,8 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                                     </span>
                                                 </td>
                                                 <td class="py-4 px-4 text-sm">
-                                                    <span class="font-semibold <?= getStatusClass($book['fine_status']) ?>">
+                                                    <span
+                                                        class="font-semibold <?= ($book['fine_status'] === 'Paid') ? 'text-green-600' : 'text-gray-500' ?>">
                                                         <?= htmlspecialchars($book['fine_status'] ?? 'N/A') ?>
                                                     </span>
                                                 </td>
@@ -457,6 +380,9 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                                         <?= htmlspecialchars($book['borrow_request_status']) ?>
                                                     </span>
                                                 </td>
+                                                <td class="py-4 px-4">
+                                                    <?= $book['return_date'] ? date('M d, Y', strtotime($book['return_date'])) : 'N/A' ?>
+                                                </td>
                                             <?php endif; ?>
                                             <td class="py-4 px-4">
                                                 <button
@@ -469,7 +395,7 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
-                    <?php endforeach;?>
+                    <?php endforeach; // End of section loop ?>
                 </div>
             <?php endif; ?>
         </div>

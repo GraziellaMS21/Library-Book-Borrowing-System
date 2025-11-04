@@ -37,7 +37,7 @@ if ($current_modal === 'edit') {
     $open_modal = 'viewFullDetailsModal';
 } elseif ($current_modal === 'return') {
     $open_modal = 'returnBookModal';
-} elseif ($current_modal === 'paid') { // ADDED for Paid Confirmation Modal
+} elseif ($current_modal === 'paid') {
     $open_modal = 'paidConfirmModal';
 }
 
@@ -45,12 +45,9 @@ if (!empty($open_modal)) {
     if ($open_modal == 'editBorrowDetailModal' && !empty($old)) {
         $modal_borrow_details = $old;
     } elseif (($open_modal == 'returnBookModal' || $open_modal == 'deleteConfirmModal' || $open_modal == 'blockUserModal' || $open_modal == 'paidConfirmModal') && !empty($old)) {
-        // For return modal failure, we need to merge the old data (for returned_condition) 
-        // with fresh data (for book_title and original_condition display)
         $fresh_detail = $borrowObj->fetchBorrowDetail($borrow_id) ?: [];
         $modal_borrow_details = array_merge($fresh_detail, $old);
     } else {
-        // Use the fetchBorrowDetail method (which joins book data) for all modals needing detail
         $modal_borrow_details = $borrowObj->fetchBorrowDetail($borrow_id) ?: [];
     }
     if ($open_modal != 'viewDetailsUserModal') { //delete 
@@ -65,44 +62,29 @@ $userTypeID = isset($_GET['userType']) ? trim($_GET['userType']) : "";
 $borrow_details = $borrowObj->viewBorrowDetails($search, $current_tab);
 $all_books = $bookObj->viewBook();
 
-// FIX: Pull the original condition from the specific modal detail
 $original_book_condition = $modal_borrow_details['book_condition'] ?? 'N/A';
 
-// New: Define condition options (needed for the modal loop)
-$condition_options = ['Good', 'Fair', 'Poor', 'Damaged', 'Lost'];
-
-// --- REMOVED calculateDisplayFine: Logic moved to manageBorrowDetails.php ---
-
+$condition_options = ['Good', 'Fair', 'Damaged', 'Lost'];
 
 foreach ($borrow_details as &$detail) {
-    // Flag to track if a DB update is necessary
     $db_update_required = false;
-
-    // This condition correctly identifies active, unreturned loans ('Borrowed' status with no return date)
-    if (($detail['borrow_status'] === 'Borrowed' && $detail['return_date'] === null)){
-
-        // **UPDATED: Call the centralized function in the model**
+    if ((($detail['borrow_status'] === 'Borrowed' || $detail['fine_status'] === 'Unpaid' ) && $detail['return_date'] === null)){
         $fine_results = $borrowObj->calculateFinalFine(
             $detail['expected_return_date'], 
             date("Y-m-d"), // Today's date for display calculation
             $bookObj, 
             $detail['bookID']
         );
-
-        // Check if calculated fine is greater OR if the DB fine is 0 but a new fine is calculated.
         if ($fine_results['fine_amount'] > $detail['fine_amount']) {
 
-            // 1. Update the local array borrow_details for display
             $detail['calculated_fine'] = $fine_results['fine_amount'];
-            $detail['fine_amount'] = $fine_results['fine_amount']; // Persist new amount locally
+            $detail['fine_amount'] = $fine_results['fine_amount']; 
             $detail['fine_reason'] = $fine_results['fine_reason'];
             $detail['fine_status'] = $fine_results['fine_status'];
 
-            // 2. Mark for database update
             $db_update_required = true;
 
         } else {
-            // Use the database value if it's already higher or if no new fine is calculated
             $detail['calculated_fine'] = $detail['fine_amount'];
         }
     } else {
@@ -156,6 +138,8 @@ unset($detail);
                         <a href="?tab=borrowed"
                             class="tab-btn <?= $current_tab == 'borrowed' ? 'active' : '' ?>">Currently
                             Borrowed</a>
+                        <a href="?tab=unpaid"
+                            class="tab-btn <?= $current_tab == 'unpaid' ? 'active' : '' ?>">Fined</a>
                         <a href="?tab=returned"
                             class="tab-btn <?= $current_tab == 'returned' ? 'active' : '' ?>">Returned</a>
                         <a href="?tab=cancelled"
@@ -177,6 +161,9 @@ unset($detail);
                             case 'borrowed':
                                 echo 'Currently Borrowed';
                                 break;
+                            case 'unpaid':
+                                echo 'Fined';
+                                break;
                             case 'returned':
                                 echo 'Returned';
                                 break;
@@ -192,7 +179,7 @@ unset($detail);
 
                     <div class="view">
                         <table>
-                            <?php if ($current_tab == 'pending' || $current_tab == 'approved'): // Assuming 'approved' also uses the same columns as 'pending' ?> 
+                            <?php if ($current_tab == 'pending' || $current_tab == 'approved'):?> 
                                 <tr>
                                     <th>No</th>
                                     <th>User Name</th>
@@ -204,7 +191,20 @@ unset($detail);
                                     <th>Exp. Return Date</th>
                                     <th>Actions</th>
                                 </tr>
-                            <?php elseif ($current_tab == 'borrowed'): // Separate header for BORROWED ?>
+                            <?php elseif ($current_tab == 'borrowed'): ?>
+                                <tr>
+                                    <th>No</th>
+                                    <th>User Name</th>
+                                    <th>Book Title</th>
+                                    <th>Copies</th>
+                                    <th>Exp. Return Date</th>
+                                    <th>Fine Amount</th>
+                                    <th>Fine Reason</th>
+                                    <th>Fine Status</th>
+                                    <th>Actions</th>
+                                </tr>
+
+                            <?php elseif ($current_tab == 'unpaid'):  ?>
                                 <tr>
                                     <th>No</th>
                                     <th>User Name</th>
@@ -325,6 +325,38 @@ unset($detail);
                                                 <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
                                                     href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">View</a>
                                             </td>
+                                        
+                                        <?php elseif ($current_tab == 'unpaid'): ?>
+                                            <td><?= $detail["no_of_copies"] ?></td>
+                                            <td><?= $detail["expected_return_date"] ?></td>
+                                            <td
+                                                class="font-semibold <?= ($detail["calculated_fine"] > 0) ? 'text-red-700' : 'text-gray-700' ?>">
+                                                ₱<?= number_format($detail["calculated_fine"] ?? 0, 2) ?>
+                                            </td>
+                                            <td><?= $detail["fine_reason"] ?? 'N/A' ?></td>
+                                            <td class="<?= ($detail["calculated_fine"] > 0 && $detail["fine_status"] === 'Unpaid') ? 'text-red-700' : 'text-gray-700' ?>">
+                                                <?= ($detail["calculated_fine"] > 0 && $detail["fine_status"] === 'Unpaid') ? "Unpaid" : "N/A" ?>
+                                            </td>
+                                            <td class="action text-center">
+                                                <?php if($detail["calculated_fine"] > 0) {?>
+                                                     <a class="actionBtn bg-green-600 hover:bg-green-700 text-sm inline-block mb-1"
+                                                    href="borrowDetailsSection.php?modal=paid&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Paid</a>
+                                                <a class="actionBtn bg-yellow-600 hover:bg-yellow-700 text-sm inline-block mb-1"
+                                                    href="borrowDetailsSection.php?modal=block&id=<?= $userID ?>&tab=<?= $current_tab ?>">Block User</a>
+                                                <?php } else {?>
+                                                
+                                                <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1"
+                                                    href="borrowDetailsSection.php?modal=return&id=<?= $borrowID ?>&tab=<?= $current_tab ?>"
+                                                    data-borrow-id="<?= $borrowID ?>"
+                                                    data-original-condition="<?= htmlspecialchars($detail["book_condition"] ?? $detail["book_condition"]) ?>">
+                                                    Returned
+                                                </a>
+                                                <?php }?>
+                                                <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
+                                                    href="borrowDetailsSection.php?modal=edit&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Edit</a>
+                                                <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
+                                                    href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">View</a>
+                                            </td>
                                         <?php elseif ($current_tab == 'returned'): ?>
                                             <td><?= $detail["no_of_copies"] ?></td>
                                             <td><?= $detail["return_date"] ?? 'N/A' ?></td>
@@ -414,11 +446,11 @@ unset($detail);
                         foreach ($condition_options as $option): 
                             $selected = '';
 
-                            // 1. Check if this is the failed submission value
+                            // Check if this is the failed submission value
                             if ($failed_condition === $option) {
                                 $selected = 'selected';
                             } 
-                            // 2. If no failed value, and this option matches the original condition, select it
+                            //If no failed value, and this option matches the original condition, select it
                             elseif (empty($failed_condition) && $option === $original_condition) {
                                 $selected = 'selected';
                             }
@@ -507,7 +539,6 @@ unset($detail);
                         <select name="borrow_request_status" id="edit_borrow_request_status" class="input-field">
                             <option value="">---Select Status---</option>
                             <?php 
-                             // Assuming $request_statuses is defined elsewhere
                              $request_statuses = ['Pending', 'Approved', 'Rejected', 'Cancelled'];
                              foreach ($request_statuses as $status) {
                                 $selected = (($modal_borrow_details['borrow_request_status'] ?? '') == $status) ? 'selected' : '';
@@ -522,7 +553,6 @@ unset($detail);
                         <select name="borrow_status" id="edit_borrow_status" class="input-field">
                             <option value="">---Select Status---</option>
                             <?php 
-                             // Assuming $borrow_statuses is defined elsewhere
                              $borrow_statuses = ['Borrowed', 'Returned'];
                              foreach ($borrow_statuses as $status) {
                                 $selected = (($modal_borrow_details['borrow_status'] ?? '') == $status) ? 'selected' : '';
@@ -537,7 +567,6 @@ unset($detail);
                         <select name="returned_condition" id="edit_returned_condition" class="input-field">
                             <option value="">---Select Condition---</option>
                             <?php 
-                            // Assuming $condition_options is defined elsewhere
                             foreach ($condition_options as $option) {
                                 $selected = (($modal_borrow_details['returned_condition'] ?? '') == $option) ? 'selected' : '';
                                 echo "<option value='{$option}' {$selected}>{$option}</option>";
@@ -572,8 +601,7 @@ unset($detail);
                         <label for="fine_status">Fine Status : </label>
                         <select name="fine_status" id="edit_fine_status" class="input-field">
                             <option value="">---Select Status---</option>
-                            <?php 
-                            // Assuming $fine_statuses is defined elsewhere
+                            <?php
                             $fine_statuses = ['Unpaid', 'Paid'];
                             foreach ($fine_statuses as $status) {
                                 $selected = (($modal_borrow_details['fine_status'] ?? '') == $status) ? 'selected' : '';

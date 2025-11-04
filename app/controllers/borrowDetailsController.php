@@ -58,7 +58,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         if ($action === 'edit' && $borrowID) {
-            // Apply fine calculation logic only if a return date is present (manual return/update)
             if ($borrowObj->borrow_status === 'Returned' && $borrowObj->return_date) {
 
                 $fine_results = $borrowObj->calculateFinalFine(
@@ -91,7 +90,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if (!$current_detail) {
                 $errors['general'] = "Cannot find loan detail to process return.";
             } else {
-                // Ensure necessary properties are set for increment and fine calculation
                 $borrowObj->userID = $current_detail['userID'];
                 $borrowObj->pickup_date = $current_detail['pickup_date'];
                 $borrowObj->expected_return_date = $current_detail['expected_return_date'];
@@ -99,7 +97,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $borrowObj->no_of_copies = $current_detail['no_of_copies'];
             }
 
-            if(empty($errors)){
+            if (empty($errors)) {
                 $borrowObj->return_date = date("Y-m-d");
                 $borrowObj->borrow_request_status = NULL;
                 $borrowObj->borrow_status = 'Returned';
@@ -187,7 +185,7 @@ if ($borrowID) {
 
     if ($action === 'paid') {
         $borrowObj->return_date = date("Y-m-d");
-        $fine_amount = $borrowObj->fine_amount; 
+        $fine_amount = $borrowObj->fine_amount;
         $fine_reason = $borrowObj->fine_reason;
 
         $borrowObj->fine_status = 'Paid';
@@ -199,7 +197,7 @@ if ($borrowID) {
 
         if (!$bookObj->incrementBookCopies($borrowObj->bookID, $borrowObj->no_of_copies)) {
             $_SESSION["errors"] = ["general" => "Failed to update book stock (increment) on fine payment."];
-            header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=borrowed"); 
+            header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=borrowed");
             exit;
         }
 
@@ -223,6 +221,7 @@ if ($borrowID) {
         } elseif ($action === 'reject') {
             $borrowObj->borrow_request_status = 'Rejected';
             $borrowObj->borrow_status = NULL;
+            $borrowObj->borrower_notified = 0;
             $final_redirect_tab = 'rejected';
             if ($current_detail['borrow_request_status'] === 'Approved' || $current_detail['borrow_request_status'] === 'Pending') {
                 if (!$bookObj->incrementBookCopies($book_id_to_update, $copies_to_move)) {
@@ -255,6 +254,7 @@ if ($borrowID) {
             $borrowObj->borrow_request_status = 'Cancelled';
             $borrowObj->borrow_status = NULL;
             $borrowObj->return_date = NULL;
+            $borrowObj->borrower_notified = 0;
             $final_redirect_tab = 'cancelled';
             if ($current_detail['borrow_request_status'] === 'Approved' && $current_detail['borrow_status'] !== 'Borrowed') {
                 if (!$bookObj->incrementBookCopies($book_id_to_update, $copies_to_move)) {

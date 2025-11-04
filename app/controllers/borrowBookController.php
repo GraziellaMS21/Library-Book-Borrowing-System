@@ -20,13 +20,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $expected_return_date = trim(htmlspecialchars($_POST["expected_return_date"] ?? ''));
         $is_list_checkout = $_POST["is_list_checkout"] ?? '0';
 
-        // 1. Read the standard PHP array of book requests
         $book_requests = $_POST["book_requests"] ?? [];
 
         $total_success_copies = 0;
         $all_success = true;
-        $successful_list_IDs = []; // To track successful inserts for database cleaning
-
+        $successful_list_IDs = []; 
+        
         if (empty($userID)) {
             $errors['userID'] = "User ID is required for multiple checkout.";
             $all_success = false;
@@ -37,14 +36,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         if ($all_success) {
-            // Loop through each book request and insert a separate detail record
             foreach ($book_requests as $request) {
                 $bookID_local = (int) ($request['bookID'] ?? 0);
                 $copies_requested = (int) ($request['copies_requested'] ?? 1);
-                $listID = (int) ($request['listID'] ?? 0); // Get the listID from the submitted data
+                $listID = (int) ($request['listID'] ?? 0);
 
                 if ($bookID_local > 0 && $copies_requested > 0) {
-                    // Set model properties for this specific book
                     $borrowObj->userID = $userID;
                     $borrowObj->bookID = $bookID_local;
                     $borrowObj->no_of_copies = $copies_requested;
@@ -58,10 +55,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $borrowObj->fine_amount = 0.00;
                     $borrowObj->fine_reason = NULL;
                     $borrowObj->fine_status = NULL;
+                    $borrowObj->borrower_notified = NULL; 
 
                     if ($borrowObj->addBorrowDetail()) {
                         $total_success_copies += $copies_requested;
-                        // Track the listID for removal from the borrowing_lists table later
                         if ($listID > 0) {
                             $successful_list_IDs[] = $listID;
                         }
@@ -74,15 +71,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             if ($total_success_copies > 0) {
 
-                // --- Database List Clearing Logic ---
                 if ($is_list_checkout === '1') {
-                    // Delete only the successful items from the list table
                     foreach ($successful_list_IDs as $id_to_delete) {
                         $borrowListObj->deleteBorrrowList($id_to_delete);
                     }
                 }
 
-                // Success/Partial Success: Redirect to myList.php with flags
                 $status = $all_success ? 'success_checkout' : 'partial_success';
                 header("Location: ../../app/views/borrower/myList.php?status={$status}&total_copies={$total_success_copies}&clear_list={$is_list_checkout}");
                 exit;
@@ -91,7 +85,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
     } elseif ($action === 'add') {
-        // 1. Collect and Sanitize Data
         $detail['userID'] = trim(htmlspecialchars($_POST["userID"] ?? ''));
         $detail['bookID'] = trim(htmlspecialchars($_POST["bookID"] ?? ''));
         $detail['pickup_date'] = trim(htmlspecialchars($_POST["pickup_date"] ?? ''));
@@ -108,7 +101,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         $bookID_post = $detail['bookID'];
 
-        // 2. Validation
         if (empty($detail['userID']))
             $errors['userID'] = "User ID is required.";
         if (empty($detail['bookID']))
@@ -120,10 +112,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($detail['no_of_copies'] < 1)
             $errors['no_of_copies'] = "At least one copy must be requested.";
 
-        // 3. Database Interaction
         if (empty(array_filter($errors))) {
-
-            // Set model properties for the transaction
             $borrowObj->userID = $detail['userID'];
             $borrowObj->bookID = $detail['bookID'];
             $borrowObj->no_of_copies = $detail['no_of_copies'];
@@ -133,9 +122,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $borrowObj->return_date = $detail['return_date'];
             $borrowObj->returned_condition = $detail['returned_condition'];
             $borrowObj->borrow_request_status = $detail['borrow_request_status'];
+            $borrowObj->borrow_status = $detail['borrow_status'];
             $borrowObj->fine_amount = $detail['fine_amount'];
             $borrowObj->fine_reason = $detail['fine_reason'];
             $borrowObj->fine_status = $detail['fine_status'];
+            $borrowObj->borrower_notified = null; 
 
             if ($borrowObj->addBorrowDetail()) {
                 $success_count = $detail['no_of_copies'];
@@ -146,10 +137,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
     }
-    // --- Handling Edit and Status Changes (Original Logic) ---
     elseif ($action === 'edit' && $borrowID) {
-        // Collect, sanitize, validate, and process edit for librarian view
-        // 1. Collect and Sanitize Data
         $detail['userID'] = trim(htmlspecialchars($_POST["userID"] ?? ''));
         $detail['bookID'] = trim(htmlspecialchars($_POST["bookID"] ?? ''));
         $detail['pickup_date'] = trim(htmlspecialchars($_POST["pickup_date"] ?? ''));
@@ -164,7 +152,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $detail['fine_reason'] = trim(htmlspecialchars($_POST["fine_reason"] ?? NULL));
         $detail['fine_status'] = trim(htmlspecialchars($_POST["fine_status"] ?? NULL));
 
-        // 2. Validation
+        $detail['borrower_notified'] = 1;
+        if (in_array($detail['borrow_request_status'], ['Rejected', 'Cancelled'])) {
+            $detail['borrower_notified'] = 0; 
+        }
+        
         if (empty($detail['userID']))
             $errors['userID'] = "User ID is required.";
         if (empty($detail['bookID']))
@@ -177,7 +169,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $errors['no_of_copies'] = "At least one copy must be requested.";
 
         if (empty(array_filter($errors))) {
-            // Set object properties
             $borrowObj->userID = $detail['userID'];
             $borrowObj->bookID = $detail['bookID'];
             $borrowObj->no_of_copies = $detail['no_of_copies'];
@@ -190,6 +181,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $borrowObj->fine_amount = $detail['fine_amount'];
             $borrowObj->fine_reason = $detail['fine_reason'];
             $borrowObj->fine_status = $detail['fine_status'];
+            $borrowObj->borrower_notified = $detail['borrower_notified']; 
+            
+            if ($borrowObj->borrow_status === 'Returned' && $borrowObj->return_date) {
+
+                $fine_results = $borrowObj->calculateFinalFine(
+                    $borrowObj->expected_return_date,
+                    $borrowObj->return_date,
+                    $bookObj,
+                    $borrowObj->bookID
+                );
+
+                if ($fine_results['fine_amount'] > 0) {
+                    if (empty($borrowObj->fine_reason) || $borrowObj->fine_reason === 'Late') {
+                        $borrowObj->fine_amount = $fine_results['fine_amount'];
+                        $borrowObj->fine_reason = $fine_results['fine_reason'];
+                    }
+                    if (empty($borrowObj->fine_status) || $borrowObj->fine_status === 'Unpaid') {
+                        $borrowObj->fine_status = 'Unpaid';
+                    }
+                }
+            }
 
             if ($borrowObj->editBorrowDetail($borrowID)) {
                 header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}&success=edit");
@@ -200,8 +212,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
 
-
-    // 4. Handle Redirection on Failure (POST)
     if (!empty($errors)) {
         $_SESSION["errors"] = $errors;
 
@@ -212,7 +222,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             exit;
         }
 
-        // Original single book/edit failure logic
         $_SESSION["old"] = $detail ?? [];
 
         if ($action === 'edit') {
@@ -221,37 +230,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             header("Location: ../../app/views/librarian/borrowDetailsSection.php");
             exit;
         } elseif ($action === 'add') {
-            // Redirect back to confirmation page for single book failure
             $bookID_post = $_POST['bookID'] ?? '';
-            $no_of_copies = $_POST['no_of_copies'] ?? 1; // Assuming copies is in POST for single checkout failure
+            $no_of_copies = $_POST['no_of_copies'] ?? 1;
             header("Location: ../../app/views/borrower/confirmation.php?bookID={$bookID_post}&copies={$no_of_copies}");
             exit;
         }
-
-        // Removed the unnecessary `elseif ($action === 'cancel')` block here since cancellation is a GET request
-        // The original block contained incomplete/misplaced librarian logic.
-
     }
 
 } else {
-    // --- GET Logic for DELETE, ACCEPT, REJECT, PICKUP, RETURN, and CANCEL (Status Updates) ---
+    if ($action === 'mark_as_read' && $borrowID) {
+        $current_tab = $_GET['tab'] ?? 'pending';
+        if ($borrowObj->updateBorrowerNotifiedStatus($borrowID, 1)) {
+            header("Location: ../../app/views/borrower/myBorrowedBooks.php?tab={$current_tab}&success=read");
+            exit;
+        } else {
+            $_SESSION["errors"] = ["general" => "Failed to mark as read."];
+            header("Location: ../../app/views/borrower/myBorrowedBooks.php?tab={$current_tab}");
+            exit;
+        }
+    }
 
-    // --- NEW BORROWER CANCEL LOGIC ---
     if ($action === 'cancel' && $borrowID) {
 
-        // 1. Fetch current detail to check status (optional but good for validation)
         $detail = $borrowObj->fetchBorrowDetail($borrowID);
-        $current_tab = $_GET['tab'] ?? 'pending'; // Get the tab to return to
+        $current_tab = $_GET['tab'] ?? 'pending';
 
-        // The borrower can only cancel a request that is 'Pending' or 'Approved' (before pickup)
         if ($detail && ($detail['borrow_request_status'] === 'Pending' || $detail['borrow_request_status'] === 'Approved')) {
 
-            // 2. Set status to 'Cancelled'
             $borrow_request_status = "Cancelled";
             $borrow_status = NULL;
             $return_date = NULL;
-            // 3. Perform update
-            if ($borrowObj->updateBorrowDetails($borrowID, $borrow_status, $borrow_request_status, $return_date)) {
+            $borrower_notified = 0;
+
+            if ($borrowObj->updateBorrowDetails($borrowID, $borrow_status, $borrow_request_status, $return_date, $borrower_notified)) {
                 if ($detail['borrow_request_status'] === 'Approved') {
                     $book_id_to_update = $detail['bookID'];
                     $copies_to_move = $detail['no_of_copies'];
@@ -259,7 +270,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $bookObj->incrementBookCopies($book_id_to_update, $copies_to_move);
                 }
 
-                // 6. Redirect back to the user's borrowed books page with a success flag
                 header("Location: ../../app/views/borrower/myBorrowedBooks.php?tab=pending&success=cancelled");
                 exit;
             } else {
@@ -267,22 +277,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 header("Location: ../../app/views/borrower/myBorrowedBooks.php?tab={$current_tab}");
                 exit;
             }
-        } elseif ($detail && $detail['borrow_request_status'] === 'Cancelled') {
-            // For the 'Done' button on an already cancelled item (for cleanup/hiding)
-            // You can implement logic to soft-delete or hide it from the 'Pending' view here if needed.
-            // For now, let's just send them back.
-            header("Location: ../../app/views/borrower/myBorrowedBooks.php?tab=pending");
-            exit;
-
         } else {
             $_SESSION["errors"] = ["general" => "Loan request not found or cannot be cancelled at this status."];
             header("Location: ../../app/views/borrower/myBorrowedBooks.php?tab={$current_tab}");
             exit;
         }
     }
-    // --- END NEW BORROWER CANCEL LOGIC ---
-
-    // Redirect to the appropriate controller for status updates (Librarian actions)
     if (in_array($action, ['delete', 'accept', 'reject', 'pickup', 'return']) && $borrowID) {
         header("Location: borrowDetailsController.php?action={$action}&id={$borrowID}");
         exit;

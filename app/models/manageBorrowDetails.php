@@ -16,13 +16,14 @@ class BorrowDetails extends Database
     public $fine_amount = 0.00;
     public $fine_reason = "";
     public $fine_status = "";
+    public $borrower_notified = NULL;
 
     protected $db;
 
     public function addBorrowDetail()
     {
-        $sql = "INSERT INTO borrowing_details (userID, bookID, no_of_copies, request_date, pickup_date, return_date, expected_return_date, returned_condition, borrow_request_status, borrow_status, fine_amount, fine_reason, fine_status)
-                VALUES (:userID, :bookID, :no_of_copies, :request_date, :pickup_date, :return_date, :expected_return_date, :returned_condition, :borrow_request_status, :borrow_status, :fine_amount, :fine_reason, :fine_status)";
+        $sql = "INSERT INTO borrowing_details (userID, bookID, no_of_copies, request_date, pickup_date, return_date, expected_return_date, returned_condition, borrow_request_status, borrow_status, fine_amount, fine_reason, fine_status, borrower_notified)
+                VALUES (:userID, :bookID, :no_of_copies, :request_date, :pickup_date, :return_date, :expected_return_date, :returned_condition, :borrow_request_status, :borrow_status, :fine_amount, :fine_reason, :fine_status, :borrower_notified)";
         $query = $this->connect()->prepare($sql);
 
         $query->bindParam(":userID", $this->userID);
@@ -38,7 +39,7 @@ class BorrowDetails extends Database
         $query->bindParam(":fine_amount", $this->fine_amount);
         $query->bindParam(":fine_reason", $this->fine_reason);
         $query->bindParam(":fine_status", $this->fine_status);
-
+        $query->bindParam(":borrower_notified", $this->borrower_notified);
         return $query->execute();
     }
 
@@ -49,14 +50,14 @@ class BorrowDetails extends Database
         $statusColumn = "";
 
         $sql = "SELECT 
-                bd.*, 
-                u.fName, 
-                u.lName, 
-                b.book_title,
-                b.book_condition
-            FROM borrowing_details bd
-            JOIN users u ON bd.userID = u.userID
-            JOIN books b ON bd.bookID = b.bookID";
+            bd.*, 
+            u.fName, 
+            u.lName, 
+            b.book_title,
+            b.book_condition
+        FROM borrowing_details bd
+        JOIN users u ON bd.userID = u.userID
+        JOIN books b ON bd.bookID = b.bookID";
 
         if ($statusFilter != "") {
             if ($statusFilter == 'borrowed') {
@@ -65,25 +66,27 @@ class BorrowDetails extends Database
             } elseif ($statusFilter == 'returned') {
                 $statusColumn = "bd.borrow_status";
                 $dbStatus = 'Returned';
+            } elseif ($statusFilter == 'unpaid') {
+                $whereConditions[] = "bd.fine_status = :statusFilter";
+                $dbStatus = 'Unpaid';
             } else {
-                // 'Pending', 'Approved', 'Cancelled', 'Rejected' use borrow_request_status
                 $statusColumn = "bd.borrow_request_status";
-                $dbStatus = ucfirst($statusFilter); // Converts 'pending' to 'Pending'
+                $dbStatus = ucfirst($statusFilter);
                 if ($statusFilter == 'approved') {
-                    $whereConditions[] = "bd.borrow_status IS NULL"; // Only show approved requests not yet fulfilled (i.e. not in 'Borrowed')
+                    $whereConditions[] = "bd.borrow_status IS NULL";
                 }
             }
 
-            // Add the condition using the dynamically determined column
-            $whereConditions[] = "{$statusColumn} = :statusFilter";
+            if ($statusFilter != 'unpaid') {
+                $whereConditions[] = "{$statusColumn} = :statusFilter";
+            }
         }
 
-        // Search conditions
         if ($search != "") {
             $whereConditions[] = " (bd.borrowID LIKE CONCAT('%', :search, '%') 
-                                OR u.fName LIKE CONCAT('%', :search, '%')
-                                OR u.lName LIKE CONCAT('%', :search, '%')
-                                OR b.book_title LIKE CONCAT('%', :search, '%'))";
+                            OR u.fName LIKE CONCAT('%', :search, '%')
+                            OR u.lName LIKE CONCAT('%', :search, '%')
+                            OR b.book_title LIKE CONCAT('%', :search, '%'))";
         }
 
         if (!empty($whereConditions)) {
@@ -130,7 +133,6 @@ class BorrowDetails extends Database
         return $result['total_overdue'] ?? 0;
     }
 
-    // FUNCTION FOR CURRENTLY BORROWED TAB
     public function viewActiveBorrowDetails($search = "")
     {
         $sql = "SELECT 
@@ -142,7 +144,7 @@ class BorrowDetails extends Database
                 FROM borrowing_details bd
                 JOIN users u ON bd.userID = u.userID
                 JOIN books b ON bd.bookID = b.bookID
-                WHERE bd.borrow_status = 'Borrowed'"; // Filter by borrow_status
+                WHERE bd.borrow_status = 'Borrowed'";
 
         $params = [];
 
@@ -169,42 +171,6 @@ class BorrowDetails extends Database
         }
     }
 
-    public function viewFinedBorrowDetails($search = "")
-    {
-        $sql = "SELECT 
-                bd.*, 
-                u.fName, 
-                u.lName, 
-                b.book_title,
-                b.book_condition
-            FROM borrowing_details bd
-            JOIN users u ON bd.userID = u.userID
-            JOIN books b ON bd.bookID = b.bookID
-            WHERE bd.fine_status = 'Unpaid' AND bd.fine_amount > 0"; // Ensure fine_amount > 0 for relevance
-
-        if (!empty($search)) {
-            $sql .= " AND (bd.borrowID LIKE CONCAT('%', :search, '%') 
-                       OR u.fName LIKE CONCAT('%', :search, '%')
-                       OR u.lName LIKE CONCAT('%', :search, '%')
-                       OR b.book_title LIKE CONCAT('%', :search, '%'))";
-        }
-
-        $sql .= " ORDER BY bd.borrowID DESC";
-
-        $query = $this->connect()->prepare($sql);
-
-        if (!empty($search)) {
-            $query->bindParam(":search", $search);
-        }
-
-        if ($query->execute()) {
-            return $query->fetchAll();
-        } else {
-            return null;
-        }
-    }
-
-
     public function editBorrowDetail($borrowID)
     {
         $sql = "UPDATE borrowing_details
@@ -220,7 +186,8 @@ class BorrowDetails extends Database
                     borrow_status = :borrow_status,
                     fine_amount = :fine_amount,
                     fine_reason = :fine_reason,
-                    fine_status = :fine_status
+                    fine_status = :fine_status,
+                    borrower_notified = :borrower_notified
                 WHERE borrowID = :borrowID";
         $query = $this->connect()->prepare($sql);
 
@@ -237,10 +204,12 @@ class BorrowDetails extends Database
         $query->bindParam(":fine_amount", $this->fine_amount);
         $query->bindParam(":fine_reason", $this->fine_reason);
         $query->bindParam(":fine_status", $this->fine_status);
+        $query->bindParam(":borrower_notified", $this->borrower_notified);
         $query->bindParam(":borrowID", $borrowID);
 
         return $query->execute();
     }
+
     public function deleteBorrowDetail($borrowID)
     {
         $sql = "DELETE FROM borrowing_details WHERE borrowID = :borrowID";
@@ -255,7 +224,7 @@ class BorrowDetails extends Database
                 FROM borrowing_details 
                 WHERE userID = :userID 
                 AND bookID = :bookID
-                AND (borrow_request_status = 'Approved' OR borrow_status = 'Borrowed')"; // Check both states
+                AND (borrow_request_status = 'Approved' OR borrow_status = 'Borrowed')"; 
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":userID", $userID);
         $query->bindParam(":bookID", $bookID);
@@ -279,7 +248,7 @@ class BorrowDetails extends Database
                 FROM borrowing_details 
                 WHERE userID = :userID 
                 AND no_of_copies > 1
-                AND (borrow_request_status = 'Approved' OR borrow_status = 'Borrowed')"; // Check both states
+                AND (borrow_request_status = 'Approved' OR borrow_status = 'Borrowed')"; 
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":userID", $userID);
 
@@ -292,28 +261,6 @@ class BorrowDetails extends Database
             return true;
         } else
             return false;
-    }
-
-    public function fetchBorrowID($userID, $bookID)
-    {
-        // Note: 'Borrowed' or 'On Loan' should reflect the active fulfillment status
-        $sql = "SELECT borrowID FROM borrowing_details 
-            WHERE userID = :userID AND bookID = :bookID
-            AND no_of_copies > 1 
-            AND borrow_status IN ('On Loan', 'Borrowed')"; // Only check fulfilled loans
-
-        try {
-            $query = $this->connect()->prepare($sql);
-            $query->bindParam(':userID', $userID, PDO::PARAM_INT);
-            $query->execute();
-
-            return $query->fetchColumn() > 0;
-
-        } catch (PDOException $e) {
-            // Log the error (optional)
-            error_log("Error checking active multi-copy loan: " . $e->getMessage());
-            return false;
-        }
     }
 
     public function fetchTotalBorrowedBooks($userID)
@@ -400,16 +347,26 @@ class BorrowDetails extends Database
         }
     }
 
-
-    public function updateBorrowDetails($borrowID, $borrow_status, $borrow_request_status, $return_date)
+    public function updateBorrowDetails($borrowID, $borrow_status, $borrow_request_status, $return_date, $borrower_notified)
     {
-        $sql = "UPDATE borrowing_details SET borrow_request_status = :borrow_request_status, borrow_status = :borrow_status, return_date = :return_date WHERE borrowID = :borrowID";
+        $sql = "UPDATE borrowing_details SET borrow_request_status = :borrow_request_status, borrow_status = :borrow_status, return_date = :return_date, borrower_notified = :borrower_notified WHERE borrowID = :borrowID";
         $query = $this->connect()->prepare($sql);
 
         $query->bindParam(":borrow_request_status", $borrow_request_status);
         $query->bindParam(":borrow_status", $borrow_status);
         $query->bindParam(":borrowID", $borrowID);
         $query->bindParam(":return_date", $return_date);
+        $query->bindParam(":borrower_notified", $borrower_notified);
+        return $query->execute();
+    }
+
+    public function updateBorrowerNotifiedStatus($borrowID, $status)
+    {
+        $sql = "UPDATE borrowing_details SET borrower_notified = :status WHERE borrowID = :borrowID";
+        $query = $this->connect()->prepare($sql);
+
+        $query->bindParam(":status", $status);
+        $query->bindParam(":borrowID", $borrowID);
         return $query->execute();
     }
 
@@ -420,7 +377,8 @@ class BorrowDetails extends Database
                     u.fName, 
                     u.lName, 
                     b.book_title,
-                    b.book_condition
+                    b.book_condition,
+                    b.replacement_cost
                 FROM borrowing_details bd
                 JOIN users u ON bd.userID = u.userID
                 JOIN books b ON bd.bookID = b.bookID
@@ -428,7 +386,7 @@ class BorrowDetails extends Database
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":borrowID", $borrowID);
         if ($query->execute()) {
-            return $query->fetch(PDO::FETCH_ASSOC); // Ensure FETCH_ASSOC for consistency
+            return $query->fetch(); 
         } else
             return null;
     }
@@ -446,37 +404,30 @@ class BorrowDetails extends Database
 
         $exec_params = [$userID];
 
-        if (is_array($status_filter)) {
-            // This array comes from the 'returned' tab, and includes: ['Returned', 'Rejected', 'Cancelled']
-            // It must check statuses in BOTH borrow_status AND borrow_request_status.
-            $placeholders = implode(',', array_fill(0, count($status_filter), '?'));
+        $status_filter = ucfirst($status_filter);
 
-            // --- FIX: Use OR to check for the statuses in EITHER of the columns ---
-            $sql .= " AND (bd.borrow_request_status IN ({$placeholders}) OR bd.borrow_status IN ({$placeholders}))";
-
-            // The array must be added twice to $exec_params to match the two sets of placeholders
-            $exec_params = array_merge($exec_params, $status_filter, $status_filter);
-
-        } elseif ($status_filter === 'Fined') {
-            // Show all records with unpaid fines
+        if ($status_filter === 'unpaid') {
             $sql .= " AND bd.fine_amount > 0 AND bd.fine_status = ?";
             $exec_params[] = 'Unpaid';
 
         } elseif ($status_filter === 'Returned') {
-            // This case is no longer needed since 'returned' is now handled by the array check above.
-            // I recommend removing this block to prevent confusion, but for safety in the original structure:
             $sql .= " AND bd.borrow_status = ?";
             $exec_params[] = 'Returned';
 
         } elseif ($status_filter === 'Borrowed') {
-            // Currently borrowed books
             $sql .= " AND bd.borrow_status = ?";
             $exec_params[] = 'Borrowed';
 
-        } else {
-            // Default (or 'Pending' in your original code): show by request status
+        } elseif ($status_filter === 'Rejected') {
             $sql .= " AND bd.borrow_request_status = ?";
-            $exec_params[] = $status_filter;
+            $exec_params[] = 'Rejected';
+
+        } elseif ($status_filter === 'Cancelled') {
+            $sql .= " AND bd.borrow_request_status = ?";
+            $exec_params[] = 'Cancelled';
+
+        } else {
+            $sql .= " AND bd.borrow_request_status IN ('Pending', 'Approved')";
         }
 
         $sql .= " ORDER BY bd.request_date DESC";
@@ -506,21 +457,10 @@ class BorrowDetails extends Database
 
     public function calculateFinalFine($expected_return_date, $comparison_date_string, $bookObj, $bookID)
     {
-        // If comparison date is null or invalid, use today
         $comparison_date_string = $comparison_date_string ?: date("Y-m-d");
 
-        try {
-            $comparison = new DateTime($comparison_date_string);
-            $expected = new DateTime($expected_return_date);
-        } catch (Exception $e) {
-            // Handle invalid date inputs gracefully
-            return [
-                'is_lost' => false,
-                'fine_amount' => 0.00,
-                'fine_reason' => null,
-                'fine_status' => null,
-            ];
-        }
+        $comparison = new DateTime($comparison_date_string);
+        $expected = new DateTime($expected_return_date);
 
         $results = [
             'is_lost' => false,
@@ -529,20 +469,17 @@ class BorrowDetails extends Database
             'fine_status' => null,
         ];
 
-        // Only calculate fine if the comparison date is after the expected return date
         if ($comparison > $expected) {
             $interval = $expected->diff($comparison);
             $days_late = $interval->days;
 
-            // Maximum late days for standard fee is 105 days (15 weeks)
-            $MAX_LATE_DAYS = 105; 
+            $MAX_LATE_DAYS = 105;
             $MAX_LATE_FEE = 300.00; // 15 weeks * 20.00/week
 
-            // --- Check for Lost Status (15 weeks = 105 days) ---
             if ($days_late >= $MAX_LATE_DAYS) {
                 $results['is_lost'] = true;
                 $replacement_cost = $bookObj->fetchBookReplacementCost($bookID);
-                
+
                 // Total Fine = Capped Late Fee (300.00) + Replacement Cost 
                 // This resolves the inconsistency and ensures a fixed maximum late component.
                 $results['fine_amount'] = $MAX_LATE_FEE + $replacement_cost;
@@ -551,7 +488,7 @@ class BorrowDetails extends Database
 
             } else {
                 // Standard Late Fine: Calculate based on full weeks late
-                $weeks_late = ceil($days_late / 7);
+                $weeks_late = ceil($days_late / 7); //immediately apply fine even after a day
                 $late_fine_amount = $weeks_late * 20.00;
 
                 $results['fine_amount'] = $late_fine_amount;
