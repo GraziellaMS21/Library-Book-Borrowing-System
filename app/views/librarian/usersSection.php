@@ -143,7 +143,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
 
                             <?php
                             $no = 1;
-                            $colspan = ($current_tab == 'approved' || $current_tab == 'blocked') ? 9 : 8;
+                            $colspan = 8;
 
                             if (empty($users)): ?>
                                 <tr>

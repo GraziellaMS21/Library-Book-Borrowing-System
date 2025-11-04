@@ -59,8 +59,6 @@ class BorrowDetails extends Database
             JOIN books b ON bd.bookID = b.bookID";
 
         if ($statusFilter != "") {
-            // --- CORRECTED MAPPING LOGIC ---
-            // 'Borrowed' and 'Returned' use the borrow_status column
             if ($statusFilter == 'borrowed') {
                 $statusColumn = "bd.borrow_status";
                 $dbStatus = 'Borrowed';
@@ -71,7 +69,6 @@ class BorrowDetails extends Database
                 // 'Pending', 'Approved', 'Cancelled', 'Rejected' use borrow_request_status
                 $statusColumn = "bd.borrow_request_status";
                 $dbStatus = ucfirst($statusFilter); // Converts 'pending' to 'Pending'
-                // --- NEW FIX: Exclude 'Borrowed' status for Approved tab ---
                 if ($statusFilter == 'approved') {
                     $whereConditions[] = "bd.borrow_status IS NULL"; // Only show approved requests not yet fulfilled (i.e. not in 'Borrowed')
                 }
@@ -507,5 +504,62 @@ class BorrowDetails extends Database
         return $query->execute();
     }
 
+    public function calculateFinalFine($expected_return_date, $comparison_date_string, $bookObj, $bookID)
+    {
+        // If comparison date is null or invalid, use today
+        $comparison_date_string = $comparison_date_string ?: date("Y-m-d");
+
+        try {
+            $comparison = new DateTime($comparison_date_string);
+            $expected = new DateTime($expected_return_date);
+        } catch (Exception $e) {
+            // Handle invalid date inputs gracefully
+            return [
+                'is_lost' => false,
+                'fine_amount' => 0.00,
+                'fine_reason' => null,
+                'fine_status' => null,
+            ];
+        }
+
+        $results = [
+            'is_lost' => false,
+            'fine_amount' => 0.00,
+            'fine_reason' => null,
+            'fine_status' => null,
+        ];
+
+        // Only calculate fine if the comparison date is after the expected return date
+        if ($comparison > $expected) {
+            $interval = $expected->diff($comparison);
+            $days_late = $interval->days;
+
+            // Maximum late days for standard fee is 105 days (15 weeks)
+            $MAX_LATE_DAYS = 105; 
+            $MAX_LATE_FEE = 300.00; // 15 weeks * 20.00/week
+
+            // --- Check for Lost Status (15 weeks = 105 days) ---
+            if ($days_late >= $MAX_LATE_DAYS) {
+                $results['is_lost'] = true;
+                $replacement_cost = $bookObj->fetchBookReplacementCost($bookID);
+                
+                // Total Fine = Capped Late Fee (300.00) + Replacement Cost 
+                // This resolves the inconsistency and ensures a fixed maximum late component.
+                $results['fine_amount'] = $MAX_LATE_FEE + $replacement_cost;
+                $results['fine_reason'] = 'Lost (Overdue)';
+                $results['fine_status'] = 'Unpaid';
+
+            } else {
+                // Standard Late Fine: Calculate based on full weeks late
+                $weeks_late = ceil($days_late / 7);
+                $late_fine_amount = $weeks_late * 20.00;
+
+                $results['fine_amount'] = $late_fine_amount;
+                $results['fine_reason'] = 'Late';
+                $results['fine_status'] = 'Unpaid';
+            }
+        }
+        return $results;
+    }
 
 }

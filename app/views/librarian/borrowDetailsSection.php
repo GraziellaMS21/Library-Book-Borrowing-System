@@ -20,7 +20,6 @@ unset($_SESSION["old"], $_SESSION["errors"]);
 // Determines the current Modal
 $current_modal = $_GET['modal'] ?? '';
 $borrow_id = (int) ($_GET['id'] ?? 0);
-// $borrow_id = (int) ($_GET['id'] ?? 0);
 $open_modal = '';
 
 // Determines the current tab
@@ -43,6 +42,11 @@ if ($current_modal === 'edit') {
 if (!empty($open_modal)) {
     if ($open_modal == 'editBorrowDetailModal' && !empty($old)) {
         $modal_borrow_details = $old;
+    } elseif (($open_modal == 'returnBookModal' || $open_modal == 'deleteConfirmModal' || $open_modal == 'blockUserModal') && !empty($old)) {
+        // For return modal failure, we need to merge the old data (for returned_condition) 
+        // with fresh data (for book_title and original_condition display)
+        $fresh_detail = $borrowObj->fetchBorrowDetail($borrow_id) ?: [];
+        $modal_borrow_details = array_merge($fresh_detail, $old);
     } else {
         // Use the fetchBorrowDetail method (which joins book data) for all modals needing detail
         $modal_borrow_details = $borrowObj->fetchBorrowDetail($borrow_id) ?: [];
@@ -62,46 +66,10 @@ $all_books = $bookObj->viewBook();
 // FIX: Pull the original condition from the specific modal detail
 $original_book_condition = $modal_borrow_details['book_condition'] ?? 'N/A';
 
+// New: Define condition options (needed for the modal loop)
+$condition_options = ['Good', 'Fair', 'Poor', 'Damaged', 'Lost'];
 
-function calculateDisplayFine($expected_return_date, $bookObj, $bookID)
-{
-    $expected = new DateTime($expected_return_date);
-    $today = new DateTime(date("Y-m-d"));
-
-    $results = [
-        'fine_amount' => 0.00,
-        'fine_reason' => null,
-        'fine_status' => null,
-    ];
-
-    if ($today > $expected) {
-        $interval = $expected->diff($today);
-        $days_late = $interval->days;
-
-        // Calculate the late fine for the entire period
-        $weeks_late = ceil($days_late / 7);
-        $late_fine_amount = $weeks_late * 20.00;
-
-        // FIX: Check for Lost Status (15 weeks = 105 days).
-        if ($days_late >= 105) {
-            // FIX: Capping the late fine component at 15 weeks (₱300.00) and adding replacement cost.
-            // Late fee component is capped at the maximum possible late fee (₱300.00)
-            $replacement_cost = $bookObj->fetchBookReplacementCost($bookID);
-
-            // Total Fine = Capped Late Fee (₱300.00) + Replacement Cost
-            $results['fine_amount'] = 300.00 + $replacement_cost;
-            $results['fine_reason'] = 'Lost';
-            $results['fine_status'] = 'Unpaid';
-
-        } else {
-            // Standard Late Fine: Uses the calculated late fine for the entire period
-            $results['fine_amount'] = $late_fine_amount;
-            $results['fine_reason'] = 'Late';
-            $results['fine_status'] = 'Unpaid';
-        }
-    }
-    return $results;
-}
+// --- REMOVED calculateDisplayFine: Logic moved to manageBorrowDetails.php ---
 
 
 foreach ($borrow_details as &$detail) {
@@ -111,12 +79,18 @@ foreach ($borrow_details as &$detail) {
     // This condition correctly identifies active, unreturned loans ('Borrowed' status with no return date)
     if (($detail['borrow_status'] === 'Borrowed' && $detail['return_date'] === null)){
 
-        $fine_results = calculateDisplayFine($detail['expected_return_date'], $bookObj, $detail['bookID']);
+        // **UPDATED: Call the centralized function in the model**
+        $fine_results = $borrowObj->calculateFinalFine(
+            $detail['expected_return_date'], 
+            date("Y-m-d"), // Today's date for display calculation
+            $bookObj, 
+            $detail['bookID']
+        );
 
         // Check if calculated fine is greater OR if the DB fine is 0 but a new fine is calculated.
         if ($fine_results['fine_amount'] > $detail['fine_amount']) {
 
-            // 1. Update the local array borrow_de$borrow_details for display
+            // 1. Update the local array borrow_details for display
             $detail['calculated_fine'] = $fine_results['fine_amount'];
             $detail['fine_amount'] = $fine_results['fine_amount']; // Persist new amount locally
             $detail['fine_reason'] = $fine_results['fine_reason'];
@@ -426,30 +400,34 @@ unset($detail);
                         id="returned_condition" 
                         class="input-field w-full p-2 border rounded-lg focus:ring-red-800 focus:border-red-800"
                     >
-                        <?php if (empty($original_book_condition)): ?>
-                            <option value="" selected>---Select Condition---</option>
-                        <?php else: ?>
-                            <option value="">---Select Condition---</option>
-                            <option value="<?= htmlspecialchars($original_book_condition) ?>" selected>
-                                <?= htmlspecialchars($original_book_condition) ?> (Original)
-                            </option>
-                        <?php endif; ?>
+                        <?php 
+                        $failed_condition = $modal_borrow_details['returned_condition'] ?? '';
+                        $original_condition = $original_book_condition; 
+                        ?>
+                        
+                        <option value="" <?= empty($failed_condition) ? 'selected' : '' ?>>---Select Condition---</option>
 
                         <?php 
-                        // Assuming $condition_options is defined elsewhere (e.g. in controller or config)
-                        $condition_options = ['Good', 'Fair', 'Poor', 'Damaged', 'Lost']; // Placeholder array if missing
+                        // Iterate through all possible options
                         foreach ($condition_options as $option): 
+                            $selected = '';
+
+                            // 1. Check if this is the failed submission value
+                            if ($failed_condition === $option) {
+                                $selected = 'selected';
+                            } 
+                            // 2. If no failed value, and this option matches the original condition, select it
+                            elseif (empty($failed_condition) && $option === $original_condition) {
+                                $selected = 'selected';
+                            }
                         ?>
-                            <?php 
-                            // skip duplicate of original
-                            if (!empty($original_book_condition) && $option === $original_book_condition) continue; 
-                            ?>
-                            <option value="<?= htmlspecialchars($option) ?>">
+                            <option value="<?= htmlspecialchars($option) ?>" <?= $selected ?>>
                                 <?= htmlspecialchars($option) ?>
+                                <?= ($option === $original_condition && empty($failed_condition)) ? ' (Original)' : '' ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
-<p class="errors text-red-500 text-sm mt-2"><?= $errors["returned_condition"] ?? "" ?></p>
+                    <p class="errors text-red-500 text-sm mt-2"><?= $errors["returned_condition"] ?? "" ?></p>
                 </div>
 
                 

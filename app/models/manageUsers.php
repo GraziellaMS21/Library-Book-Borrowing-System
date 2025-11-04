@@ -22,31 +22,28 @@ class User extends Database
     public function viewUser($search = "", $userType = "", $statusFilter = "")
     {
         $whereConditions = [];
+        $dbStatus = ucfirst($statusFilter);
 
         $sql = "SELECT u.*, ut.type_name
-                FROM users u
-                JOIN user_type ut ON u.userTypeID = ut.userTypeID";
+            FROM users u
+            JOIN user_type ut ON u.userTypeID = ut.userTypeID";
 
         if ($statusFilter != "") {
-            $dbStatus = strtolower($statusFilter);
 
             if ($statusFilter == 'blocked') {
-                $dbStatus = 'Blocked';
+                $whereConditions[] = "u.account_status = 'Blocked'";
             } elseif ($statusFilter == 'approved') {
-                $dbStatus = 'Approved';
-            } elseif ($statusFilter == 'rejected') {
-                $dbStatus = 'Rejected';
+                $whereConditions[] = "u.registration_status = 'Approved'";
+                $whereConditions[] = "u.account_status = 'Active'";
             } else {
-                $dbStatus = 'Pending';
+                $whereConditions[] = "u.registration_status = :statusFilter";
             }
-
-            $whereConditions[] = "u.registration_status = :statusFilter";
         }
 
         if ($search != "") {
             $whereConditions[] = "(u.fName LIKE CONCAT('%', :search, '%') 
-                                OR u.lName LIKE CONCAT('%', :search, '%')
-                                OR u.email LIKE CONCAT('%', :search, '%'))";
+                            OR u.lName LIKE CONCAT('%', :search, '%')
+                            OR u.email LIKE CONCAT('%', :search, '%'))";
         }
         if ($userType != "") {
             $whereConditions[] = "ut.userTypeID = :userType";
@@ -58,7 +55,6 @@ class User extends Database
 
         $sql .= " ORDER BY u.lName ASC";
 
-
         $query = $this->connect()->prepare($sql);
 
         if ($search != "") {
@@ -67,16 +63,8 @@ class User extends Database
         if ($userType != "") {
             $query->bindParam(":userType", $userType);
         }
-        if ($statusFilter != "") {
-            if ($statusFilter == 'blocked') {
-                $dbStatus = 'Blocked';
-            } elseif ($statusFilter == 'approved') {
-                $dbStatus = 'Approved';
-            } elseif ($statusFilter == 'rejected') {
-                $dbStatus = 'Rejected';
-            } else {
-                $dbStatus = 'Pending';
-            }
+
+        if (in_array($statusFilter, ['pending', 'rejected'])) {
             $query->bindParam(":statusFilter", $dbStatus);
         }
 
@@ -86,8 +74,7 @@ class User extends Database
             return null;
         }
     }
-    
-    // NEW FUNCTION: Count total borrowers (users with role 'Borrower' and status 'Approved')
+
     public function countTotalBorrowers()
     {
         $sql = "SELECT COUNT(userID) AS total_borrowers FROM users WHERE role = 'Borrower' AND registration_status = 'Approved'";
@@ -119,7 +106,6 @@ class User extends Database
 
     public function fetchUserName($userID)
     {
-        // Select only the name columns you need (e.g., fName and lName)
         $sql = "SELECT fName, lName FROM users WHERE userID = :userID";
 
         $query = $this->connect()->prepare($sql);
@@ -127,7 +113,6 @@ class User extends Database
         $query->execute();
         $user = $query->fetch();
 
-        // Ensure we always return an array, not false
         if ($user === false) {
             return null;
         }
@@ -203,12 +188,29 @@ class User extends Database
         return $query->execute();
     }
 
-    public function approveRejectUser($userID, $newStatus)
+    public function updateUserStatus($userID, $newRegStatus, $newAccStatus)
     {
-        $sql = "UPDATE users SET registration_status = :newStatus WHERE userID = :userID";
+        if ($newRegStatus != "" && $newAccStatus != "") {
+            $sql = "UPDATE users SET registration_status = :newRegStatus,  account_status = :newAccStatus WHERE userID = :userID";
+        } else if ($newRegStatus != "") {
+            $sql = "UPDATE users SET registration_status = :newRegStatus WHERE userID = :userID";
+        } else {
+            $sql = "UPDATE users SET account_status = :newAccStatus WHERE userID = :userID";
+        }
+
         $query = $this->connect()->prepare($sql);
-        $query->bindParam(":newStatus", $newStatus);
+
+        if ($newRegStatus != "" && $newAccStatus != "") {
+            $query->bindParam(":newRegStatus", $newRegStatus);
+            $query->bindParam(":newAccStatus", $newAccStatus);
+        } else if ($newRegStatus != "") {
+            $query->bindParam(":newRegStatus", $newRegStatus);
+        } else {
+            $query->bindParam(":newAccStatus", $newAccStatus);
+        }
+
         $query->bindParam(":userID", $userID);
+
         return $query->execute();
     }
 
@@ -220,14 +222,4 @@ class User extends Database
         return $query->execute();
     }
 
-    public function updateUserStatus($userID, $newStatus)
-    {
-        $sql = "UPDATE users SET registration_status = :newStatus WHERE userID = :userID";
-        $query = $this->connect()->prepare($sql);
-
-        $query->bindParam(":newStatus", $newStatus);
-        $query->bindParam(":userID", $userID);
-
-        return $query->execute();
-    }
 }

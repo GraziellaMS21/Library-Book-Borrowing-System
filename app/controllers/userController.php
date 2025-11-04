@@ -111,8 +111,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-// --- GET Request Handling (Separate IF blocks, consistent with bookController) ---
-
 if ($action === 'approveReject' && $userID && isset($_GET['status'])) {
     $newStatus = trim($_GET['status']);
 
@@ -122,7 +120,7 @@ if ($action === 'approveReject' && $userID && isset($_GET['status'])) {
         exit;
     }
 
-    if ($userObj->approveRejectUser($userID, $newStatus)) {
+    if ($userObj->updateUserStatus($userID, $newStatus, "")) {
         header("Location: ../../app/views/librarian/usersSection.php?" . "tab={$currentTab}");
         exit;
     } else {
@@ -133,7 +131,7 @@ if ($action === 'approveReject' && $userID && isset($_GET['status'])) {
 }
 
 if ($action === 'block' && $userID) {
-    if ($userObj->approveRejectUser($userID, "Blocked")) {
+    if ($userObj->updateUserStatus($userID, "", "Blocked")) {
         header("Location: ../../app/views/librarian/usersSection.php?tab=blocked");
         exit;
     } else {
@@ -144,7 +142,7 @@ if ($action === 'block' && $userID) {
 }
 
 if ($action === 'unblock' && $userID) {
-    if ($userObj->approveRejectUser($userID, "Approved")) {
+    if ($userObj->updateUserStatus($userID, "Approved", "Active")) {
         header("Location: ../../app/views/librarian/usersSection.php?tab=approved");
         exit;
     } else {
@@ -153,7 +151,6 @@ if ($action === 'unblock' && $userID) {
         exit;
     }
 }
-
 if ($action === 'delete' && $userID) {
     $userData = $userObj->fetchUser($userID);
     $imagePath = $userData['imageID_dir'] ?? null;
