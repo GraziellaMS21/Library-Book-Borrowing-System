@@ -6,11 +6,11 @@ if (!isset($_SESSION["user_id"])) {
 }
 
 // Check if user is an Admin/Librarian (optional, but good practice)
-if (isset($_SESSION['user_role']) && $_SESSION['user_role'] != 'Admin') {
-    // Redirect non-admins if necessary
-    // header("Location: user_dashboard.php");
-    // exit;
-}
+// if (isset($_SESSION['user_role']) && $_SESSION['user_role'] != 'Admin') {
+//     // Redirect non-admins if necessary
+//     // header("Location: user_dashboard.php");
+//     // exit;
+// }
 
 // Include necessary models
 require_once(__DIR__ . '/../../models/manageBook.php');
@@ -23,13 +23,11 @@ $userModel = new User();
 $borrowModel = new BorrowDetails();
 
 $total_books = $bookModel->countTotalBooks();
-// Using countPendingUsers for "Pending Requests" on the dashboard for user registration requests
 $total_borrowers = $userModel->countTotalBorrowers(); 
 $overdue_book_count = $borrowModel->countOverdueBooks(); 
-// Renaming pending requests box for clarity, using borrow request pending count
 $pending_borrow_requests_count = $borrowModel->countPendingRequests(); 
 
-// --- Fetch Data for Tables ---
+
 $pending_requests = $borrowModel->viewBorrowDetails("", "Pending");
 $pending_users = $userModel->viewUser("", "", "pending"); // Fetch all pending user registrations
 $pending_users_count = count($pending_users); // Count the fetched array
@@ -75,15 +73,12 @@ $pending_users_count = count($pending_users); // Count the fetched array
 
   <?php require_once(__DIR__ . '/../shared/dashboardHeader.php'); ?>
   
-  <!-- Adjusted to use the w-10/12 from your requested structure, but kept the padding and responsiveness -->
   <div class="flex flex-col w-10/12"> 
     <nav class="mb-6">
-      <!-- Changed back to the original simpler h1 style from your request for 'Dashboard' -->
       <h1 class="text-3xl font-bold text-gray-800">Dashboard</h1>
     </nav>
     <main>
       <div class="container">
-        <!-- Grid layout updated to use your requested structure (grid-cols-2 md:grid-cols-4) and colors -->
         <div id="dashboardSection" class="section dashboardSection grid grid-cols-2 md:grid-cols-4 gap-4">
           
           <!-- Total Books -->
@@ -112,7 +107,7 @@ $pending_users_count = count($pending_users); // Count the fetched array
           
         </div>
 
-        <!-- NEW: Pending Requests Table -->
+        <!-- Pending Requests Table -->
         <section class="section mt-8">
             <h2 class="text-2xl font-bold text-red-800 mb-4">Pending Borrow Requests (<?= htmlspecialchars($pending_borrow_requests_count) ?>)</h2>
             <div class="view bg-white p-4 rounded-lg shadow-md">
@@ -150,11 +145,11 @@ $pending_users_count = count($pending_users); // Count the fetched array
                                     <td><?= $request_date ?></td>
                                     <td class="action text-center">
                                         <a class="actionBtn bg-green-500 hover:bg-green-600 text-white inline-block mb-1"
-                                            href="../../../app/controllers/borrowDetailsController.php?action=accept&id=<?= $borrowID ?>&tab=pending">Accept</a>
+                                            href="../../../app/controllers/dashboardController.php?action=accept&id=<?= $borrowID ?>">Accept</a>
                                         <a class="actionBtn bg-red-500 hover:bg-red-600 text-white inline-block mb-1"
-                                            href="../../../app/controllers/borrowDetailsController.php?action=reject&id=<?= $borrowID ?>&tab=pending">Reject</a>
+                                            href="../../../app/controllers/dashboardController.php?action=reject&id=<?= $borrowID ?>">Reject</a>
                                         <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-white inline-block mb-1"
-                                            href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=pending">View</a>
+                                            href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>">View</a>
                                     </td>
                                 </tr>
                             <?php }
@@ -200,11 +195,11 @@ $pending_users_count = count($pending_users); // Count the fetched array
                                     <td><?= $user["date_registered"] ?></td>
                                     <td class="action text-center">
                                         <a class="actionBtn bg-green-500 hover:bg-green-600 text-white inline-block mb-1"
-                                            href="../../../app/controllers/userController.php?action=approveReject&id=<?= $userID ?>&status=Approved&tab=pending">Approve</a>
+                                            href="../../../app/controllers/userController.php?action=approveReject&id=<?= $userID ?>&status=Approved">Approve</a>
                                         <a class="actionBtn bg-red-500 hover:bg-red-600 text-white inline-block mb-1"
-                                            href="../../../app/controllers/userController.php?action=approveReject&id=<?= $userID ?>&status=Rejected&tab=pending">Reject</a>
+                                            href="../../../app/controllers/userController.php?action=approveReject&id=<?= $userID ?>&status=Rejected">Reject</a>
                                         <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-white inline-block mb-1"
-                                            href="usersSection.php?modal=view&id=<?= $userID ?>&tab=pending">View</a>
+                                            href="usersSection.php?modal=view&id=<?= $userID ?>">View</a>
                                     </td>
                                 </tr>
                             <?php }

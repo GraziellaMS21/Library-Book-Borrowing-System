@@ -37,12 +37,14 @@ if ($current_modal === 'edit') {
     $open_modal = 'viewFullDetailsModal';
 } elseif ($current_modal === 'return') {
     $open_modal = 'returnBookModal';
+} elseif ($current_modal === 'paid') { // ADDED for Paid Confirmation Modal
+    $open_modal = 'paidConfirmModal';
 }
 
 if (!empty($open_modal)) {
     if ($open_modal == 'editBorrowDetailModal' && !empty($old)) {
         $modal_borrow_details = $old;
-    } elseif (($open_modal == 'returnBookModal' || $open_modal == 'deleteConfirmModal' || $open_modal == 'blockUserModal') && !empty($old)) {
+    } elseif (($open_modal == 'returnBookModal' || $open_modal == 'deleteConfirmModal' || $open_modal == 'blockUserModal' || $open_modal == 'paidConfirmModal') && !empty($old)) {
         // For return modal failure, we need to merge the old data (for returned_condition) 
         // with fresh data (for book_title and original_condition display)
         $fresh_detail = $borrowObj->fetchBorrowDetail($borrow_id) ?: [];
@@ -306,7 +308,7 @@ unset($detail);
                                             <td class="action text-center">
                                                 <?php if($detail["calculated_fine"] > 0) {?>
                                                      <a class="actionBtn bg-green-600 hover:bg-green-700 text-sm inline-block mb-1"
-                                                    href="../../../app/controllers/borrowDetailsController.php?tab=<?= $current_tab ?>&action=paid&id=<?= $borrowID ?>">Paid</a>
+                                                    href="borrowDetailsSection.php?modal=paid&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Paid</a>
                                                 <a class="actionBtn bg-yellow-600 hover:bg-yellow-700 text-sm inline-block mb-1"
                                                     href="borrowDetailsSection.php?modal=block&id=<?= $userID ?>&tab=<?= $current_tab ?>">Block User</a>
                                                 <?php } else {?>
@@ -615,6 +617,50 @@ unset($detail);
             </div>
         </div>
     </div>
+
+    <div id="paidConfirmModal" class="modal delete-modal <?= $open_modal == 'paidConfirmModal' ? 'open' : '' ?>">
+        <div class="modal-content max-w-sm">
+            <span class="close close-times" data-modal="paidConfirmModal" data-tab="<?= $current_tab ?>">&times;</span>
+            <h2 class="text-xl font-bold mb-4 text-green-700">Confirm Fine Payment & Return</h2>
+            <p class="mb-4 text-gray-700">
+                You are marking the fine as **Paid** and the loan as **Returned** for:
+                <span class="font-semibold text-red-800"><?= $modal_borrow_details['book_title'] ?? 'N/A' ?></span>.
+            </p>
+            
+            <div class="grid grid-cols-2 gap-y-2 mb-4 p-3 bg-gray-100 rounded-lg">
+                <p class="font-semibold col-span-2 text-md text-blue-800 border-b pb-1">Loan and Fine Details</p>
+                
+                <p class="font-semibold">Original Condition:</p>
+                <p class="text-blue-600"><?= htmlspecialchars($modal_borrow_details['book_condition'] ?? 'N/A') ?></p>
+
+                <p class="font-semibold">Fine Amount:</p>
+                <p class="font-bold text-red-700">₱<?= number_format($modal_borrow_details['fine_amount'] ?? 0, 2) ?></p>
+
+                <p class="font-semibold">Fine Reason:</p>
+                <p><?= $modal_borrow_details['fine_reason'] ?? 'N/A' ?></p>
+
+                <p class="font-semibold">Fine Status:</p>
+                <p class="font-bold text-red-700"><?= $modal_borrow_details['fine_status'] ?? 'N/A' ?></p>
+            </div>
+            
+            <p class="mb-6 text-gray-700 font-bold">
+                Do you want to proceed? This will update book stock and mark the fine as Paid.
+            </p>
+
+            <div class="flex justify-end space-x-4">
+                <button type="button"
+                    class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400"
+                    data-modal="paidConfirmModal" data-tab="<?= $current_tab ?>">
+                    Cancel
+                </button>
+                <a href="../../../app/controllers/borrowDetailsController.php?action=paid&id=<?= $borrow_id ?? '' ?>&tab=<?= $current_tab ?>"
+                    class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 cursor-pointer">
+                    Confirm Paid & Return
+                </a>
+            </div>
+        </div>
+    </div>
+
 
     <div id="blockUserModal" class="modal delete-modal <?= $open_modal == 'blockUserModal' ? 'open' : '' ?>">
         <div class="modal-content max-w-sm">
