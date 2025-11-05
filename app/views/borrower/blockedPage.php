@@ -1,13 +1,5 @@
 <?php
 session_start();
-// NOTE: Modified redirect to go to catalogue if logged in and not blocked, 
-// but since this page is for BLOCKED users, we assume the session exists 
-// but they were redirected here from the login page.
-if (isset($_SESSION["user_id"])) {
-    // If somehow a user reaches here without a session, send them to login
-    header("Location: blockedPage.php");
-    exit;
-}
 
 require_once(__DIR__ . "/../../models/manageBorrowDetails.php");
 require_once(__DIR__ . "/../../models/manageUsers.php");
@@ -18,7 +10,8 @@ $userObj = new User();
 $bookObj = new Book();
 
 // --- Core Data Fetching ---
-$userID = $_SESSION["user_id"];
+$userID = $_SESSION["temp_blocked_user_id"] ?? null;
+unset($_SESSION["temp_blocked_user_id"]);
 $user = $userObj->fetchUser($userID);
 
 // 1. Fetch all records that currently have an 'unpaid' fine status

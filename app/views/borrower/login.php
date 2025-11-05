@@ -5,19 +5,38 @@ if (isset($_SESSION["user_id"])) {
     exit;
 }
 
+require_once(__DIR__ . "/../../models/manageBorrowDetails.php");
+require_once(__DIR__ . "/../../models/manageUsers.php");
+
+$userObj = new User();
+$borrowObj = new BorrowDetails();
+
+$userID = null;
+$user = null;
+$borrow_detail = null;
+
 $errors = $_SESSION["errors"] ?? [];
 unset($_SESSION["errors"]);
 
-// Get the status from the URL query
+// Get the status and user ID from the URL query
 $status_message = $_GET['status'] ?? '';
+$redirect_userID = $_GET['userID'] ?? null;
 $open_modal = '';
 
 if ($status_message === 'pending') {
     $open_modal = 'pendingModal';
-}else if ($status_message === 'rejected') {
+} else if ($status_message === 'rejected') {
     $open_modal = 'rejectedModal';
+} else if ($status_message === 'blocked') {
+    $open_modal = 'blockedModal';
+    // Use the ID passed in the URL to fetch the borrow details if the modal is blocked
+    if ($redirect_userID) {
+        // NOTE: We rely on the database access here instead of the session
+        $userID = $redirect_userID;
+        $user = $userObj->fetchUser($userID); // Fetch user data
+        $borrow_detail = $borrowObj->fetchUserBorrowDetails($userID, 'unpaid');
+    }
 }
-// Note: We don't set a modal for 'blocked' since the controller redirects directly to blockedPage.php
 ?>
 
 <!DOCTYPE html>
@@ -31,10 +50,8 @@ if ($status_message === 'pending') {
     <link rel="stylesheet" href="../../../public/assets/css/login.css">
     <link rel="stylesheet" href="../../../public/assets/css/header_footer2.css">
     <style>
-        /* Basic modal styling (copied from register.php) */
         .modal {
             display: none;
-            /* Hidden by default */
             position: fixed;
             z-index: 100;
             left: 0;
@@ -107,7 +124,6 @@ if ($status_message === 'pending') {
         </div>
     </main>
 
-    <!-- NEW PENDING MODAL -->
     <div id="pendingModal" class="modal <?= $open_modal == 'pendingModal' ? 'open' : '' ?>">
         <div class="modal-content text-center">
             <h2 class="text-2xl font-bold mb-4 text-orange-700">Account Pending</h2>
@@ -148,58 +164,85 @@ if ($status_message === 'pending') {
         </div>
     </div>
 
+    <div id="blockedModal" class="modal <?= $open_modal == 'blockedModal' ? 'open' : '' ?>">
+        <div class="modal-content text-center">
+            <h2 class="text-2xl font-bold mb-4 text-red-700">Account Blocked</h2>
+
+            <p class="mb-6 text-gray-700">
+                Your account is <strong class="text-red-600">BLOCKED</strong>.
+            </p>
+
+
+            <?php if (is_array($borrow_detail) && !empty($borrow_detail)) { ?>
+                <p class="mb-6 text-gray-700 font-semibold">
+                    Please settle your unpaid fine.
+                </p>
+                <div class="flex justify-center mt-6">
+                    <?php $_SESSION['temp_blocked_user_id'] = $userID; ?>
+                    <a href="../../../app/views/borrower/blockedPage.php" class="text-red-800 px-6 py-3 font-semibold">
+                        Check Unpaid ->
+                    </a>
+                </div>
+
+            <?php } else { ?>
+                <p class="mb-6 text-gray-700 font-semibold">
+                    Please contact the administrator to review your account status.
+                </p>
+            <?php } ?>
+
+            <div class="flex justify-center mt-6">
+                <button id="closeBlockedModalBtn"
+                    class="bg-red-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <?php require_once(__DIR__ . '/../shared/footer.php'); ?>
 </body>
 <script src="../../../public/assets/js/header_footer.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // --- Custom JS for the pending modal ---
         const pendingModal = document.getElementById('pendingModal');
         const rejectedModal = document.getElementById('rejectedModal');
+        const blockedModal = document.getElementById('blockedModal');
 
-        if (pendingModal.classList.contains('open')) {
-            // Function to close the modal and remove the URL parameter
-            const closeModal = () => {
+        // Function to close any modal and clean the URL (including the userID parameter)
+        const closeModal = (modalElement) => {
+            if (modalElement && modalElement.classList.contains('open')) {
                 const url = new URL(window.location.href);
                 url.searchParams.delete('status');
+                url.searchParams.delete('userID'); // Clear the ID as well
                 window.history.replaceState(null, '', url); // Clean the URL without reloading
-                pendingModal.classList.remove('open');
-                pendingModal.style.display = 'none';
-            };
+                modalElement.classList.remove('open');
+                modalElement.style.display = 'none';
+            }
+        };
 
-            // Close when clicking the button
-            const closeBtn = document.getElementById('closePendingModalBtn');
-            closeBtn.addEventListener('click', closeModal);
+        // Helper function to set up listeners
+        const setupModalListeners = (modalElement, buttonId) => {
+            if (modalElement.classList.contains('open')) {
+                const closeBtn = document.getElementById(buttonId);
 
-            // Close when clicking outside the modal
-            window.addEventListener('click', (e) => {
-                if (e.target === pendingModal) {
-                    closeModal();
+                // Close when clicking the button
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', () => closeModal(modalElement));
                 }
-            });
-        }
 
-        if (rejectedModal.classList.contains('open')) {
-            // Function to close the modal and remove the URL parameter
-            const closeModal = () => {
-                const url = new URL(window.location.href);
-                url.searchParams.delete('status');
-                window.history.replaceState(null, '', url); // Clean the URL without reloading
-                rejectedModal.classList.remove('open');
-                rejectedModal.style.display = 'none';
-            };
+                // Close when clicking outside the modal
+                window.addEventListener('click', (e) => {
+                    if (e.target === modalElement) {
+                        closeModal(modalElement);
+                    }
+                });
+            }
+        };
 
-            // Close when clicking the button
-            const closeBtn = document.getElementById('closeRejectedModalBtn');
-            closeBtn.addEventListener('click', closeModal);
-
-            // Close when clicking outside the modal
-            window.addEventListener('click', (e) => {
-                if (e.target === rejectedModal) {
-                    closeModal();
-                }
-            });
-        }
+        // Initialize listeners
+        setupModalListeners(pendingModal, 'closePendingModalBtn');
+        setupModalListeners(rejectedModal, 'closeRejectedModalBtn');
+        setupModalListeners(blockedModal, 'closeBlockedModalBtn');
     });
 </script>
 

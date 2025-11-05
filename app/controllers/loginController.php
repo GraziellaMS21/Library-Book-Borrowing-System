@@ -1,7 +1,8 @@
 <?php
 session_start();
 require_once(__DIR__ . '/../models/userLogin.php');
-$loginObj = new Login($email, $password);
+
+$loginObj = new Login();
 
 $login = [];
 $errors = [];
@@ -19,7 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     if (empty(array_filter($errors))) {
-        $result = $loginObj->logIn($login["email"], $login["password"]);
+        $result = $loginObj->userLogIn($login["email"], $login["password"]);
 
         if (is_array($result)) {
             // User found and password correct. Now check status.
@@ -29,12 +30,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             } elseif ($result["registration_status"] === "Rejected") {
                 header("Location: ../../app/views/borrower/login.php?status=rejected");
                 exit;
-            } elseif ($result["registration_status"] === "Blocked") {
-                // Redirect Blocked users to blocked page as requested
-                header("Location: ../../app/views/borrower/blockedPage.php");
+            } elseif ($result["account_status"] === "Blocked") {
+                // PASS THE USER ID VIA URL FOR THE LOGIN PAGE TO LOOK UP THE FINE STATUS
+                header("Location: ../../app/views/borrower/login.php?status=blocked&userID=" . $result['userID']);
                 exit;
             } elseif ($result["registration_status"] === "Approved") {
-                // Proceed with successful login only if status is Approved
                 $_SESSION["user_id"] = $result["userID"];
                 $_SESSION["email"] = $result["email"];
                 $_SESSION["lName"] = $result["lName"];
@@ -49,7 +49,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     exit;
                 }
             } else {
-                // Should not happen if registration_status is properly enforced (Approved, Pending, Blocked)
                 $errors["invalid"] = "Invalid User Status. Please contact support.";
             }
 
