@@ -283,7 +283,6 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                         <th class="py-3 px-4">Fine Reason</th>
                                         <th class="py-3 px-4">Fine Amount</th>
                                         <th class="py-3 px-4">Fine Status</th>
-                                        <th class="py-3 px-4 w-20">Action</th>
 
 
                                     <?php elseif ($active_tab == 'returned'): ?>
@@ -416,12 +415,6 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                             </td>
                                             <td class="py-4 px-4 text-xs">
                                                 <?= htmlspecialchars($book['fine_reason'] ?? 'N/A') ?>
-                                            </td>
-                                            <td class="py-4 px-4">
-                                                <button
-                                                    class="px-2 py-1 rounded text-white bg-green-600 hover:bg-green-700 text-sm font-medium">
-                                                    Pay Fine
-                                                </button>
                                             </td>
 
                                         <?php elseif ($active_tab == 'returned'): ?>

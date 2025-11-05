@@ -1,5 +1,7 @@
 <?php
 require_once(__DIR__ . "/../../config/database.php");
+require_once(__DIR__ . "/manageBook.php");
+$bookObj = new Book();
 
 class BorrowDetails extends Database
 {
@@ -224,7 +226,7 @@ class BorrowDetails extends Database
                 FROM borrowing_details 
                 WHERE userID = :userID 
                 AND bookID = :bookID
-                AND (borrow_request_status = 'Approved' OR borrow_status = 'Borrowed')"; 
+                AND (borrow_request_status = 'Approved' OR borrow_status = 'Borrowed')";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":userID", $userID);
         $query->bindParam(":bookID", $bookID);
@@ -248,7 +250,7 @@ class BorrowDetails extends Database
                 FROM borrowing_details 
                 WHERE userID = :userID 
                 AND no_of_copies > 1
-                AND (borrow_request_status = 'Approved' OR borrow_status = 'Borrowed')"; 
+                AND (borrow_request_status = 'Approved' OR borrow_status = 'Borrowed')";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":userID", $userID);
 
@@ -323,14 +325,13 @@ class BorrowDetails extends Database
             return 0;
     }
 
-    // NEW FUNCTION: Fetch the total number of copies tied up in PENDING or APPROVED requests for a specific book.
     public function fetchPendingAndApprovedCopiesForBook($bookID)
     {
         $sql = "SELECT SUM(no_of_copies) AS total_pending
                 FROM borrowing_details 
                 WHERE bookID = :bookID
                 AND borrow_request_status IN ('Pending', 'Approved')
-                AND (borrow_status IS NULL OR borrow_status = 'Fined')"; // Requests not yet returned/cancelled/rejected
+                AND (borrow_status IS NULL OR borrow_status = 'Fined')";
 
         $query = $this->connect()->prepare($sql);
         $query->bindParam(':bookID', $bookID);
@@ -373,7 +374,7 @@ class BorrowDetails extends Database
     public function fetchBorrowDetail($borrowID)
     {
         $sql = "SELECT 
-                    bd.*, 
+                    bd.*,  
                     u.fName, 
                     u.lName, 
                     b.book_title,
@@ -386,7 +387,7 @@ class BorrowDetails extends Database
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":borrowID", $borrowID);
         if ($query->execute()) {
-            return $query->fetch(); 
+            return $query->fetch();
         } else
             return null;
     }
@@ -454,8 +455,8 @@ class BorrowDetails extends Database
 
         return $query->execute();
     }
-
-    public function calculateFinalFine($expected_return_date, $comparison_date_string, $bookObj, $bookID)
+    
+    public function calculateFinalFine($expected_return_date, $comparison_date_string, Book $bookObj, $bookID)
     {
         $comparison_date_string = $comparison_date_string ?: date("Y-m-d");
 
@@ -478,12 +479,13 @@ class BorrowDetails extends Database
 
             if ($days_late >= $MAX_LATE_DAYS) {
                 $results['is_lost'] = true;
+                // VS Code can now resolve this method call:
                 $replacement_cost = $bookObj->fetchBookReplacementCost($bookID);
 
                 // Total Fine = Capped Late Fee (300.00) + Replacement Cost 
                 // This resolves the inconsistency and ensures a fixed maximum late component.
                 $results['fine_amount'] = $MAX_LATE_FEE + $replacement_cost;
-                $results['fine_reason'] = 'Lost (Overdue)';
+                $results['fine_reason'] = 'Lost';
                 $results['fine_status'] = 'Unpaid';
 
             } else {

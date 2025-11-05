@@ -133,7 +133,7 @@ $modal_available_copies = $copies;
 </head>
 
 <body class="bg-gray-50 min-h-screen">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <?php require_once(__DIR__ . '/../shared/headerBorrower.php'); ?>
 
         <header class="text-center text-white my-10">
@@ -168,13 +168,14 @@ $modal_available_copies = $copies;
                 <div class="flex-grow md:w-2/3">
                     <h2 class="text-3xl font-bold text-red-900 mb-4"><?= $book_title ?></h2>
 
-                    <div class="space-y-4 text-lg">
+                    <div class="space-y-4 text-base">
                         <p class="text-gray-700"><strong>Author:</strong> <?= $author ?></p>
                         <p class="text-gray-700"><strong>Category:</strong> <?= $category_name ?></p>
                         <p class="text-gray-700"><strong>Publisher:</strong> <?= $publication_name ?></p>
                         <p class="text-gray-700"><strong>Publication Year:</strong> <?= $publication_year ?></p>
                         <p class="text-gray-700"><strong>ISBN:</strong> <?= $ISBN ?></p>
                         <p class="text-gray-700"><strong>Book Condition:</strong> <?= $book_condition ?></p>
+                        <p class="text-gray-700"><strong>Replacement Cost:</strong> <?= htmlspecialchars($book['replacement_cost']) ?></p></p>
                         <p class="text-gray-700">
                             <strong>Copies Available:</strong>
                             <span
@@ -188,6 +189,7 @@ $modal_available_copies = $copies;
                             $status = "Available";
                             $status_color = 'text-green-600 bg-green-100';
                             $button_disabled = false;
+                            $borrow_denied = false;
 
                             if ($copies <= 0) {
                                 $status = "Borrowed";

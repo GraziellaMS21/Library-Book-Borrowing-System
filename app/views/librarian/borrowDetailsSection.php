@@ -651,7 +651,7 @@ unset($detail);
             <span class="close close-times" data-modal="paidConfirmModal" data-tab="<?= $current_tab ?>">&times;</span>
             <h2 class="text-xl font-bold mb-4 text-green-700">Confirm Fine Payment & Return</h2>
             <p class="mb-4 text-gray-700">
-                You are marking the fine as **Paid** and the loan as **Returned** for:
+                You are marking the fine as <strong>Paid</strong> and the loan as <strong>Returned</strong> for:
                 <span class="font-semibold text-red-800"><?= $modal_borrow_details['book_title'] ?? 'N/A' ?></span>.
             </p>
             

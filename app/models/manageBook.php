@@ -235,7 +235,7 @@ class Book extends Database
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":quantity", $quantity);
         $query->bindParam(":bookID", $bookID);
-        
+
         return $query->execute();
     }
 
@@ -247,5 +247,19 @@ class Book extends Database
         $query->bindParam(":bookID", $bookID);
 
         return $query->execute();
+    }
+
+
+    public function fetchBookReplacementCost($bookID)
+    {
+        $sql = "SELECT replacement_cost FROM books WHERE bookID = :bookID";
+
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(":bookID", $bookID, PDO::PARAM_INT);
+        $query->execute();
+
+        $cost = $query->fetchColumn(0);
+
+        return (float) $cost;
     }
 }
