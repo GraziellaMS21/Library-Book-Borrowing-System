@@ -374,7 +374,7 @@ class BorrowDetails extends Database
     public function fetchBorrowDetail($borrowID)
     {
         $sql = "SELECT 
-                    bd.*,  
+                    bd.*,
                     u.fName, 
                     u.lName, 
                     b.book_title,
@@ -497,6 +497,10 @@ class BorrowDetails extends Database
                 $results['fine_reason'] = 'Late';
                 $results['fine_status'] = 'Unpaid';
             }
+        }
+        if ($results['fine_amount'] <= 0.00) {
+            $results['fine_reason'] = null; // Also clear the reason for perfect consistency
+            $results['fine_status'] = null;
         }
         return $results;
     }

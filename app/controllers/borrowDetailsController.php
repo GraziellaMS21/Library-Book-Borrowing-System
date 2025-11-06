@@ -30,27 +30,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $detail['fine_reason'] = trim(htmlspecialchars($_POST["fine_reason"] ?? NULL));
     $detail['fine_status'] = trim(htmlspecialchars($_POST["fine_status"] ?? NULL));
 
+    // Fetch existing details for edit/return/paid actions to carry over bookID/userID if not posted
+    if ($action === 'edit' || $action === 'return' || $action === 'paid') {
+        $current_detail = $borrowObj->fetchBorrowDetail($borrowID);
+        if ($current_detail) {
+            $detail['userID'] = $detail['userID'] ?: $current_detail['userID'];
+            $detail['bookID'] = $detail['bookID'] ?: $current_detail['bookID'];
+        }
+    }
+
     // Validation
-    if (empty($detail['userID']) && $action !== 'return') {
+    // Only require userID and bookID for non-return/paid/edit actions (like a new borrow request)
+    if (empty($detail['userID']) && $action !== 'return' && $action !== 'paid' && $action !== 'edit') {
         $errors['userID'] = "User ID is required.";
     }
-    if (empty($detail['bookID']) && $action !== 'return') {
+    if (empty($detail['bookID']) && $action !== 'return' && $action !== 'paid' && $action !== 'edit') {
         $errors['bookID'] = "Book ID is required.";
     }
-    if (empty($detail['expected_return_date']) && $action !== 'return') {
+    if (empty($detail['expected_return_date']) && $action !== 'return' && $action !== 'paid') {
         $errors['expected_return_date'] = "Expected Return Date is required.";
     }
     if ($detail['fine_amount'] < 0) {
         $errors['fine_amount'] = "Fine amount cannot be negative.";
     }
-    if ($detail['no_of_copies'] < 1 && $action !== 'return') {
+    if ($detail['no_of_copies'] < 1 && $action !== 'return' && $action !== 'paid') {
         $errors['no_of_copies'] = "At least one copy must be requested.";
     }
-    if ($action === 'return' && empty($detail['returned_condition'])) {
-        $errors['returned_condition'] = "Returned condition is required to complete the return.";
+    // Only require returned_condition for return or paid actions
+    if (($action === 'return' || $action === 'paid') && empty($detail['returned_condition'])) {
+        $errors['returned_condition'] = "Returned condition is required to complete the return/payment.";
     }
 
     if (empty(array_filter($errors))) {
+        // Map form data to object properties
         foreach ($detail as $key => $value) {
             if (property_exists($borrowObj, $key)) {
                 $borrowObj->$key = $value;
@@ -58,26 +70,46 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         if ($action === 'edit' && $borrowID) {
-            if ($borrowObj->borrow_status === 'Returned' && $borrowObj->return_date) {
-
-                $fine_results = $borrowObj->calculateFinalFine(
-                    $borrowObj->expected_return_date,
-                    $borrowObj->return_date,
-                    $bookObj,
-                    $borrowObj->bookID
-                );
-
-                if ($fine_results['fine_amount'] > 0) {
-                    if (empty($borrowObj->fine_reason) || $borrowObj->fine_reason === 'Late') {
-                        $borrowObj->fine_amount = $fine_results['fine_amount'];
-                        $borrowObj->fine_reason = $fine_results['fine_reason'];
-                    }
-                    if (empty($borrowObj->fine_status) || $borrowObj->fine_status === 'Unpaid') {
-                        $borrowObj->fine_status = 'Unpaid';
-                    }
-                }
+            
+            // $current_detail was fetched earlier, ensure it's available
+            if (!isset($current_detail) || !$current_detail) {
+                 $current_detail = $borrowObj->fetchBorrowDetail($borrowID);
             }
+            
+            // Determine the comparison date for fine calculation:
+            // 1. If return_date is set in the form, use it.
+            // 2. If return_date is NOT set, use today's date to calculate current late fine.
+            $comparison_date = $borrowObj->return_date ?: date("Y-m-d");
 
+            // 🌟 MODIFIED LOGIC: Recalculate fine if the submitted fine is zero/minimal 
+            // AND expected_return_date is set. This covers:
+            // 1. Recalculate button clicked (fine_amount set to 0.00)
+            // 2. User manually resets fine_amount to 0.00 and saves.
+            if (
+                $borrowObj->fine_amount <= 0.01 && 
+                $borrowObj->expected_return_date
+            ) {
+                
+                // Use the dates from the posted detail for recalculation
+                $fine_results = $borrowObj->calculateFinalFine(
+                    $borrowObj->expected_return_date, 
+                    $comparison_date, // Use the determined comparison date
+                    $bookObj,
+                    $detail['bookID'] // Use the determined bookID
+                );
+                
+                // Update detail object with calculated fine results
+                $borrowObj->fine_amount = $fine_results['fine_amount'];
+                $borrowObj->fine_reason = $fine_results['fine_reason'];
+                // Ensure fine status is 'Unpaid' if a new late fine is calculated (only if fine > 0)
+                $borrowObj->fine_status = ($fine_results['fine_amount'] > 0) ? 'Unpaid' : ($borrowObj->fine_status ?: NULL);
+            }
+            
+            if ($borrowObj->fine_amount <= 0.00) {
+                $borrowObj->fine_reason = NULL;
+                $borrowObj->fine_status = NULL;
+            }
+            
             if ($borrowObj->editBorrowDetail($borrowID)) {
                 header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}&success=edit");
                 exit;
@@ -86,8 +118,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
         } elseif ($action === 'return' && $borrowID) {
-            $current_detail = $borrowObj->fetchBorrowDetail($borrowID);
-            if (!$current_detail) {
+            // Logic for 'return' remains the same (always calculates fine)
+            if (!isset($current_detail) || !$current_detail) {
                 $errors['general'] = "Cannot find loan detail to process return.";
             } else {
                 $borrowObj->userID = $current_detail['userID'];
@@ -126,6 +158,44 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             } else {
                 $errors["general"] = $errors["general"] ?? "Failed to complete book return process.";
             }
+        } elseif ($action === 'paid' && $borrowID) {
+            // Logic for 'paid' remains the same
+            if (!isset($current_detail) || !$current_detail) {
+                $errors['general'] = "Cannot find loan detail to process payment.";
+            } else {
+                $borrowObj->userID = $current_detail['userID'];
+                $borrowObj->bookID = $current_detail['bookID'];
+                $borrowObj->no_of_copies = $current_detail['no_of_copies'];
+                $borrowObj->pickup_date = $current_detail['pickup_date'];
+                $borrowObj->expected_return_date = $current_detail['expected_return_date'];
+                // Carry over the current fine amount/reason
+                $borrowObj->fine_amount = $current_detail['fine_amount'];
+                $borrowObj->fine_reason = $current_detail['fine_reason'];
+            }
+
+            if (empty($errors)) {
+                $borrowObj->return_date = date("Y-m-d");
+                $borrowObj->borrow_request_status = NULL;
+                $borrowObj->borrow_status = 'Returned';
+
+                // Fine status is explicitly set to Paid when using the 'paid' action
+                $borrowObj->fine_status = 'Paid';
+                $borrowObj->returned_condition = $detail['returned_condition']; // Use posted condition
+
+                // Only increment copies if the book wasn't returned already
+                if ($current_detail['borrow_status'] !== 'Returned') {
+                    if (!$bookObj->incrementBookCopies($borrowObj->bookID, $borrowObj->no_of_copies)) {
+                        $errors["general"] = "Failed to update book stock (increment).";
+                    }
+                }
+            }
+
+            if (empty($errors) && $borrowObj->editBorrowDetail($borrowID)) {
+                header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=returned&success=returned");
+                exit;
+            } else {
+                $errors["general"] = $errors["general"] ?? "Failed to complete book return process.";
+            }
         }
     }
 
@@ -136,6 +206,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $modal_param = match ($action) {
             'return' => 'return',
             'edit' => 'edit',
+            'paid' => 'paid',
             default => '',
         };
 
@@ -147,16 +218,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 if ($borrowID) {
     if ($action === 'blockUser') {
-        if ($userObj->updateUserStatus($userID, "", 'Blocked')) {
+        // Fetch the loan details to get the correct User ID
+        $current_detail = $borrowObj->fetchBorrowDetail($borrowID);
+        $userID_to_block = $current_detail['userID'] ?? null;
+
+        if ($userID_to_block && $userObj->updateUserStatus($userID_to_block, "", 'Blocked')) {
             header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=currently_borrowed&success=blocked");
             exit;
         } else {
-            $_SESSION["errors"] = ["general" => "Failed to block user. Check if User model is correctly linked."];
+            $_SESSION["errors"] = ["general" => "Failed to block user. User ID not found or database error."];
             header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=currently_borrowed");
             exit;
         }
     }
 
+    // Fetch detail again for other actions if 'blockUser' didn't exit
     $current_detail = $borrowObj->fetchBorrowDetail($borrowID);
     if (!$current_detail) {
         $_SESSION["errors"] = ["general" => "Borrow detail not found."];
@@ -179,34 +255,6 @@ if ($borrowID) {
         } else {
             $_SESSION["errors"] = ["general" => "Failed to delete detail."];
             header("Location: ../../app/views/librarian/borrowDetailsSection.php?modal=delete&id={$borrowID}&tab={$current_tab}");
-            exit;
-        }
-    }
-
-    if ($action === 'paid') {
-        $borrowObj->return_date = date("Y-m-d");
-        $fine_amount = $borrowObj->fine_amount;
-        $fine_reason = $borrowObj->fine_reason;
-
-        $borrowObj->fine_status = 'Paid';
-        $borrowObj->fine_amount = $fine_amount;
-        $borrowObj->fine_reason = $fine_reason;
-        $borrowObj->returned_condition = 'Good';
-        $borrowObj->borrow_request_status = NULL;
-        $borrowObj->borrow_status = 'Returned';
-
-        if (!$bookObj->incrementBookCopies($borrowObj->bookID, $borrowObj->no_of_copies)) {
-            $_SESSION["errors"] = ["general" => "Failed to update book stock (increment) on fine payment."];
-            header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=borrowed");
-            exit;
-        }
-
-        if ($borrowObj->editBorrowDetail($borrowID)) {
-            header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=returned&success=paid");
-            exit;
-        } else {
-            $_SESSION["errors"] = ["general" => "Failed to mark fine as paid. Database error."];
-            header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}");
             exit;
         }
     }

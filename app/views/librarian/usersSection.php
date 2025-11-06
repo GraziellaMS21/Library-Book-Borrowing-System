@@ -31,7 +31,7 @@ if ($current_modal === 'edit') {
 } elseif ($current_modal === 'block') {
     $open_modal = 'blockConfirmUserModal';
 } elseif ($current_modal === 'delete') {
-    $open_modal = 'deleteConfirmUserModal';
+    $open_modal = 'deleteConfirmModal';
 }
 
 if (!empty($open_modal)) {
@@ -64,7 +64,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Librarian Dashboard - Manage Users</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/adminFinal.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/admin.css" />
 </head>
 
 <body class="h-screen w-screen flex">
@@ -341,8 +341,17 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                 <p class="errors text-red-500 text-sm col-span-2 mt-2"><?= $errors["db_error"] ?? "" ?></p>
 
                 <br>
-                <input type="submit" value="Save Changes"
-                    class="font-bold cursor-pointer mt-4 border-none rounded-lg bg-red-800 text-white p-2 w-full hover:bg-red-700">
+                <div class="cancelConfirmBtns">
+
+                    <button type="button" data-modal="editBookModal" data-tab="<?= $current_tab ?>"
+                        class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 cursor-pointer">
+                        Cancel
+                    </button>
+
+                    <input type="submit" value="Save Changes"
+                        class="font-bold cursor-pointer mt-4 border-none rounded-lg bg-red-800 text-white p-2 w-full hover:bg-red-700">
+
+                </div>
             </form>
         </div>
     </div>
@@ -355,7 +364,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
             <h2 class="text-2xl font-bold mb-4">User Details</h2>
             <div class="user-details grid grid-cols-2 gap-y-2 gap-x-4 text-base">
 
-                <div class="col-span-2 mb-4 justify-items-center">
+                <div class="col-span-2 mb-4 relative justify-items-center">
                     <p class="font-semibold mb-2">ID Image:</p>
                     <?php
                     $modal_image_url = !empty($modal_user['imageID_dir']) ? "../../../" . $modal_user['imageID_dir'] : null;
@@ -366,6 +375,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                     <?php } else { ?>
                         <p class="text-gray-500">No ID Image Uploaded</p>
                     <?php } ?>
+                    <button type="button" id="openImage" class="enlarge text-red">enlarge</button>
                 </div>
 
                 <p class="col-span-2"><strong>Last Name:</strong> <?= $modal_user['lName'] ?? 'N/A' ?></p>
@@ -388,7 +398,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
             </div>
             <div class="mt-6 text-right">
                 <button type="button" data-modal="viewDetailsUserModal" data-tab="<?= $current_tab ?>"
-                    class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">Close</button>
+                    class="close viewBtn bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">Close</button>
             </div>
         </div>
     </div>
@@ -417,8 +427,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
     </div>
 
 
-    <div id="deleteConfirmUserModal"
-        class="modal delete-modal <?= $open_modal == 'deleteConfirmUserModal' ? 'open' : '' ?>">
+    <div id="deleteConfirmModal" class="modal delete-modal <?= $open_modal == 'deleteConfirmModal' ? 'open' : '' ?>">
         <div class="modal-content max-w-sm">
             <h2 class="text-xl font-bold mb-4 text-red-700">Confirm Deletion</h2>
             <p class="mb-6 text-gray-700">
@@ -427,13 +436,13 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                     class="font-semibold italic"><?= ($modal_user['fName'] ?? '') . ' ' . ($modal_user['lName'] ?? 'this user') ?></span>?
                 This action cannot be undone.
             </p>
-            <div class="flex justify-end space-x-4">
-                <button type="button" data-modal="deleteConfirmUserModal" data-tab="<?= $current_tab ?>"
+            <div class="cancelConfirmBtns">
+                <button type="button" data-modal="deleteConfirmModal" data-tab="<?= $current_tab ?>"
                     class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">
                     Cancel
                 </button>
-                <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=delete&id=<?= $modal_user['userID'] ?? $user_id ?>"
-                    class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 cursor-pointer">
+                <a href="../../../app/controllers/bookController.php?action=delete&id=<?= $modal_user['userID'] ?>"
+                    class="text-white px-4 py-2 rounded-lg font-semibold cursor-pointer">
                     Confirm Delete
                 </a>
             </div>
@@ -454,8 +463,47 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
         </div>
     </div>
 
+    <div id="imageEnlargeModal" class="modal hidden">
+        <div class="modal-content !max-w-4xl text-center">
+            <span class="close-times" id="closeImage">&times;</span>
+            <p class="font-semibold mb-2">Image:</p>
+            <?php
+            $modal_image_url = !empty($modal_user['imageID_dir']) ? "../../../" . $modal_user['imageID_dir'] : null;
+
+
+            if ($modal_image_url) { ?>
+                <img src="<?= $modal_image_url ?>" alt="Book Cover Image"
+                    class="w-full h-auto max-h-[80vh] object-contain mx-auto">
+            <?php } else { ?>
+                <p class="text-gray-500">No Book Cover Uploaded</p>
+            <?php } ?>
+            <!-- </div> -->
+        </div>
+    </div>
 
 </body>
 <script src="../../../public/assets/js/modal.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const closeImage = document.getElementById("closeImage");
+        const imageEnlargeModal = document.getElementById("imageEnlargeModal");
+        const openImage = document.getElementById("openImage");
+
+
+        openImage.addEventListener("click", () => {
+            imageEnlargeModal.style.display = 'flex';
+        })
+
+        closeImage.addEventListener("click", () => {
+            imageEnlargeModal.style.display = 'none';
+        })
+
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    })
+</script>
 
 </html>

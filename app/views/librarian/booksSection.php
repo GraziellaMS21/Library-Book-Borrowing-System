@@ -84,7 +84,7 @@ $books = $bookObj->viewBook($search, $categoryID);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Librarian Dashboard</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/adminFinal.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/admin.css" />
 </head>
 
 <body class="h-screen w-screen flex">
@@ -149,13 +149,13 @@ $books = $bookObj->viewBook($search, $categoryID);
                                     <td><?= $book["book_condition"] ?></td>
                                     <td><?= $book["status"] ?></td>
                                     <td class="action text-center">
-                                        <a class="editBtn bg-blue-500 hover:bg-blue-600"
+                                        <a class="actionBtn bg-blue-500 hover:bg-blue-600"
                                             href="booksSection.php?modal=edit&id=<?= $book['bookID'] ?>">Edit</a>
-                                        <a class="deleteBtn  bg-red-500 hover:bg-red-600"
+                                        <a class="actionBtn bg-red-500 hover:bg-red-600"
                                             href="booksSection.php?modal=delete&id=<?= $book['bookID'] ?>">
                                             Delete
                                         </a>
-                                        <a class="viewBtn bg-gray-500 hover:bg-gray-600 text-white "
+                                        <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-white "
                                             href="booksSection.php?modal=view&id=<?= $book['bookID'] ?>">View</a>
                                     </td>
                                 </tr>
@@ -383,17 +383,27 @@ $books = $bookObj->viewBook($search, $categoryID);
                     </p>
                 </div>
                 <br>
-                <input type="submit" value="Save Changes" class="font-bold cursor-pointer mb-8 border-none rounded-lg">
+
+                <div class="cancelConfirmBtns">
+                    <button type="button" data-modal="editBookModal"
+                        class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 cursor-pointer">
+                        Cancel
+                    </button>
+
+                    <input type="submit" value="Save Changes"
+                        class="text-white px-4 py-2 rounded-lg font-semibold cursor-pointer">
+                </div>
             </form>
         </div>
     </div>
 
     <div id="viewDetailsModal" class="modal <?= $open_modal == 'viewDetailsModal' ? 'open' : '' ?>">
         <div class="modal-content">
+            <span class="close close-times" data-modal="viewDetailsModal">&times;</span>
             <h2 class="text-2xl font-bold mb-4">Full Book Details</h2>
             <div class="book-details grid grid-cols-2 gap-y-2 gap-x-4 text-sm">
 
-                <div class="col-span-2 mb-4 justify-items-center">
+                <div class="col-span-2 mb-4 relative justify-items-center">
                     <p class="font-semibold mb-2">Book Cover:</p>
                     <?php
                     $modal_book_cover_url = !empty($modal_book['book_cover_dir']) ? "../../../" . $modal_book['book_cover_dir'] : null;
@@ -401,6 +411,7 @@ $books = $bookObj->viewBook($search, $categoryID);
                     if ($modal_book_cover_url) { ?>
                         <img src="<?= $modal_book_cover_url ?>" alt="Book Cover Image"
                             class="max-w-xs max-h-60 border rounded shadow-md object-cover">
+                        <button type="button" id="openImage" class="enlarge text-red">⬄</button>
                     <?php } else { ?>
                         <p class="text-gray-500">No Book Cover Uploaded</p>
                     <?php } ?>
@@ -427,7 +438,7 @@ $books = $bookObj->viewBook($search, $categoryID);
             </div>
             <div class="mt-6 text-right">
                 <button type="button"
-                    class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400"
+                    class="close viewBtn bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400"
                     data-modal="viewDetailsModal">Close</button>
             </div>
         </div>
@@ -441,13 +452,13 @@ $books = $bookObj->viewBook($search, $categoryID);
                 <span class="font-semibold italic"><?= $modal_book['book_title'] ?? 'this book' ?></span>?
                 This action cannot be undone.
             </p>
-            <div class="flex justify-end space-x-4">
+            <div class="cancelConfirmBtns">
                 <button type="button" data-modal="deleteConfirmModal"
                     class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">
                     Cancel
                 </button>
                 <a href="../../../app/controllers/bookController.php?action=delete&id=<?= $modal_book['bookID'] ?>"
-                    class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 cursor-pointer">
+                    class="text-white px-4 py-2 rounded-lg font-semibold cursor-pointer">
                     Confirm Delete
                 </a>
             </div>
@@ -468,8 +479,46 @@ $books = $bookObj->viewBook($search, $categoryID);
         </div>
     </div>
 
+    <div id="imageEnlargeModal" class="modal hidden">
+        <div class="modal-content !max-w-4xl text-center">
+            <span class="close-times" id="closeImage">&times;</span>
+            <?php
+            $modal_book_cover_url = !empty($modal_book['book_cover_dir']) ? "../../../" . $modal_book['book_cover_dir'] : null;
+
+            if ($modal_book_cover_url) { ?>
+                <img src="<?= $modal_book_cover_url ?>" alt="Book Cover Image"
+                    class="w-full h-auto max-h-[80vh] object-contain mx-auto">
+            <?php } else { ?>
+                <p class="text-gray-500">No Book Cover Uploaded</p>
+            <?php } ?>
+            <!-- </div> -->
+        </div>
+    </div>
+
 
 </body>
 <script src="../../../public/assets/js/modal.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const closeImage = document.getElementById("closeImage");
+        const imageEnlargeModal = document.getElementById("imageEnlargeModal");
+        const openImage = document.getElementById("openImage");
+
+
+        openImage.addEventListener("click", () => {
+            imageEnlargeModal.style.display = 'flex';
+        })
+
+        closeImage.addEventListener("click", () => {
+            imageEnlargeModal.style.display = 'none';
+        })
+
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    })
+</script>
 
 </html>

@@ -53,7 +53,7 @@ $categories = $categoryObj->viewCategory();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Librarian Dashboard</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/adminFinal.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/admin.css" />
 </head>
 
 <body class="h-screen w-screen flex">
@@ -61,51 +61,51 @@ $categories = $categoryObj->viewCategory();
 
 
     <div class="flex flex-col w-10/12">
-    <nav>
-        <h1 class="text-xl font-semibold">Categories</h1>
-    </nav>
-    <main>
-        <div class="container">
-            <div class="section h-full">
-                <div class="title flex w-full items-center justify-between">
-                    <h1 class="text-red-800 font-bold text-4xl">MANAGE CATEGORIES</h1>
-                    <a id="openAddCategoryModalBtn" class="addBtn" href="categorySection.php?modal=add">+ Add
-                        Category</a>
-                </div>
+        <nav>
+            <h1 class="text-xl font-semibold">Categories</h1>
+        </nav>
+        <main>
+            <div class="container">
+                <div class="section h-full">
+                    <div class="title flex w-full items-center justify-between">
+                        <h1 class="text-red-800 font-bold text-4xl">MANAGE CATEGORIES</h1>
+                        <a id="openAddCategoryModalBtn" class="addBtn" href="categorySection.php?modal=add">+ Add
+                            Category</a>
+                    </div>
 
 
-                <div class="view">
-                    <table>
-                        <tr>
-                            <th>No</th>
-                            <th>Category Name</th>
-                            <th>Actions</th>
-                        </tr>
-
-                        <?php
-                        $no = 1;
-                        foreach ($categories as $cat) {
-                            ?>
+                    <div class="view">
+                        <table>
                             <tr>
-                                <td><?= $no++ ?></td>
-                                <td><?= $cat["category_name"] ?></td>
-                                <td class="action text-center">
-                                    <a class="editBtn bg-blue-500 hover:bg-blue-600"
-                                        href="categorySection.php?modal=edit&id=<?= $cat['categoryID'] ?>">Edit</a>
-                                    <a class="deleteBtn bg-red-500 hover:bg-red-600"
-                                        href="categorySection.php?modal=delete&id=<?= $cat['categoryID'] ?>">
-                                        Delete
-                                    </a>
-                                </td>
+                                <th>No</th>
+                                <th>Category Name</th>
+                                <th>Actions</th>
                             </tr>
+
                             <?php
-                        }
-                        ?>
-                    </table>
+                            $no = 1;
+                            foreach ($categories as $cat) {
+                                ?>
+                                <tr>
+                                    <td><?= $no++ ?></td>
+                                    <td><?= $cat["category_name"] ?></td>
+                                    <td class="action text-center">
+                                        <a class="actionBtn bg-blue-500 hover:bg-blue-600"
+                                            href="categorySection.php?modal=edit&id=<?= $cat['categoryID'] ?>">Edit</a>
+                                        <a class="actionBtn bg-red-500 hover:bg-red-600"
+                                            href="categorySection.php?modal=delete&id=<?= $cat['categoryID'] ?>">
+                                            Delete
+                                        </a>
+                                    </td>
+                                </tr>
+                                <?php
+                            }
+                            ?>
+                        </table>
+                    </div>
                 </div>
             </div>
-        </div>
-    </main>
+        </main>
     </div>
 
     <div id="addCategoryModal" class="modal <?= $open_modal == 'addCategoryModal' ? 'open' : '' ?>">
@@ -156,13 +156,13 @@ $categories = $categoryObj->viewCategory();
                     class="font-semibold italic"><?= htmlspecialchars($modal['category_name'] ?? 'this category') ?></span>?
                 This action cannot be undone.
             </p>
-            <div class="flex justify-end space-x-4">
+            <div class="cancelConfirmBtns">
                 <button type="button" data-modal="deleteConfirmModal"
                     class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">
                     Cancel
                 </button>
-                <a href="../../../app/controllers/categoryController.php?action=delete&id=<?= htmlspecialchars($modal['categoryID'] ?? $category_id) ?>"
-                    class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 cursor-pointer">
+                <a href="../../../app/controllers/bookController.php?action=delete&id=<?= $modal['categoryID'] ?>"
+                    class="text-white px-4 py-2 rounded-lg font-semibold cursor-pointer">
                     Confirm Delete
                 </a>
             </div>

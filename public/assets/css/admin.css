@@ -216,7 +216,7 @@ tbody tr:hover {
 /* ---- GENERAL FORM STYLES ---- */
 label {
   display: block;
-  font-weight: 500;
+  font-weight: 600 !important;
   margin-bottom: 0.2rem;
 }
 
@@ -262,7 +262,7 @@ select:focus {
 }
 
 input[type="submit"] {
-  background-color: #610101;
+  background-color: #931c19;
   color: white;
   padding: 0.7rem 1.5rem;
   box-shadow: 0 4px 10px rgba(147, 28, 25, 0.3);
@@ -274,7 +274,7 @@ input[type="submit"] {
 
 input[type="submit"]:hover {
   transform: translateY(-2px);
-  background-color: #931c19;
+  background-color: #610101;
   box-shadow: 0 6px 12px rgba(147, 28, 25, 0.4);
 }
 
@@ -306,8 +306,8 @@ input[type="submit"]:hover {
   width: 100vw;
   background: rgba(0, 0, 0, 0.65);
   animation: fadeIn 0.3s ease;
-  z-index: 1000; /* High z-index to cover everything */
-  padding: 1rem; /* Padding for mobile view */
+  z-index: 1000;
+  padding: 1rem;
 }
 
 .modal.open {
@@ -337,6 +337,7 @@ input[type="submit"]:hover {
   margin-bottom: 1.5rem;
   border-bottom: 2px solid #eee;
   padding-bottom: 0.5rem;
+  font-weight: 600 !important;
 }
 
 /* Keyframe Animations */
@@ -410,4 +411,71 @@ input[type="submit"]:hover {
 
 .tab-btn:hover {
   color: #991b1b;
+}
+
+.enlarge {
+  background-color: grey;
+  color: white;
+  font-size: 2rem;
+  border-radius: 50%;
+  padding: 0.5rem 0;
+  position: absolute;
+  top: 15%;
+  right: 35%;
+  opacity: 30%;
+  transition: opacity 0.3s ease;
+}
+
+.enlarge:hover {
+  opacity: 50%;
+}
+
+.cancelConfirmBtns, .cancelConfirmBtns {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cancelConfirmBtns a,
+.cancelConfirmBtns button,
+.cancelConfirmBtns input[type="submit"]{
+  width: 50% !important;
+  display: inline-block;
+  text-align: center;
+  transition: background-color 0.2s ease, transform 0.2s ease-in-out;
+}
+
+.cancelConfirmBtns a,
+.cancelConfirmBtns input[type="submit"] {
+  background-color: #931c19;
+  margin: 0 !important;
+}
+
+.cancelConfirmBtns a:hover,
+.cancelConfirmBtns input[type="submit"]:hover {
+  transform: translateY(-2px);
+  background-color: #610101;
+  box-shadow: 0 6px 12px rgba(147, 28, 25, 0.4);
+}
+
+.cancelConfirmBtns button:hover, .viewBtn:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(82, 82, 82, 0.4);
+}
+
+.btnBlock:hover {
+  transform: translateY(-2px);
+  background-color: rgba(147, 68, 7) !important;
+  box-shadow: 0 6px 12px rgba(147, 28, 25, 0.4);
+}
+
+.btnPaid:hover {
+  transform: translateY(-2px);
+  background-color: rgba(4, 120, 87) !important;
+  box-shadow: 0 6px 12px rgba(147, 28, 25, 0.4);
+}
+
+.viewBtn {
+  width: 100%;
 }
