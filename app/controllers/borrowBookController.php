@@ -24,8 +24,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         $total_success_copies = 0;
         $all_success = true;
-        $successful_list_IDs = []; 
-        
+        $successful_list_IDs = [];
+
         if (empty($userID)) {
             $errors['userID'] = "User ID is required for multiple checkout.";
             $all_success = false;
@@ -55,7 +55,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $borrowObj->fine_amount = 0.00;
                     $borrowObj->fine_reason = NULL;
                     $borrowObj->fine_status = NULL;
-                    $borrowObj->borrower_notified = NULL; 
+                    $borrowObj->user_notified = NULL;
 
                     if ($borrowObj->addBorrowDetail()) {
                         $total_success_copies += $copies_requested;
@@ -126,7 +126,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $borrowObj->fine_amount = $detail['fine_amount'];
             $borrowObj->fine_reason = $detail['fine_reason'];
             $borrowObj->fine_status = $detail['fine_status'];
-            $borrowObj->borrower_notified = null; 
+            $borrowObj->user_notified = null;
 
             if ($borrowObj->addBorrowDetail()) {
                 $success_count = $detail['no_of_copies'];
@@ -136,8 +136,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $errors["general"] = "Failed to add the loan request to the database.";
             }
         }
-    }
-    elseif ($action === 'edit' && $borrowID) {
+    } elseif ($action === 'edit' && $borrowID) {
         $detail['userID'] = trim(htmlspecialchars($_POST["userID"] ?? ''));
         $detail['bookID'] = trim(htmlspecialchars($_POST["bookID"] ?? ''));
         $detail['pickup_date'] = trim(htmlspecialchars($_POST["pickup_date"] ?? ''));
@@ -152,11 +151,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $detail['fine_reason'] = trim(htmlspecialchars($_POST["fine_reason"] ?? NULL));
         $detail['fine_status'] = trim(htmlspecialchars($_POST["fine_status"] ?? NULL));
 
-        $detail['borrower_notified'] = 1;
+        $detail['user_notified'] = 1;
         if (in_array($detail['borrow_request_status'], ['Rejected', 'Cancelled'])) {
-            $detail['borrower_notified'] = 0; 
+            $detail['user_notified'] = 0;
         }
-        
+
         if (empty($detail['userID']))
             $errors['userID'] = "User ID is required.";
         if (empty($detail['bookID']))
@@ -181,8 +180,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $borrowObj->fine_amount = $detail['fine_amount'];
             $borrowObj->fine_reason = $detail['fine_reason'];
             $borrowObj->fine_status = $detail['fine_status'];
-            $borrowObj->borrower_notified = $detail['borrower_notified']; 
-            
+            $borrowObj->user_notified = $detail['user_notified'];
+
             if ($borrowObj->borrow_status === 'Returned' && $borrowObj->return_date) {
 
                 $fine_results = $borrowObj->calculateFinalFine(
@@ -260,9 +259,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $borrow_request_status = "Cancelled";
             $borrow_status = NULL;
             $return_date = NULL;
-            $borrower_notified = 0;
+            $user_notified = 0;
 
-            if ($borrowObj->updateBorrowDetails($borrowID, $borrow_status, $borrow_request_status, $return_date, $borrower_notified)) {
+            if ($borrowObj->updateBorrowDetails($borrowID, $borrow_status, $borrow_request_status, $return_date, $user_notified)) {
                 if ($detail['borrow_request_status'] === 'Approved') {
                     $book_id_to_update = $detail['bookID'];
                     $copies_to_move = $detail['no_of_copies'];

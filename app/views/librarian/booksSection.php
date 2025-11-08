@@ -84,7 +84,7 @@ $books = $bookObj->viewBook($search, $categoryID);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Librarian Dashboard</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/admin.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/admin1.css" />
 </head>
 
 <body class="h-screen w-screen flex">
@@ -411,7 +411,9 @@ $books = $bookObj->viewBook($search, $categoryID);
                     if ($modal_book_cover_url) { ?>
                         <img src="<?= $modal_book_cover_url ?>" alt="Book Cover Image"
                             class="max-w-xs max-h-60 border rounded shadow-md object-cover">
-                        <button type="button" id="openImage" class="enlarge text-red">⬄</button>
+                        <button type="button" id="openImage" class="enlarge">
+                            <i class="fa-solid fa-expand" style="color: #ffffff;"></i>
+                        </button>
                     <?php } else { ?>
                         <p class="text-gray-500">No Book Cover Uploaded</p>
                     <?php } ?>
@@ -480,7 +482,7 @@ $books = $bookObj->viewBook($search, $categoryID);
     </div>
 
     <div id="imageEnlargeModal" class="modal hidden">
-        <div class="modal-content !max-w-4xl text-center">
+        <div class="modal-content !max-w-2xl text-center">
             <span class="close-times" id="closeImage">&times;</span>
             <?php
             $modal_book_cover_url = !empty($modal_book['book_cover_dir']) ? "../../../" . $modal_book['book_cover_dir'] : null;

@@ -53,7 +53,7 @@ $categories = $categoryObj->viewCategory();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Librarian Dashboard</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/admin.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/admin1.css" />
 </head>
 
 <body class="h-screen w-screen flex">

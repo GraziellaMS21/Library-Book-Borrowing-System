@@ -70,12 +70,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         if ($action === 'edit' && $borrowID) {
-            
+
             // $current_detail was fetched earlier, ensure it's available
             if (!isset($current_detail) || !$current_detail) {
-                 $current_detail = $borrowObj->fetchBorrowDetail($borrowID);
+                $current_detail = $borrowObj->fetchBorrowDetail($borrowID);
             }
-            
+
             // Determine the comparison date for fine calculation:
             // 1. If return_date is set in the form, use it.
             // 2. If return_date is NOT set, use today's date to calculate current late fine.
@@ -86,30 +86,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // 1. Recalculate button clicked (fine_amount set to 0.00)
             // 2. User manually resets fine_amount to 0.00 and saves.
             if (
-                $borrowObj->fine_amount <= 0.01 && 
+                $borrowObj->fine_amount <= 0.01 &&
                 $borrowObj->expected_return_date
             ) {
-                
+
                 // Use the dates from the posted detail for recalculation
                 $fine_results = $borrowObj->calculateFinalFine(
-                    $borrowObj->expected_return_date, 
+                    $borrowObj->expected_return_date,
                     $comparison_date, // Use the determined comparison date
                     $bookObj,
                     $detail['bookID'] // Use the determined bookID
                 );
-                
+
                 // Update detail object with calculated fine results
                 $borrowObj->fine_amount = $fine_results['fine_amount'];
                 $borrowObj->fine_reason = $fine_results['fine_reason'];
                 // Ensure fine status is 'Unpaid' if a new late fine is calculated (only if fine > 0)
                 $borrowObj->fine_status = ($fine_results['fine_amount'] > 0) ? 'Unpaid' : ($borrowObj->fine_status ?: NULL);
             }
-            
+
             if ($borrowObj->fine_amount <= 0.00) {
                 $borrowObj->fine_reason = NULL;
                 $borrowObj->fine_status = NULL;
             }
-            
+
             if ($borrowObj->editBorrowDetail($borrowID)) {
                 header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}&success=edit");
                 exit;
@@ -269,7 +269,7 @@ if ($borrowID) {
         } elseif ($action === 'reject') {
             $borrowObj->borrow_request_status = 'Rejected';
             $borrowObj->borrow_status = NULL;
-            $borrowObj->borrower_notified = 0;
+            $borrowObj->user_notified = 0;
             $final_redirect_tab = 'rejected';
             if ($current_detail['borrow_request_status'] === 'Approved' || $current_detail['borrow_request_status'] === 'Pending') {
                 if (!$bookObj->incrementBookCopies($book_id_to_update, $copies_to_move)) {
@@ -302,7 +302,7 @@ if ($borrowID) {
             $borrowObj->borrow_request_status = 'Cancelled';
             $borrowObj->borrow_status = NULL;
             $borrowObj->return_date = NULL;
-            $borrowObj->borrower_notified = 0;
+            $borrowObj->user_notified = 0;
             $final_redirect_tab = 'cancelled';
             if ($current_detail['borrow_request_status'] === 'Approved' && $current_detail['borrow_status'] !== 'Borrowed') {
                 if (!$bookObj->incrementBookCopies($book_id_to_update, $copies_to_move)) {

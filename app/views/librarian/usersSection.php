@@ -64,7 +64,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Librarian Dashboard - Manage Users</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/admin.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/admin1.css" />
 </head>
 
 <body class="h-screen w-screen flex">
@@ -375,7 +375,9 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                     <?php } else { ?>
                         <p class="text-gray-500">No ID Image Uploaded</p>
                     <?php } ?>
-                    <button type="button" id="openImage" class="enlarge text-red">enlarge</button>
+                    <button type="button" id="openImage" class="enlarge">
+                        <i class="fa-solid fa-expand" style="color: #ffffff;"></i>
+                    </button>
                 </div>
 
                 <p class="col-span-2"><strong>Last Name:</strong> <?= $modal_user['lName'] ?? 'N/A' ?></p>

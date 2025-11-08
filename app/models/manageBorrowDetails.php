@@ -18,14 +18,14 @@ class BorrowDetails extends Database
     public $fine_amount = 0.00;
     public $fine_reason = "";
     public $fine_status = "";
-    public $borrower_notified = NULL;
+    public $user_notified = NULL;
 
     protected $db;
 
     public function addBorrowDetail()
     {
-        $sql = "INSERT INTO borrowing_details (userID, bookID, no_of_copies, request_date, pickup_date, return_date, expected_return_date, returned_condition, borrow_request_status, borrow_status, fine_amount, fine_reason, fine_status, borrower_notified)
-                VALUES (:userID, :bookID, :no_of_copies, :request_date, :pickup_date, :return_date, :expected_return_date, :returned_condition, :borrow_request_status, :borrow_status, :fine_amount, :fine_reason, :fine_status, :borrower_notified)";
+        $sql = "INSERT INTO borrowing_details (userID, bookID, no_of_copies, request_date, pickup_date, return_date, expected_return_date, returned_condition, borrow_request_status, borrow_status, fine_amount, fine_reason, fine_status, user_notified)
+                VALUES (:userID, :bookID, :no_of_copies, :request_date, :pickup_date, :return_date, :expected_return_date, :returned_condition, :borrow_request_status, :borrow_status, :fine_amount, :fine_reason, :fine_status, :user_notified)";
         $query = $this->connect()->prepare($sql);
 
         $query->bindParam(":userID", $this->userID);
@@ -41,7 +41,7 @@ class BorrowDetails extends Database
         $query->bindParam(":fine_amount", $this->fine_amount);
         $query->bindParam(":fine_reason", $this->fine_reason);
         $query->bindParam(":fine_status", $this->fine_status);
-        $query->bindParam(":borrower_notified", $this->borrower_notified);
+        $query->bindParam(":user_notified", $this->user_notified);
         return $query->execute();
     }
 
@@ -189,7 +189,7 @@ class BorrowDetails extends Database
                     fine_amount = :fine_amount,
                     fine_reason = :fine_reason,
                     fine_status = :fine_status,
-                    borrower_notified = :borrower_notified
+                    user_notified = :user_notified
                 WHERE borrowID = :borrowID";
         $query = $this->connect()->prepare($sql);
 
@@ -206,7 +206,7 @@ class BorrowDetails extends Database
         $query->bindParam(":fine_amount", $this->fine_amount);
         $query->bindParam(":fine_reason", $this->fine_reason);
         $query->bindParam(":fine_status", $this->fine_status);
-        $query->bindParam(":borrower_notified", $this->borrower_notified);
+        $query->bindParam(":user_notified", $this->user_notified);
         $query->bindParam(":borrowID", $borrowID);
 
         return $query->execute();
@@ -348,22 +348,22 @@ class BorrowDetails extends Database
         }
     }
 
-    public function updateBorrowDetails($borrowID, $borrow_status, $borrow_request_status, $return_date, $borrower_notified)
+    public function updateBorrowDetails($borrowID, $borrow_status, $borrow_request_status, $return_date, $user_notified)
     {
-        $sql = "UPDATE borrowing_details SET borrow_request_status = :borrow_request_status, borrow_status = :borrow_status, return_date = :return_date, borrower_notified = :borrower_notified WHERE borrowID = :borrowID";
+        $sql = "UPDATE borrowing_details SET borrow_request_status = :borrow_request_status, borrow_status = :borrow_status, return_date = :return_date, user_notified = :user_notified WHERE borrowID = :borrowID";
         $query = $this->connect()->prepare($sql);
 
         $query->bindParam(":borrow_request_status", $borrow_request_status);
         $query->bindParam(":borrow_status", $borrow_status);
         $query->bindParam(":borrowID", $borrowID);
         $query->bindParam(":return_date", $return_date);
-        $query->bindParam(":borrower_notified", $borrower_notified);
+        $query->bindParam(":user_notified", $user_notified);
         return $query->execute();
     }
 
     public function updateBorrowerNotifiedStatus($borrowID, $status)
     {
-        $sql = "UPDATE borrowing_details SET borrower_notified = :status WHERE borrowID = :borrowID";
+        $sql = "UPDATE borrowing_details SET user_notified = :status WHERE borrowID = :borrowID";
         $query = $this->connect()->prepare($sql);
 
         $query->bindParam(":status", $status);
@@ -455,7 +455,7 @@ class BorrowDetails extends Database
 
         return $query->execute();
     }
-    
+
     public function calculateFinalFine($expected_return_date, $comparison_date_string, Book $bookObj, $bookID)
     {
         $comparison_date_string = $comparison_date_string ?: date("Y-m-d");

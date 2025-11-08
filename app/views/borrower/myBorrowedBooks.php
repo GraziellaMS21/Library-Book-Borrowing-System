@@ -7,7 +7,7 @@ if (!isset($_SESSION["user_id"])) {
 
 require_once(__DIR__ . "/../../models/manageBorrowDetails.php");
 require_once(__DIR__ . "/../../models/manageUsers.php");
-require_once(__DIR__ . "/../../models/manageBook.php"); 
+require_once(__DIR__ . "/../../models/manageBook.php");
 
 $borrowObj = new BorrowDetails();
 $userObj = new User();
@@ -41,10 +41,10 @@ if ($active_tab === 'returned') {
 
     $rejected = $borrowObj->fetchUserBorrowDetails($userID, 'Rejected');
     $cancelled = $borrowObj->fetchUserBorrowDetails($userID, 'Cancelled');
-    $rejected_requests = array_filter($rejected, fn($borrow) => $borrow['borrow_request_status'] === 'Rejected' && $borrow['borrower_notified'] == 0);
+    $rejected_requests = array_filter($rejected, fn($borrow) => $borrow['borrow_request_status'] === 'Rejected' && $borrow['user_notified'] == 0);
 
 
-    $cancelled_requests = array_filter($cancelled, fn($borrow) => $borrow['borrow_request_status'] === 'Cancelled' && $borrow['borrower_notified'] == 0);
+    $cancelled_requests = array_filter($cancelled, fn($borrow) => $borrow['borrow_request_status'] === 'Cancelled' && $borrow['user_notified'] == 0);
 
 
     $borrowed_books = array_merge($pending_requests, $approved_requests, $rejected_requests, $cancelled_requests);
@@ -65,17 +65,17 @@ $tabs_for_fine_check = ['borrowed', 'unpaid'];
 if (in_array($active_tab, $tabs_for_fine_check) && !empty($borrowed_books)) {
     foreach ($borrowed_books as $detail) {
         $db_update_required = false;
-        
+
         // Only check for overdue fine calculation on 'Borrowed' loans that haven't been returned
         if ($detail['borrow_status'] === 'Borrowed' && $detail['return_date'] === null) {
-        
+
             $full_detail = $borrowObj->fetchBorrowDetail($detail['borrowID']);
 
             // Calculate fine based on today's date
             $fine_results = $borrowObj->calculateFinalFine(
-                $detail['expected_return_date'], 
+                $detail['expected_return_date'],
                 date("Y-m-d"), // Today's date for comparison
-                $bookObj, 
+                $bookObj,
                 $detail['bookID']
             );
 
@@ -88,7 +88,7 @@ if (in_array($active_tab, $tabs_for_fine_check) && !empty($borrowed_books)) {
                 $db_update_required = true;
             }
         }
-        
+
         // If a higher fine was calculated or if the fine_status changed due to lateness, update the DB
         if ($db_update_required) {
             $borrowObj->updateFineDetails(
@@ -365,12 +365,12 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                                         href="../../../app/controllers/borrowBookController.php?action=cancel&id=<?= $book['borrowID'] ?>">
                                                         Cancel
                                                     </a>
-                                                <?php elseif ($book['borrow_request_status'] == 'Rejected' && $book['borrower_notified'] == 0): ?>
+                                                <?php elseif ($book['borrow_request_status'] == 'Rejected' && $book['user_notified'] == 0): ?>
                                                     <a class="px-2 py-1 rounded text-white bg-green-600 hover:bg-green-700 text-sm font-medium"
                                                         href="../../../app/controllers/borrowBookController.php?action=mark_as_read&id=<?= $book['borrowID'] ?>&tab=pending">
                                                         Mark as Read
                                                     </a>
-                                                <?php elseif ($book['borrow_request_status'] == 'Cancelled' && $book['borrower_notified'] == 0): ?>
+                                                <?php elseif ($book['borrow_request_status'] == 'Cancelled' && $book['user_notified'] == 0): ?>
                                                     <a class="px-2 py-1 rounded text-white bg-green-600 hover:bg-green-700 text-sm font-medium"
                                                         href="../../../app/controllers/borrowBookController.php?action=mark_as_read&id=<?= $book['borrowID'] ?>&tab=pending">
                                                         Mark as Read
@@ -462,7 +462,7 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
-                    <?php endforeach;?>
+                    <?php endforeach; ?>
                 </div>
             <?php endif; ?>
         </div>

@@ -116,7 +116,7 @@ unset($detail);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Librarian Dashboard - Manage Borrow Details</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/admin.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/admin1.css" />
 </head>
 
 <body class="h-screen w-screen flex">
@@ -613,7 +613,6 @@ unset($detail);
                             $fine_statuses = ['Unpaid', 'Paid'];
                             foreach ($fine_statuses as $status) {
                                 $selected = '';
-                                // Only select 'Unpaid' or 'Paid' if fine_amount > 0 AND it matches the status
                                 if (($modal_borrow_details['fine_amount'] ?? 0) > 0.00 && ($modal_borrow_details['fine_status'] ?? '') == $status) {
                                     $selected = 'selected';
                                 }
