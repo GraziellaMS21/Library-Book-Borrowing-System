@@ -31,7 +31,7 @@ switch ($currentFile) {
 
 <link rel="stylesheet" href="../../../public/assets/fontawesome-free-7.1.0-web/css/all.min.css">
 
-<nav class="flex justify-between items-center w-full sticky py-4 px-8 top-0 z-10">
+<nav class="flex justify-between items-center w-full sticky py-4 px-8 top-0 z-50">
     <div class="flex items-center gap-3">
         <i class="toggle-btn fa-solid fa-list text-xl" style="color: #545454ff;"></i>
         <img src="../../../public/assets/images/logo.png" alt="Logo" class="h-12 w-12">
@@ -41,7 +41,7 @@ switch ($currentFile) {
     <h1 class="text-3xl font-bold text-gray-800">
         <?php echo htmlspecialchars($pageTitle); ?>
     </h1>
-    
+
     <div class="account flex items-center">
         <div class="bg-white rounded-full flex items-center justify-center h-8 w-8 px-4 mx-4">
             <i class="fa-solid fa-user" style="color: #bd322f;"></i>
@@ -88,7 +88,7 @@ switch ($currentFile) {
             </li>
             <li class="links">
                 <a href="../../../app/views/librarian/reportsSection.php" id="reportsBtn">
-                    <i class="fas fa-chart-pie"></i> <span class="text-white pl-4">Borrowing Details</span>
+                    <i class="fas fa-chart-pie"></i> <span class="text-white pl-4">Reports</span>
                 </a>
             </li>
             <li class="links mt-auto">

@@ -516,6 +516,29 @@ class BorrowDetails extends Database
         return $result['total_borrowed'] ?? 0;
     }
 
+     public function countTotalBooksForPickUp()
+    {
+        $sql = "SELECT SUM(no_of_copies) AS total_borrowed 
+                FROM borrowing_details 
+                WHERE borrow_request_status = 'Approved'";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result['total_borrowed'] ?? 0;
+    }
+
+    public function sumTotalCollectedFines()
+    {
+        $sql = "SELECT SUM(fine_amount) AS total_fines
+                FROM borrowing_details
+                WHERE fine_status = 'Paid'";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result['total_fines'] ?? 0.00;
+    }
+
+
     public function sumMonthlyCollectedFines()
     {
         $sql = "SELECT SUM(fine_amount) AS total_fines
@@ -528,25 +551,23 @@ class BorrowDetails extends Database
         $result = $query->fetch(PDO::FETCH_ASSOC);
         return $result['total_fines'] ?? 0.00;
     }
+    
+     public function getCollectedFinesLast7Days()
+{
+    $sql = "SELECT DATE(return_date) AS fine_date, 
+                   SUM(fine_amount) AS total_fines
+            FROM borrowing_details
+            WHERE fine_status = 'Paid'
+              AND return_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+            GROUP BY DATE(return_date)
+            ORDER BY fine_date ASC";
+    
+    $query = $this->connect()->prepare($sql);
+    $query->execute();
+    return $query->fetchAll(PDO::FETCH_ASSOC);
+}
 
-    // --- NEW FUNCTION ADDED ---
-    /**
-     * Calculates the total of UNPAID fines that were expected to be returned this month.
-     * This assumes the fine is logged when the expected_return_date passes.
-     */
-    public function sumMonthlyUncollectedFines()
-    {
-        $sql = "SELECT SUM(fine_amount) AS total_fines
-                FROM borrowing_details
-                WHERE fine_status = 'Unpaid'
-                AND MONTH(expected_return_date) = MONTH(CURDATE())
-                AND YEAR(expected_return_date) = YEAR(CURDATE())";
-        $query = $this->connect()->prepare($sql);
-        $query->execute();
-        $result = $query->fetch(PDO::FETCH_ASSOC);
-        return $result['total_fines'] ?? 0.00;
-    }
-
+    
     public function getTopBorrowedBookName()
     {
         $sql = "SELECT b.book_title
@@ -643,6 +664,30 @@ class BorrowDetails extends Database
     return $query->fetchAll(PDO::FETCH_ASSOC);
 }
 
+public function getTopUnpaidFinesUsers($limit = 5)
+    {
+        $sql = "SELECT 
+                    u.fName, 
+                    u.lName, 
+                    SUM(bd.fine_amount) AS total_unpaid
+                FROM borrowing_details bd
+                JOIN users u ON bd.userID = u.userID
+                WHERE bd.fine_status = 'Unpaid'
+                GROUP BY bd.userID, u.fName, u.lName
+                HAVING total_unpaid > 0
+                ORDER BY total_unpaid DESC
+                LIMIT :limit";
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(':limit', $limit, PDO::PARAM_INT);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Fetches the breakdown of all borrows by user type.
+     * FOR: Dashboard Chart - Borrower Type Breakdown
+     */
+
     public function getFilteredBorrowHistory($filters = [])
     {
         $sql = "SELECT 
@@ -714,4 +759,68 @@ class BorrowDetails extends Database
         $query->execute($params);
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function getDailyBorrowingActivity()
+    {
+        $sql = "SELECT 
+                    DATE(request_date) AS borrow_date,
+                    SUM(no_of_copies) AS total_borrows
+                FROM borrowing_details
+                WHERE request_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                  AND (borrow_request_status = 'Approved' OR borrow_status IN ('Borrowed', 'Returned'))
+                GROUP BY DATE(request_date)
+                ORDER BY borrow_date ASC";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Fetches total borrowed vs. total returned for the current month.
+     * FOR: Dashboard Chart - Books Borrowed vs. Returned
+     */
+    public function getMonthlyBorrowReturnStats()
+    {
+        $sql_borrowed = "SELECT SUM(no_of_copies) AS total_borrowed
+                         FROM borrowing_details
+                         WHERE (borrow_request_status = 'Approved' OR borrow_status IN ('Borrowed', 'Returned'))
+                         AND MONTH(request_date) = MONTH(CURDATE())
+                         AND YEAR(request_date) = YEAR(CURDATE())";
+        
+        $query_borrowed = $this->connect()->prepare($sql_borrowed);
+        $query_borrowed->execute();
+        $borrowed = $query_borrowed->fetch(PDO::FETCH_ASSOC)['total_borrowed'] ?? 0;
+
+        $sql_returned = "SELECT SUM(no_of_copies) AS total_returned
+                         FROM borrowing_details
+                         WHERE borrow_status = 'Returned'
+                         AND MONTH(return_date) = MONTH(CURDATE())
+                         AND YEAR(return_date) = YEAR(CURDATE())";
+        
+        $query_returned = $this->connect()->prepare($sql_returned);
+        $query_returned->execute();
+        $returned = $query_returned->fetch(PDO::FETCH_ASSOC)['total_returned'] ?? 0;
+
+        return [
+            ['status' => 'Borrowed', 'count' => $borrowed],
+            ['status' => 'Returned', 'count' => $returned]
+        ];
+    }
+
+    public function getBooksDueToday() {
+        // CURDATE() gets today's date (e.g., '2025-11-11')
+        $sql = "SELECT bd.*, u.fName, u.lName, b.book_title
+                FROM borrowing_details bd
+                JOIN users u ON bd.userID = u.userID
+                JOIN books b ON bd.bookID = b.bookID
+                WHERE bd.borrow_status = 'Borrowed'
+                AND DATE(bd.expected_return_date) = CURDATE()
+                ORDER BY u.lName, u.fName";
+
+        $stmt = $this->connect()->prepare($sql);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
 }

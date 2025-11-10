@@ -75,9 +75,9 @@ class User extends Database
         }
     }
 
-    public function countTotalBorrowers()
+    public function countTotalActiveBorrowers()
     {
-        $sql = "SELECT COUNT(userID) AS total_borrowers FROM users WHERE role = 'Borrower' AND registration_status = 'Approved'";
+        $sql = "SELECT COUNT(userID) AS total_borrowers FROM users WHERE role = 'Borrower' AND account_status = 'Active'";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         $result = $query->fetch(PDO::FETCH_ASSOC);
@@ -235,4 +235,17 @@ class User extends Database
         return $result ? $result['fName'] . ' ' . $result['lName'] : 'N/A';
     }
 
+    public function getUserRegistrationTrend()
+    {
+        $sql = "SELECT 
+                    DATE(date_registered) AS reg_date,
+                    COUNT(userID) AS new_users
+                FROM users
+                WHERE date_registered >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                GROUP BY DATE(date_registered)
+                ORDER BY reg_date ASC";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

@@ -133,9 +133,9 @@ class Book extends Database
     }
 
     //====HELPER FUNCTIONS====
-    public function countTotalBooks()
+    public function countTotalDistinctBooks()
     {
-        $sql = "SELECT COUNT(book_copies) AS total_books FROM books";
+        $sql = "SELECT COUNT(book_title) AS total_books FROM books";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         $result = $query->fetch(PDO::FETCH_ASSOC);
@@ -144,12 +144,14 @@ class Book extends Database
 
     public function countTotalBookCopies()
     {
-        $sql = "SELECT SUM(book_copies) AS total_books FROM books";
+        $sql = "SELECT 
+                (SELECT SUM(book_copies) FROM books) AS total_books";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         $result = $query->fetch(PDO::FETCH_ASSOC);
         return $result['total_books'] ?? 0;
     }
+
 
     public function fetchCategory()
     {
