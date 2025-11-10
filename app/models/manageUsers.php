@@ -221,5 +221,18 @@ class User extends Database
         $query->bindParam(":userID", $userID);
         return $query->execute();
     }
+    public function getTopBorrowerName()
+    {
+        $sql = "SELECT u.fName, u.lName
+                FROM borrowing_details bd
+                JOIN users u ON bd.userID = u.userID
+                GROUP BY bd.userID, u.fName, u.lName
+                ORDER BY COUNT(bd.userID) DESC
+                LIMIT 1";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result ? $result['fName'] . ' ' . $result['lName'] : 'N/A';
+    }
 
 }

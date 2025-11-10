@@ -505,4 +505,213 @@ class BorrowDetails extends Database
         return $results;
     }
 
+    public function countTotalBorrowedBooks()
+    {
+        $sql = "SELECT SUM(no_of_copies) AS total_borrowed 
+                FROM borrowing_details 
+                WHERE borrow_status = 'Borrowed'";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result['total_borrowed'] ?? 0;
+    }
+
+    public function sumMonthlyCollectedFines()
+    {
+        $sql = "SELECT SUM(fine_amount) AS total_fines
+                FROM borrowing_details
+                WHERE fine_status = 'Paid'
+                AND MONTH(return_date) = MONTH(CURDATE())
+                AND YEAR(return_date) = YEAR(CURDATE())";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result['total_fines'] ?? 0.00;
+    }
+
+    // --- NEW FUNCTION ADDED ---
+    /**
+     * Calculates the total of UNPAID fines that were expected to be returned this month.
+     * This assumes the fine is logged when the expected_return_date passes.
+     */
+    public function sumMonthlyUncollectedFines()
+    {
+        $sql = "SELECT SUM(fine_amount) AS total_fines
+                FROM borrowing_details
+                WHERE fine_status = 'Unpaid'
+                AND MONTH(expected_return_date) = MONTH(CURDATE())
+                AND YEAR(expected_return_date) = YEAR(CURDATE())";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result['total_fines'] ?? 0.00;
+    }
+
+    public function getTopBorrowedBookName()
+    {
+        $sql = "SELECT b.book_title
+                FROM borrowing_details bd
+                JOIN books b ON bd.bookID = b.bookID
+                GROUP BY bd.bookID, b.book_title
+                ORDER BY COUNT(bd.bookID) DESC
+                LIMIT 1";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result['book_title'] ?? 'N/A';
+    }
+
+    public function getTopBorrowedBooks($limit = 5)
+    {
+        $sql = "SELECT b.book_title, COUNT(bd.bookID) AS borrow_count
+                FROM borrowing_details bd
+                JOIN books b ON bd.bookID = b.bookID
+                GROUP BY bd.bookID, b.book_title
+                ORDER BY borrow_count DESC
+                LIMIT :limit";
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(':limit', $limit, PDO::PARAM_INT);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getTopActiveBorrowers($limit = 5)
+    {
+        $sql = "SELECT u.fName, u.lName, COUNT(bd.userID) AS borrow_count
+                FROM borrowing_details bd
+                JOIN users u ON bd.userID = u.userID
+                GROUP BY bd.userID, u.fName, u.lName
+                ORDER BY borrow_count DESC
+                LIMIT :limit";
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(':limit', $limit, PDO::PARAM_INT);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getMonthlyFinesTrend()
+    {
+        // SQL for last 12 months fines
+        $sql = "SELECT 
+                    DATE_FORMAT(return_date, '%Y-%m') AS month,
+                    SUM(fine_amount) AS total_fines
+                FROM borrowing_details
+                WHERE fine_status = 'Paid'
+                AND return_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+                GROUP BY DATE_FORMAT(return_date, '%Y-%m')
+                ORDER BY month ASC";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+ 
+    public function getMonthlyBorrowingTrend()
+    {
+        $sql = "SELECT 
+                    DATE_FORMAT(request_date, '%Y-%m') AS month,
+                    SUM(no_of_copies) AS total_borrows
+                FROM borrowing_details
+                WHERE request_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+                  AND (borrow_request_status = 'Approved' OR borrow_status IN ('Borrowed', 'Returned'))
+                GROUP BY DATE_FORMAT(request_date, '%Y-%m')
+                ORDER BY month ASC";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Fetches the breakdown of all borrow statuses.
+     * FOR: Dashboard Chart - Borrow Status Breakdown
+     */
+    public function getBorrowStatusBreakdown()
+{
+    $sql = "SELECT 
+               CASE
+                   WHEN borrow_status = 'Borrowed' AND (expected_return_date >= CURDATE() OR expected_return_date IS NULL) THEN 'Borrowed'
+                   WHEN borrow_status = 'Borrowed' AND expected_return_date < CURDATE() THEN 'Overdue'
+                   WHEN borrow_status = 'Returned' THEN 'Returned'
+                   WHEN borrow_status = 'Lost' THEN 'Lost'
+               END AS status_label,
+               COUNT(borrowID) AS status_count
+            FROM borrowing_details
+            WHERE borrow_status IS NOT NULL
+            GROUP BY status_label";
+
+    $query = $this->connect()->prepare($sql);
+    $query->execute();
+    return $query->fetchAll(PDO::FETCH_ASSOC);
+}
+
+    public function getFilteredBorrowHistory($filters = [])
+    {
+        $sql = "SELECT 
+            bd.*, 
+            u.fName, 
+            u.lName, 
+            ut.type_name,
+            b.book_title,
+            c.category_name
+        FROM borrowing_details bd
+        JOIN users u ON bd.userID = u.userID
+        JOIN user_type ut ON u.userTypeID = ut.userTypeID
+        JOIN books b ON bd.bookID = b.bookID
+        JOIN category c ON b.categoryID = c.categoryID";
+
+        $whereConditions = [];
+        $params = [];
+
+        // Date Range Filter
+        if (!empty($filters['start_date'])) {
+            $whereConditions[] = "bd.request_date >= :start_date";
+            $params[':start_date'] = $filters['start_date'];
+        }
+        if (!empty($filters['end_date'])) {
+            $whereConditions[] = "bd.request_date <= :end_date";
+            $params[':end_date'] = $filters['end_date'];
+        }
+
+        // Category Filter
+        if (!empty($filters['category'])) {
+            $whereConditions[] = "b.categoryID = :category";
+            $params[':category'] = $filters['category'];
+        }
+
+        // User Type Filter
+        if (!empty($filters['user_type'])) {
+            $whereConditions[] = "u.userTypeID = :user_type";
+            $params[':user_type'] = $filters['user_type'];
+        }
+
+        // Status Filter
+        if (!empty($filters['status'])) {
+            switch ($filters['status']) {
+                case 'Pending':
+                    $whereConditions[] = "bd.borrow_request_status = 'Pending'";
+                    break;
+                case 'Approved':
+                    $whereConditions[] = "bd.borrow_request_status = 'Approved' AND bd.borrow_status IS NULL";
+                    break;
+                case 'Borrowed':
+                    $whereConditions[] = "bd.borrow_status = 'Borrowed'";
+                    break;
+                case 'Returned':
+                    $whereConditions[] = "bd.borrow_status = 'Returned'";
+                    break;
+                case 'Overdue':
+                    $whereConditions[] = "bd.borrow_status = 'Borrowed' AND bd.expected_return_date < CURDATE()";
+                    break;
+            }
+        }
+
+        if (!empty($whereConditions)) {
+            $sql .= " WHERE " . implode(" AND ", $whereConditions);
+        }
+
+        $sql .= " ORDER BY bd.request_date DESC";
+        
+        $query = $this->connect()->prepare($sql);
+        $query->execute($params);
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

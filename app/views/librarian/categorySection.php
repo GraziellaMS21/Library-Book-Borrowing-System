@@ -53,121 +53,116 @@ $categories = $categoryObj->viewCategory();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Librarian Dashboard</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/admin1.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/admin.css" />
 </head>
 
-<body class="h-screen w-screen flex">
+<div class="w-full h-screen flex flex-col">
     <?php require_once(__DIR__ . '/../shared/dashboardHeader.php'); ?>
 
-
-    <div class="flex flex-col w-10/12">
-        <nav>
-            <h1 class="text-xl font-semibold">Categories</h1>
-        </nav>
-        <main>
-            <div class="container">
-                <div class="section h-full">
-                    <div class="title flex w-full items-center justify-between">
-                        <h1 class="text-red-800 font-bold text-4xl">MANAGE CATEGORIES</h1>
-                        <a id="openAddCategoryModalBtn" class="addBtn" href="categorySection.php?modal=add">+ Add
-                            Category</a>
-                    </div>
+    <main class="overflow-y-auto">
+        <div class="container">
+            <div class="section h-full">
+                <div class="title flex w-full items-center justify-between">
+                    <h1 class="text-red-800 font-bold text-4xl">MANAGE CATEGORIES</h1>
+                    <a id="openAddCategoryModalBtn" class="addBtn" href="categorySection.php?modal=add">+ Add
+                        Category</a>
+                </div>
 
 
-                    <div class="view">
-                        <table>
-                            <tr>
-                                <th>No</th>
-                                <th>Category Name</th>
-                                <th>Actions</th>
-                            </tr>
+                <div class="view">
+                    <table>
+                        <tr>
+                            <th>No</th>
+                            <th>Category Name</th>
+                            <th>Actions</th>
+                        </tr>
 
-                            <?php
-                            $no = 1;
-                            foreach ($categories as $cat) {
-                                ?>
-                                <tr>
-                                    <td><?= $no++ ?></td>
-                                    <td><?= $cat["category_name"] ?></td>
-                                    <td class="action text-center">
-                                        <a class="actionBtn bg-blue-500 hover:bg-blue-600"
-                                            href="categorySection.php?modal=edit&id=<?= $cat['categoryID'] ?>">Edit</a>
-                                        <a class="actionBtn bg-red-500 hover:bg-red-600"
-                                            href="categorySection.php?modal=delete&id=<?= $cat['categoryID'] ?>">
-                                            Delete
-                                        </a>
-                                    </td>
-                                </tr>
-                                <?php
-                            }
+                        <?php
+                        $no = 1;
+                        foreach ($categories as $cat) {
                             ?>
-                        </table>
-                    </div>
+                            <tr>
+                                <td><?= $no++ ?></td>
+                                <td><?= $cat["category_name"] ?></td>
+                                <td class="action text-center">
+                                    <a class="actionBtn bg-blue-500 hover:bg-blue-600"
+                                        href="categorySection.php?modal=edit&id=<?= $cat['categoryID'] ?>">Edit</a>
+                                    <a class="actionBtn bg-red-500 hover:bg-red-600"
+                                        href="categorySection.php?modal=delete&id=<?= $cat['categoryID'] ?>">
+                                        Delete
+                                    </a>
+                                </td>
+                            </tr>
+                            <?php
+                        }
+                        ?>
+                    </table>
                 </div>
             </div>
-        </main>
-    </div>
-
-    <div id="addCategoryModal" class="modal <?= $open_modal == 'addCategoryModal' ? 'open' : '' ?>">
-        <div class="modal-content">
-            <span class="close close-times" data-modal="addCategoryModal">&times;</span>
-            <h2>Add New Category</h2>
-            <form action="../../../app/controllers/categoryController.php?action=add" method="POST" autocomplete="off">
-                <div class="input">
-                    <label for="category_name">Category Name<span>*</span> : </label>
-                    <input type="text" class="input-field" name="category_name" id="add_category_name"
-                        value="<?= $modal["category_name"] ?? "" ?>">
-                    <p class="errors"><?= $errors["category_name"] ?? "" ?></p>
-                </div>
-                <br>
-                <input type="submit" value="Add Category" class="font-bold cursor-pointer mb-8 border-none rounded-lg">
-            </form>
         </div>
-    </div>
+    </main>
+</div>
 
-    <div id="editCategoryModal" class="modal <?= $open_modal == 'editCategoryModal' ? 'open' : '' ?>">
-        <div class="modal-content">
-            <span class="close close-times" data-modal="editCategoryModal">&times;</span>
-            <h2>Edit Category</h2>
-            <form id="editCategoryForm"
-                action="../../../app/controllers/categoryController.php?action=edit&id=<?= $category_id ?>"
-                method="POST" autocomplete="off">
-                <input type="hidden" name="categoryID" value="<?= $category_id ?>">
-                <div class="input">
-                    <label for="category_name">Category Name<span>*</span> : </label>
-                    <input type="text" class="input-field" name="category_name" id="edit_category_name"
-                        value="<?= $modal["category_name"] ?? "" ?>">
-                    <p class="errors">
-                        <?= $errors["category_name"] ?? "" ?>
-                    </p>
-                </div>
-                <br>
-                <input type="submit" value="Save Changes" class="font-bold cursor-pointer mb-8 border-none rounded-lg">
-            </form>
-        </div>
-    </div>
-
-    <div id="deleteConfirmModal" class="modal delete-modal <?= $open_modal == 'deleteConfirmModal' ? 'open' : '' ?>">
-        <div class="modal-content max-w-sm">
-            <h2 class="text-xl font-bold mb-4 text-red-700">Confirm Deletion</h2>
-            <p class="mb-6 text-gray-700">
-                Are you sure you want to delete the category:
-                <span
-                    class="font-semibold italic"><?= htmlspecialchars($modal['category_name'] ?? 'this category') ?></span>?
-                This action cannot be undone.
-            </p>
-            <div class="cancelConfirmBtns">
-                <button type="button" data-modal="deleteConfirmModal"
-                    class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">
-                    Cancel
-                </button>
-                <a href="../../../app/controllers/bookController.php?action=delete&id=<?= $modal['categoryID'] ?>"
-                    class="text-white px-4 py-2 rounded-lg font-semibold cursor-pointer">
-                    Confirm Delete
-                </a>
+<div id="addCategoryModal" class="modal <?= $open_modal == 'addCategoryModal' ? 'open' : '' ?>">
+    <div class="modal-content">
+        <span class="close close-times" data-modal="addCategoryModal">&times;</span>
+        <h2>Add New Category</h2>
+        <form action="../../../app/controllers/categoryController.php?action=add" method="POST" autocomplete="off">
+            <div class="input">
+                <label for="category_name">Category Name<span>*</span> : </label>
+                <input type="text" class="input-field" name="category_name" id="add_category_name"
+                    value="<?= $modal["category_name"] ?? "" ?>">
+                <p class="errors"><?= $errors["category_name"] ?? "" ?></p>
             </div>
+            <br>
+            <input type="submit" value="Add Category" class="font-bold cursor-pointer mb-8 border-none rounded-lg">
+        </form>
+    </div>
+</div>
+
+<div id="editCategoryModal" class="modal <?= $open_modal == 'editCategoryModal' ? 'open' : '' ?>">
+    <div class="modal-content">
+        <span class="close close-times" data-modal="editCategoryModal">&times;</span>
+        <h2>Edit Category</h2>
+        <form id="editCategoryForm"
+            action="../../../app/controllers/categoryController.php?action=edit&id=<?= $category_id ?>" method="POST"
+            autocomplete="off">
+            <input type="hidden" name="categoryID" value="<?= $category_id ?>">
+            <div class="input">
+                <label for="category_name">Category Name<span>*</span> : </label>
+                <input type="text" class="input-field" name="category_name" id="edit_category_name"
+                    value="<?= $modal["category_name"] ?? "" ?>">
+                <p class="errors">
+                    <?= $errors["category_name"] ?? "" ?>
+                </p>
+            </div>
+            <br>
+            <input type="submit" value="Save Changes" class="font-bold cursor-pointer mb-8 border-none rounded-lg">
+        </form>
+    </div>
+</div>
+
+<div id="deleteConfirmModal" class="modal delete-modal <?= $open_modal == 'deleteConfirmModal' ? 'open' : '' ?>">
+    <div class="modal-content max-w-sm">
+        <h2 class="text-xl font-bold mb-4 text-red-700">Confirm Deletion</h2>
+        <p class="mb-6 text-gray-700">
+            Are you sure you want to delete the category:
+            <span
+                class="font-semibold italic"><?= htmlspecialchars($modal['category_name'] ?? 'this category') ?></span>?
+            This action cannot be undone.
+        </p>
+        <div class="cancelConfirmBtns">
+            <button type="button" data-modal="deleteConfirmModal"
+                class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">
+                Cancel
+            </button>
+            <a href="../../../app/controllers/bookController.php?action=delete&id=<?= $modal['categoryID'] ?>"
+                class="text-white px-4 py-2 rounded-lg font-semibold cursor-pointer">
+                Confirm Delete
+            </a>
         </div>
     </div>
+</div>
 
 
 </body>

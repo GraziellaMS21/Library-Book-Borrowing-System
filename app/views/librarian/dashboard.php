@@ -5,33 +5,43 @@ if (!isset($_SESSION["user_id"])) {
     exit;
 }
 
-// Check if user is an Admin/Librarian (optional, but good practice)
-// if (isset($_SESSION['user_role']) && $_SESSION['user_role'] != 'Admin') {
-//     // Redirect non-admins if necessary
-//     // header("Location: user_dashboard.php");
-//     // exit;
-// }
-
-// Include necessary models
+require_once(__DIR__ . "/../../models/manageUsers.php");
 require_once(__DIR__ . '/../../models/manageBook.php');
-require_once(__DIR__ . '/../../models/manageUsers.php');
 require_once(__DIR__ . '/../../models/manageBorrowDetails.php');
 
-// Initialize models and fetch data
-$bookModel = new Book();
-$userModel = new User();
-$borrowModel = new BorrowDetails();
+// Initialize models
+$bookObj = new Book();
+$userObj = new User();
+$borrowObj = new BorrowDetails();
+$user_id = $_SESSION['user_id'];
+$userDashboard = $userObj->fetchUserName($user_id);
 
-$total_books = $bookModel->countTotalBooks();
-$total_book_copies = $bookModel->countTotalBookCopies();
-$total_borrowers = $userModel->countTotalBorrowers();
-$overdue_book_count = $borrowModel->countOverdueBooks();
-$pending_borrow_requests_count = $borrowModel->countPendingRequests();
+// --- 1. DATA FOR CARDS ---
+$total_book_copies = $bookObj->countTotalBookCopies();
+$total_borrowed_books = $borrowObj->countTotalBorrowedBooks(); // New
+$pending_borrow_requests_count = $borrowObj->countPendingRequests();
+$overdue_book_count = $borrowObj->countOverdueBooks();
+$total_borrowers = $userObj->countTotalBorrowers();
+$monthly_collected_fines = $borrowObj->sumMonthlyCollectedFines();
+$monthly_uncollected_fines = $borrowObj->sumMonthlyUncollectedFines(); // New
 
+// --- 2. DATA FOR TOP 5 LISTS ---
+$top_5_books = $borrowObj->getTopBorrowedBooks(5);
+$top_5_categories = $bookObj->getTopPopularCategories(5);
+$top_5_borrowers = $borrowObj->getTopActiveBorrowers(5);
 
-$pending_requests = $borrowModel->viewBorrowDetails("", "Pending");
-$pending_users = $userModel->viewUser("", "", "pending"); // Fetch all pending user registrations
-$pending_users_count = count($pending_users); // Count the fetched array
+// --- 3. DATA FOR CHARTS ---
+// We'll json_encode these later in the script block
+$monthly_borrow_trend_data = $borrowObj->getMonthlyBorrowingTrend();
+$category_popularity_data = $bookObj->getTopPopularCategories(5); // Re-using this data
+$borrow_status_breakdown_data = $borrowObj->getBorrowStatusBreakdown();
+$monthly_fines_trend_data = $borrowObj->getMonthlyFinesTrend();
+
+// --- 4. DATA FOR ACTIVITY TABLES ---
+$pending_requests = $borrowObj->viewBorrowDetails("", "Pending");
+$pending_users = $userObj->viewUser("", "", "pending");
+$pending_users_count = count($pending_users);
+
 ?>
 
 
@@ -43,119 +53,132 @@ $pending_users_count = count($pending_users); // Count the fetched array
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Librarian Dashboard</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/admin1.css" />
-    <style>
-        .info {
-            padding: 1.5rem;
-            border-radius: 0.5rem;
-            color: white;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            transition: transform 0.2s;
-            min-height: 120px;
-        }
-
-        .info:hover {
-            transform: translateY(-2px);
-        }
-
-        .count {
-            font-size: 2.5rem;
-            font-weight: bold;
-            line-height: 1;
-        }
-    </style>
+    <link rel="stylesheet" href="../../../public/assets/css/admin.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body class="h-screen w-screen flex">
-
-    <?php require_once(__DIR__ . '/../shared/dashboardHeader.php'); ?>
-
-    <div class="flex flex-col w-10/12">
-        <nav class="mb-6 flex justify-between items-center">
-            <h1 class="text-3xl font-bold text-gray-800">Dashboard</h1>
-            <div class="account flex items-center">
-                <div class="bg-white rounded-full flex items-center justify-center h-8 w-8 px-4 mx-4">
-                    <i class="fa-solid fa-user" style="color: #bd322f;"></i>
-                </div>
-                <h2 class="text-lg font-bold">
-                    <?= $userDashboard["fName"] . " " . $userDashboard["lName"] ?>
-                </h2>
-            </div>
-        </nav>
-        <main>
+<body>
+    <div class="w-full h-screen flex flex-col">
+        <?php require_once(__DIR__ . '/../shared/dashboardHeader.php'); ?>
+        <main class="overflow-y-auto">
             <div class="container">
-                <div id="dashboardSection" class="section dashboardSection grid grid-cols-2 md:grid-cols-4 gap-4">
 
-                    <!-- Total Books -->
-                    <div class="info total-books bg-blue-600">
-                        <span class="count"><?= htmlspecialchars($total_books) ?></span>
-                        <h2 class="title">Total Books</h2>
-                    </div>
-
-                    <!-- Total Book Copies -->
-                    <div class="info total-books bg-green-600">
-                        <span class="count"><?= htmlspecialchars($total_book_copies) ?></span>
+                <section id="dashboardSection" class="section dashboardSection grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="info">
+                        <span><?= htmlspecialchars($total_book_copies) ?></span>
                         <h2 class="title">Total Book Copies</h2>
                     </div>
 
-                    <!-- Total Borrowed Books -->
-                    <div class="info total-books bg-orange-500">
-                        <span class="count"><?= htmlspecialchars($total_book_copies) ?></span>
+                    <div class="info">
+                        <span><?= htmlspecialchars($total_borrowed_books) ?></span>
                         <h2 class="title">Total Borrowed Books</h2>
                     </div>
 
-                    <!-- Pending Borrow Requests -->
-                    <div class="info pending-request bg-red-600">
-                        <span class="count"><?= htmlspecialchars($pending_borrow_requests_count) ?></span>
+                    <div class="info">
+                        <span><?= htmlspecialchars($pending_borrow_requests_count) ?></span>
                         <h2 class="title">Pending Borrow Requests</h2>
                     </div>
 
-                    <!-- Overdue Books -->
-                    <div class="info overdue-book-count bg-yellow-600">
-                        <span class="count"><?= htmlspecialchars($overdue_book_count) ?></span>
+                    <div class="info">
+                        <span><?= htmlspecialchars($overdue_book_count) ?></span>
                         <h2 class="title">Overdue Books</h2>
                     </div>
 
-                    <!-- Total Borrowers (Approved Users) -->
-                    <div class="info total-borrowers bg-purple-600">
-                        <span class="count"><?= htmlspecialchars($total_borrowers) ?></span>
+                    <div class="info">
+                        <span><?= htmlspecialchars(string: $total_borrowers) ?></span>
                         <h2 class="title">Total Borrowers</h2>
                     </div>
 
-                    <!-- Monthly Collected Fines -->
-                    <div class="info total-borrowers bg-teal-600">
-                        <span class="count"><?= htmlspecialchars($total_borrowers) ?></span>
+                    <div class="info">
+                        <span>₱<?= number_format($monthly_collected_fines, 2) ?></span>
                         <h2 class="title">Monthly Collected Fines</h2>
                     </div>
 
-                    <!-- Top Borrowed Books -->
-                    <div class="info total-borrowers bg-sky-600">
-                        <span class="count"><?= htmlspecialchars($total_borrowers) ?></span>
-                        <h2 class="title">Top Borrowed Book</h2>
+                    <div class="info">
+                        <span>₱<?= number_format($monthly_uncollected_fines, 2)?></span>
+                        <h2 class="title">Monthly Uncollected Fines</h2>
                     </div>
 
-                    <!-- Top Popular Category -->
-                    <div class="info total-borrowers bg-indigo-600">
-                        <span class="count"><?= htmlspecialchars($total_borrowers) ?></span>
-                        <h2 class="title">Top Popular Category</h2>
+                    <div class="info">
+                        <span><?= htmlspecialchars($pending_users_count) ?></span>
+                        <h2 class="title">Pending User Requests </h2>
                     </div>
 
-                    <!-- Active Borrowers -->
-                    <div class="info total-borrowers bg-emerald-600">
-                        <span class="count"><?= htmlspecialchars($total_borrowers) ?></span>
-                        <h2 class="title">Top Active Borrower</h2>
+                </section>
+
+                <section class="mx-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="top-info">
+                        <h2 class="text-xl font-bold text-red-800 mb-3">Top 5 Most Borrowed Books</h2>
+                        <ol class="list-decimal list-inside space-y-2">
+                            <?php foreach ($top_5_books as $book): ?>
+                                <li class="truncate break-words whitespace-normal">
+                                    <span class="font-semibold"><?= htmlspecialchars($book['book_title']) ?></span>
+                                    <span class="text-gray-600">(<?= $book['borrow_count'] ?> borrows)</span>
+                                </li>
+                            <?php endforeach; ?>
+                            <?php if (empty($top_5_books)): ?>
+                                <li class="text-gray-500">No borrowing data available.</li>
+                            <?php endif; ?>
+                        </ol>
                     </div>
 
+                    <div class="top-info">
+                        <h2 class="text-xl font-bold text-red-800 mb-3">Top 5 Most Popular Categories</h2>
+                        <ol class="list-decimal list-inside space-y-2">
+                            <?php foreach ($top_5_categories as $category): ?>
+                                <li class="truncate break-words whitespace-normal">
+                                    <span class="font-semibold"><?= htmlspecialchars($category['category_name']) ?></span>
+                                    <span class="text-gray-600">(<?= $category['borrow_count'] ?> borrows)</span>
+                                </li>
+                            <?php endforeach; ?>
+                            <?php if (empty($top_5_categories)): ?>
+                                <li class="text-gray-500">No category data available.</li>
+                            <?php endif; ?>
+                        </ol>
+                    </div>
+
+                    <div class="top-info">
+                        <h2 class="text-xl font-bold text-red-800 mb-3">Top 5 Most Active Borrowers</h2>
+                        <ol class="list-decimal list-inside space-y-2">
+                            <?php foreach ($top_5_borrowers as $borrower): ?>
+                                <li class="truncate break-words whitespace-normal">
+                                    <span
+                                        class="font-semibold"><?= htmlspecialchars($borrower['fName'] . ' ' . $borrower['lName']) ?></span>
+                                    <span class="text-gray-600">(<?= $borrower['borrow_count'] ?> borrows)</span>
+                                </li>
+                            <?php endforeach; ?>
+                            <?php if (empty($top_5_borrowers)): ?>
+                                <li class="text-gray-500">No borrower data available.</li>
+                            <?php endif; ?>
+                        </ol>
+                    </div>
+                </section>
 
 
-                </div>
+                <section class="section grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-4 rounded-lg shadow-md">
+                        <h2 class="text-xl font-bold text-red-800 mb-3">Monthly Borrowing Trend (Last 12 Mo.)</h2>
+                        <canvas id="monthlyBorrowChart"></canvas>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-md">
+                        <h2 class="text-xl font-bold text-red-800 mb-3">Category Popularity</h2>
+                        <div class="max-w-xs mx-auto">
+                            <canvas id="categoryPopularityChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-md">
+                        <h2 class="text-xl font-bold text-red-800 mb-3">Borrow Status Breakdown</h2>
+                        <div class="max-w-xs mx-auto">
+                            <canvas id="borrowStatusChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-md">
+                        <h2 class="text-xl font-bold text-red-800 mb-3">Fine Collection Over Time (Last 12 Mo.)</h2>
+                        <canvas id="fineCollectionChart"></canvas>
+                    </div>
+                </section>
 
-                <!-- Pending Requests Table -->
+
                 <section class="section mt-8">
                     <h2 class="text-2xl font-bold text-red-800 mb-4">Pending Borrow Requests
                         (<?= htmlspecialchars($pending_borrow_requests_count) ?>)</h2>
@@ -208,7 +231,7 @@ $pending_users_count = count($pending_users); // Count the fetched array
                         </table>
                     </div>
                 </section>
-                <!-- --- PENDING USER APPROVALS TABLE--- -->
+
                 <section class="section mt-8">
                     <h2 class="text-2xl font-bold text-red-800 mb-4">Pending User Approvals
                         (<?= htmlspecialchars($pending_users_count) ?>)</h2>
@@ -264,6 +287,109 @@ $pending_users_count = count($pending_users); // Count the fetched array
         </main>
     </div>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Helper function to generate random colors for charts
+            const getChartColors = (num) => {
+                const colors = [
+                    '#931C19', '#BD322F', '#610101', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'
+                ];
+                let result = [];
+                for (let i = 0; i < num; i++) {
+                    result.push(colors[i % colors.length]);
+                }
+                return result;
+            };
+
+            // 1. Monthly Borrowing Trend (Bar Chart)
+            const monthlyBorrowData = <?= json_encode($monthly_borrow_trend_data) ?>;
+            const borrowCtx = document.getElementById('monthlyBorrowChart').getContext('2d');
+            if (monthlyBorrowData.length > 0) {
+                new Chart(borrowCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: monthlyBorrowData.map(d => d.month),
+                        datasets: [{
+                            label: 'Total Borrows',
+                            data: monthlyBorrowData.map(d => d.total_borrows),
+                            backgroundColor: '#931C19',
+                            borderColor: '#610101',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true, ticks: { precision: 0 } }
+                        }
+                    }
+                });
+            }
+
+            // 2. Category Popularity (Pie Chart)
+            const categoryData = <?= json_encode($category_popularity_data) ?>;
+            const categoryCtx = document.getElementById('categoryPopularityChart').getContext('2d');
+            if (categoryData.length > 0) {
+                new Chart(categoryCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: categoryData.map(d => d.category_name),
+                        datasets: [{
+                            label: 'Borrows',
+                            data: categoryData.map(d => d.borrow_count),
+                            backgroundColor: getChartColors(categoryData.length),
+                        }]
+                    },
+                    options: { responsive: true, }
+                });
+            }
+
+            // 3. Borrow Status Breakdown (Donut Chart)
+            const statusData = <?= json_encode($borrow_status_breakdown_data) ?>;
+            const statusCtx = document.getElementById('borrowStatusChart').getContext('2d');
+            if (statusData.length > 0) {
+                new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: statusData.map(d => d.status_label),
+                        datasets: [{
+                            label: 'Count',
+                            data: statusData.map(d => d.status_count),
+                            backgroundColor: getChartColors(statusData.length),
+                        }]
+                    },
+                    options: { responsive: true, }
+                });
+            }
+
+            // 4. Fine Collection Over Time (Line Chart)
+            const finesData = <?= json_encode($monthly_fines_trend_data) ?>;
+            const finesCtx = document.getElementById('fineCollectionChart').getContext('2d');
+            if (finesData.length > 0) {
+                new Chart(finesCtx, {
+                    type: 'line',
+                    data: {
+                        labels: finesData.map(d => d.month),
+                        datasets: [{
+                            label: 'Fines Collected (₱)',
+                            data: finesData.map(d => d.total_fines),
+                            backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                            borderColor: 'rgba(245, 158, 11, 1)',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>

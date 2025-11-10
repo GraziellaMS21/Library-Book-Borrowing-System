@@ -271,4 +271,34 @@ class Book extends Database
 
         return (float) $cost;
     }
+
+    public function getTopPopularCategories($limit = 5)
+    {
+        $sql = "SELECT c.category_name, COUNT(bd.borrowID) AS borrow_count
+                FROM borrowing_details bd
+                JOIN books b ON bd.bookID = b.bookID
+                JOIN category c ON b.categoryID = c.categoryID
+                GROUP BY c.category_name
+                ORDER BY borrow_count DESC
+                LIMIT :limit";
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(':limit', $limit, PDO::PARAM_INT);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getTopCategoryName()
+    {
+        $sql = "SELECT c.category_name
+                FROM borrowing_details bd
+                JOIN books b ON bd.bookID = b.bookID
+                JOIN category c ON b.categoryID = c.categoryID
+                GROUP BY c.category_name
+                ORDER BY COUNT(bd.borrowID) DESC
+                LIMIT 1";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result['category_name'] ?? 'N/A';
+    }
 }
