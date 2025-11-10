@@ -20,6 +20,9 @@ switch ($currentFile) {
     case 'borrowDetailsSection.php':
         $pageTitle = 'Borrowing Details';
         break;
+    case 'reportsSection.php':
+        $pageTitle = 'Reports';
+        break;
     // 'dashboard.php' is already covered by the default
 }
 // --- END NEW LOGIC ---

@@ -266,6 +266,19 @@ if ($borrowID) {
             $borrowObj->borrow_request_status = 'Approved';
             $borrowObj->borrow_status = NULL;
 
+            $book_info = $bookObj->fetchBook($book_id_to_update);
+            $available_physical_copies = (int) ($book_info['book_copies'] ?? 0);
+
+            if ($available_physical_copies < $copies_to_move) {
+                $_SESSION["errors"] = ["general" => "Error: Cannot fulfill claim (BorrowID {$borrowID}). Only {$available_physical_copies} copies remaining, but {$copies_to_move} are requested. Reject this request manually."];
+                header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}");
+                exit;
+            }
+            if (!$bookObj->decrementBookCopies($book_id_to_update, $copies_to_move)) {
+                $_SESSION["errors"] = ["general" => "Failed to update book stock (decrement)."];
+                header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}");
+                exit;
+            }
         } elseif ($action === 'reject') {
             $borrowObj->borrow_request_status = 'Rejected';
             $borrowObj->borrow_status = NULL;
@@ -284,20 +297,7 @@ if ($borrowID) {
             $borrowObj->pickup_date = date("Y-m-d");
             $final_redirect_tab = 'borrowed';
 
-            $book_info = $bookObj->fetchBook($book_id_to_update);
-            $available_physical_copies = (int) ($book_info['book_copies'] ?? 0);
-
-            if ($available_physical_copies < $copies_to_move) {
-                $_SESSION["errors"] = ["general" => "Error: Cannot fulfill claim (BorrowID {$borrowID}). Only {$available_physical_copies} copies remaining, but {$copies_to_move} are requested. Reject this request manually."];
-                header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}");
-                exit;
-            }
-
-            if (!$bookObj->decrementBookCopies($book_id_to_update, $copies_to_move)) {
-                $_SESSION["errors"] = ["general" => "Failed to update book stock (decrement)."];
-                header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}");
-                exit;
-            }
+            
         } elseif ($action === 'cancel') {
             $borrowObj->borrow_request_status = 'Cancelled';
             $borrowObj->borrow_status = NULL;

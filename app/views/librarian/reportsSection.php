@@ -4,16 +4,10 @@ if (!isset($_SESSION["user_id"])) {
     header("Location: ../../app/views/borrower/login.php");
     exit;
 }
-
-// ---
-// NOTE: Add a link to this page (reportsSection.php) in your dashboardHeader.php file!
-// e.g., <a href="reportsSection.php"><li>Reports</li></a>
-// ---
-
 require_once(__DIR__ . '/../../models/manageBook.php');
 require_once(__DIR__ . '/../../models/manageUsers.php');
 require_once(__DIR__ . '/../../models/manageBorrowDetails.php');
-require_once(__DIR__ . '/../../models/manageCategory.php'); // Needed for filters
+require_once(__DIR__ . '/../../models/manageCategory.php');
 
 // Initialize models
 $bookModel = new Book();
@@ -55,23 +49,10 @@ $monthly_fines_data = $borrowModel->getMonthlyFinesTrend();
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body class="h-screen w-screen flex">
-
-    <?php require_once(__DIR__ . '/../shared/dashboardHeader.php'); ?>
-
-    <div class="flex flex-col w-10/12">
-        <nav class="mb-6 flex justify-between items-center">
-            <h1 class="text-3xl font-bold text-gray-800">Reports</h1>
-            <div class="account flex items-center">
-                <div class="bg-white rounded-full flex items-center justify-center h-8 w-8 px-4 mx-4">
-                    <i class="fa-solid fa-user" style="color: #bd322f;"></i>
-                </div>
-                <h2 class="text-lg font-bold">
-                    <?= $userDashboard["fName"] . " " . $userDashboard["lName"] ?>
-                </h2>
-            </div>
-        </nav>
-        <main>
+<body>
+    <div class="w-full h-screen flex flex-col">
+        <?php require_once(__DIR__ . '/../shared/dashboardHeader.php'); ?>
+        <main class="overflow-y-auto">
             <div class="container">
 
                 <!-- 1. FILTER SECTION -->

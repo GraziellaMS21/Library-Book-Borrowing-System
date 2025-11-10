@@ -31,10 +31,30 @@ aside {
   width: 230px;
   transition: width 0.3s ease;
   height: 100vh;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .sidebar.narrow {
   width: 80px;
+}
+
+.sidebar.narrow:hover {
+  width: 230px;
+}
+
+.sidebar.narrow .links a span {
+  color: white;
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: opacity 0.3s ease, width 0.3s ease;
+}
+
+.sidebar.narrow:hover .links a span {
+  opacity: 1;
+  width: auto;
 }
 
 .toggle-btn {
@@ -68,14 +88,6 @@ aside {
   padding-left: 2.5rem;
 }
 
-.sidebar.narrow .links a span {
-  color: white;
-}
-
-.sidebar.narrow .links a span {
-  display: none;
-}
-
 @media only screen and (max-width: 1024px) {
   aside {
     max-width: 5rem;
@@ -105,16 +117,16 @@ main {
   width: 95%;
 }
 
-.top-info  {
+.top-info {
   padding: 2rem 1rem;
   background: white;
   border-radius: 1rem;
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  
 }
 
-.section:hover, .top-info:hover {
+.section:hover,
+.top-info:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
 }
@@ -344,20 +356,20 @@ input[type="submit"]:hover {
 }
 
 .info span {
-  color:white !important;
+  color: white !important;
   font-size: 2rem;
 }
 
 .info:nth-child(3n + 1) {
-  background-color:#931c19;
+  background-color: #931c19;
 }
 
 .info:nth-child(3n + 2) {
-  background-color:#3e3e3e;
+  background-color: #3e3e3e;
 }
 
 .info:nth-child(3n + 3) {
-  background-color:#bd322f;
+  background-color: #bd322f;
 }
 
 /* ---- MODAL SECTION ---- */

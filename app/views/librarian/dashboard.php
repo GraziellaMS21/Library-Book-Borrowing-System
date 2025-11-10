@@ -18,12 +18,12 @@ $userDashboard = $userObj->fetchUserName($user_id);
 
 // --- 1. DATA FOR CARDS ---
 $total_book_copies = $bookObj->countTotalBookCopies();
-$total_borrowed_books = $borrowObj->countTotalBorrowedBooks(); // New
+$total_borrowed_books = $borrowObj->countTotalBorrowedBooks();
 $pending_borrow_requests_count = $borrowObj->countPendingRequests();
 $overdue_book_count = $borrowObj->countOverdueBooks();
 $total_borrowers = $userObj->countTotalBorrowers();
 $monthly_collected_fines = $borrowObj->sumMonthlyCollectedFines();
-$monthly_uncollected_fines = $borrowObj->sumMonthlyUncollectedFines(); // New
+$monthly_uncollected_fines = $borrowObj->sumMonthlyUncollectedFines();
 
 // --- 2. DATA FOR TOP 5 LISTS ---
 $top_5_books = $borrowObj->getTopBorrowedBooks(5);
@@ -33,7 +33,7 @@ $top_5_borrowers = $borrowObj->getTopActiveBorrowers(5);
 // --- 3. DATA FOR CHARTS ---
 // We'll json_encode these later in the script block
 $monthly_borrow_trend_data = $borrowObj->getMonthlyBorrowingTrend();
-$category_popularity_data = $bookObj->getTopPopularCategories(5); // Re-using this data
+$category_popularity_data = $bookObj->getTopPopularCategories(5);
 $borrow_status_breakdown_data = $borrowObj->getBorrowStatusBreakdown();
 $monthly_fines_trend_data = $borrowObj->getMonthlyFinesTrend();
 
@@ -95,7 +95,7 @@ $pending_users_count = count($pending_users);
                     </div>
 
                     <div class="info">
-                        <span>₱<?= number_format($monthly_uncollected_fines, 2)?></span>
+                        <span>₱<?= number_format($monthly_uncollected_fines, 2) ?></span>
                         <h2 class="title">Monthly Uncollected Fines</h2>
                     </div>
 
@@ -106,75 +106,76 @@ $pending_users_count = count($pending_users);
 
                 </section>
 
-                <section class="mx-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="top-info">
-                        <h2 class="text-xl font-bold text-red-800 mb-3">Top 5 Most Borrowed Books</h2>
-                        <ol class="list-decimal list-inside space-y-2">
-                            <?php foreach ($top_5_books as $book): ?>
-                                <li class="truncate break-words whitespace-normal">
-                                    <span class="font-semibold"><?= htmlspecialchars($book['book_title']) ?></span>
-                                    <span class="text-gray-600">(<?= $book['borrow_count'] ?> borrows)</span>
-                                </li>
-                            <?php endforeach; ?>
-                            <?php if (empty($top_5_books)): ?>
-                                <li class="text-gray-500">No borrowing data available.</li>
-                            <?php endif; ?>
-                        </ol>
+                <section class="section grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div
+                        class="bg-white p-4 rounded-lg shadow-md flex flex-col justify-center items-center min-h-[300px]">
+                        <h2 class="text-xl font-bold text-red-800 mb-3 w-full">Top 5 Most Active Borrowers</h2>
+                        <?php if (empty($top_5_borrowers)): ?>
+                            <p class="text-gray-500">No borrower data available.</p>
+                        <?php else: ?>
+                            <canvas id="topBorrowersChart"></canvas>
+                        <?php endif; ?>
+                    </div>
+                    <div
+                        class="bg-white p-4 rounded-lg shadow-md flex flex-col justify-center items-center min-h-[300px]">
+                        <h2 class="text-xl font-bold text-red-800 mb-3 w-full">Top 5 Most Borrowed Books</h2>
+                        <?php if (empty($top_5_books)): ?>
+                            <p class="text-gray-500">No borrowing data available.</p>
+                        <?php else: ?>
+                            <canvas id="topBooksChart"></canvas>
+                        <?php endif; ?>
                     </div>
 
-                    <div class="top-info">
-                        <h2 class="text-xl font-bold text-red-800 mb-3">Top 5 Most Popular Categories</h2>
-                        <ol class="list-decimal list-inside space-y-2">
-                            <?php foreach ($top_5_categories as $category): ?>
-                                <li class="truncate break-words whitespace-normal">
-                                    <span class="font-semibold"><?= htmlspecialchars($category['category_name']) ?></span>
-                                    <span class="text-gray-600">(<?= $category['borrow_count'] ?> borrows)</span>
-                                </li>
-                            <?php endforeach; ?>
-                            <?php if (empty($top_5_categories)): ?>
-                                <li class="text-gray-500">No category data available.</li>
-                            <?php endif; ?>
-                        </ol>
-                    </div>
-
-                    <div class="top-info">
-                        <h2 class="text-xl font-bold text-red-800 mb-3">Top 5 Most Active Borrowers</h2>
-                        <ol class="list-decimal list-inside space-y-2">
-                            <?php foreach ($top_5_borrowers as $borrower): ?>
-                                <li class="truncate break-words whitespace-normal">
-                                    <span
-                                        class="font-semibold"><?= htmlspecialchars($borrower['fName'] . ' ' . $borrower['lName']) ?></span>
-                                    <span class="text-gray-600">(<?= $borrower['borrow_count'] ?> borrows)</span>
-                                </li>
-                            <?php endforeach; ?>
-                            <?php if (empty($top_5_borrowers)): ?>
-                                <li class="text-gray-500">No borrower data available.</li>
-                            <?php endif; ?>
-                        </ol>
-                    </div>
+                    
                 </section>
 
 
                 <section class="section grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white p-4 rounded-lg shadow-md">
-                        <h2 class="text-xl font-bold text-red-800 mb-3">Monthly Borrowing Trend (Last 12 Mo.)</h2>
-                        <canvas id="monthlyBorrowChart"></canvas>
+
+                    <div
+                        class="bg-white p-4 rounded-lg shadow-md flex flex-col justify-center items-center min-h-[300px]">
+                        <h2 class="text-xl font-bold text-red-800 mb-3 w-full">Monthly Borrowing Trend (Last 12 Mo.)
+                        </h2>
+                        <?php if (empty($monthly_borrow_trend_data)): ?>
+                            <p class="text-gray-500">No borrowing trend data available.</p>
+                        <?php else: ?>
+                            <canvas id="monthlyBorrowChart"></canvas>
+                        <?php endif; ?>
                     </div>
-                    <div class="bg-white p-4 rounded-lg shadow-md">
-                        <h2 class="text-xl font-bold text-red-800 mb-3">Category Popularity</h2>
-                        <div class="max-w-xs mx-auto">
-                            <canvas id="categoryPopularityChart"></canvas>
-                        </div>
+
+                    <div
+                        class="bg-white p-4 rounded-lg shadow-md flex flex-col justify-center items-center min-h-[300px]">
+                        <h2 class="text-xl font-bold text-red-800 mb-3 w-full">Category Popularity</h2>
+                        <?php if (empty($category_popularity_data)): ?>
+                            <p class="text-gray-500">No category popularity data available.</p>
+                        <?php else: ?>
+                            <div class="max-w-xs mx-auto w-full">
+                                <canvas id="categoryPopularityChart"></canvas>
+                            </div>
+                        <?php endif; ?>
                     </div>
-                    <div class="bg-white p-4 rounded-lg shadow-md">
-                        <h2 class="text-xl font-bold text-red-800 mb-3">Borrow Status Breakdown</h2>
-                        <div class="max-w-xs mx-auto">
-                            <canvas id="borrowStatusChart"></canvas>
-                        </div>
+
+                    <div
+                        class="bg-white p-4 rounded-lg shadow-md flex flex-col justify-center items-center min-h-[300px]">
+                        <h2 class="text-xl font-bold text-red-800 mb-3 w-full">Borrow Status Breakdown</h2>
+                        <?php if (empty($borrow_status_breakdown_data)): ?>
+                            <p class="text-gray-500">No borrow status data available.</p>
+                        <?php else: ?>
+                            <div class="max-w-xs mx-auto w-full">
+                                <canvas id="borrowStatusChart"></canvas>
+                            </div>
+                        <?php endif; ?>
                     </div>
-                    <div class="bg-white p-4 rounded-lg shadow-md">
-                        <h2 class="text-xl font-bold text-red-800 mb-3">Fine Collection Over Time (Last 12 Mo.)</h2>
-                        <canvas id="fineCollectionChart"></canvas>
+
+                    <div
+                        class="bg-white p-4 rounded-lg shadow-md flex flex-col justify-center items-center min-h-[300px]">
+                        <h2 class="text-xl font-bold text-red-800 mb-3 w-full">Fine Collection Over Time (Last 12 Mo.)
+                        </h2>
+                        <?php if (empty($monthly_fines_trend_data)): ?>
+                            <p class="text-gray-500">No fine collection data available.</p>
+                        <?php else: ?>
+                            <canvas id="fineCollectionChart"></canvas>
+                        <?php endif; ?>
                     </div>
                 </section>
 
@@ -301,10 +302,67 @@ $pending_users_count = count($pending_users);
                 return result;
             };
 
+            // --- NEW: Top 5 Books Chart (Horizontal Bar) ---
+            const topBooksData = <?= json_encode($top_5_books) ?>;
+            if (topBooksData.length > 0) {
+                const topBooksCtx = document.getElementById('topBooksChart').getContext('2d');
+                new Chart(topBooksCtx, {
+                    type: 'bar',
+                    data: {
+                        // Reverse labels and data to show Top 1 at the top
+                        labels: topBooksData.map(d => d.book_title).reverse(),
+                        datasets: [{
+                            label: 'Borrows',
+                            data: topBooksData.map(d => d.borrow_count).reverse(),
+                            backgroundColor: '#931C19',
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y', // This makes it a horizontal bar chart
+                        responsive: true,
+                        scales: {
+                            x: { beginAtZero: true, ticks: { precision: 0 } }
+                        },
+                        plugins: {
+                            legend: { display: false } // No legend needed for a single dataset
+                        }
+                    }
+                });
+            }
+
+            // --- NEW: Top 5 Borrowers Chart (Horizontal Bar) ---
+            const topBorrowersData = <?= json_encode($top_5_borrowers) ?>;
+            if (topBorrowersData.length > 0) {
+                const topBorrowersCtx = document.getElementById('topBorrowersChart').getContext('2d');
+                new Chart(topBorrowersCtx, {
+                    type: 'bar',
+                    data: {
+                        // Reverse labels and data
+                        labels: topBorrowersData.map(d => d.fName + ' ' + d.lName).reverse(),
+                        datasets: [{
+                            label: 'Borrows',
+                            data: topBorrowersData.map(d => d.borrow_count).reverse(),
+                            backgroundColor: '#610101',
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        scales: {
+                            x: { beginAtZero: true, ticks: { precision: 0 } }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+
+
             // 1. Monthly Borrowing Trend (Bar Chart)
             const monthlyBorrowData = <?= json_encode($monthly_borrow_trend_data) ?>;
-            const borrowCtx = document.getElementById('monthlyBorrowChart').getContext('2d');
             if (monthlyBorrowData.length > 0) {
+                const borrowCtx = document.getElementById('monthlyBorrowChart').getContext('2d');
                 new Chart(borrowCtx, {
                     type: 'bar',
                     data: {
@@ -328,8 +386,8 @@ $pending_users_count = count($pending_users);
 
             // 2. Category Popularity (Pie Chart)
             const categoryData = <?= json_encode($category_popularity_data) ?>;
-            const categoryCtx = document.getElementById('categoryPopularityChart').getContext('2d');
             if (categoryData.length > 0) {
+                const categoryCtx = document.getElementById('categoryPopularityChart').getContext('2d');
                 new Chart(categoryCtx, {
                     type: 'pie',
                     data: {
@@ -346,8 +404,8 @@ $pending_users_count = count($pending_users);
 
             // 3. Borrow Status Breakdown (Donut Chart)
             const statusData = <?= json_encode($borrow_status_breakdown_data) ?>;
-            const statusCtx = document.getElementById('borrowStatusChart').getContext('2d');
             if (statusData.length > 0) {
+                const statusCtx = document.getElementById('borrowStatusChart').getContext('2d');
                 new Chart(statusCtx, {
                     type: 'doughnut',
                     data: {
@@ -360,12 +418,12 @@ $pending_users_count = count($pending_users);
                     },
                     options: { responsive: true, }
                 });
-            }
+d            }
 
             // 4. Fine Collection Over Time (Line Chart)
             const finesData = <?= json_encode($monthly_fines_trend_data) ?>;
-            const finesCtx = document.getElementById('fineCollectionChart').getContext('2d');
             if (finesData.length > 0) {
+                const finesCtx = document.getElementById('fineCollectionChart').getContext('2d');
                 new Chart(finesCtx, {
                     type: 'line',
                     data: {
