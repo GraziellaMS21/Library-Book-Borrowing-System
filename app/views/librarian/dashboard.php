@@ -23,9 +23,8 @@ $total_pick_up = $borrowObj->countTotalBooksForPickUp();
 $pending_borrow_requests_count = $borrowObj->countPendingRequests();
 $overdue_book_count = $borrowObj->countOverdueBooks();
 $total_borrowers = $userObj->countTotalActiveBorrowers();
-// $monthly_collected_fines = $borrowObj->sumTotalCollectedFines();
 $monthly_collected_fines = $borrowObj->sumMonthlyCollectedFines();
-$collected_fines_7_days = $borrowObj->getCollectedFinesLast7Days(); // This is the correct variable
+$collected_fines_7_days = $borrowObj->getCollectedFinesLast7Days();
 
 
 $books_due_today = $borrowObj->getBooksDueToday();
@@ -35,23 +34,17 @@ $books_due_today_count = count($books_due_today);
 $top_5_books = $borrowObj->getTopBorrowedBooks(5);
 $top_5_categories = $bookObj->getTopPopularCategories(5);
 $top_5_borrowers = $borrowObj->getTopActiveBorrowers(5);
-// $top_unpaid_users = $borrowObj->getTopUnpaidFinesUsers(5); // Removed
-// $borrower_type_data = $borrowObj->getBorrowerTypeBreakdown(); // Removed
-
 // --- 3. DATA FOR NEW CHARTS ---
-// We'll json_encode these later in the script block
-$daily_activity_data = $borrowObj->getDailyBorrowingActivity(); // NEW
-$borrow_return_data = $borrowObj->getMonthlyBorrowReturnStats(); // NEW
-$user_reg_trend_data = $userObj->getUserRegistrationTrend(); // NEW
+$daily_activity_data = $borrowObj->getDailyBorrowingActivity(); 
+$borrow_return_data = $borrowObj->getMonthlyBorrowReturnStats(); 
+$user_reg_trend_data = $userObj->getUserRegistrationTrend(); 
 $month = date('F');
 // --- 4. DATA FOR ACTIVITY TABLES ---
-// Data fetching for pending tables can be removed if no longer needed anywhere
-// $pending_requests = $borrowObj->viewBorrowDetails("", "Pending"); // Removed data fetch
-// $pending_users = $userObj->viewUser("", "", "pending"); // Removed data fetch
-// $pending_users_count = count($pending_users); // Kept for card, but $pending_users fetch is needed if this card stays
-$pending_users = $userObj->viewUser("", "", "pending"); // Re-added this line, it's needed for the "Pending User Requests" card
+$pending_users = $userObj->viewUser("", "", "pending");
 $pending_users_count = count($pending_users);
 
+
+$borrow_details = $borrowObj->viewBorrowDetails('', 'pending');
 
 ?>
 
@@ -65,7 +58,7 @@ $pending_users_count = count($pending_users);
     <title>Librarian Dashboard</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
     <link rel="stylesheet" href="../../../public/assets/css/admin.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../../../public/assets/js/chart.js"></script>
 </head>
 
 <body>
@@ -327,7 +320,7 @@ $pending_users_count = count($pending_users);
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php if (empty($pending_requests)): ?>
+                                <?php if (empty($borrow_details)): ?>
                                     <tr>
                                         <td colspan="6" class="text-center py-4 text-gray-500">
                                             No pending borrow requests found.
@@ -335,7 +328,7 @@ $pending_users_count = count($pending_users);
                                     </tr>
                                 <?php else:
                                     $no = 1;
-                                    foreach ($pending_requests as $detail) {
+                                    foreach ($borrow_details as $detail) {
                                         $fullName = htmlspecialchars($detail["lName"] . ', ' . $detail["fName"]);
                                         $bookTitle = htmlspecialchars($detail["book_title"]);
                                         $borrowID = $detail["borrowID"];

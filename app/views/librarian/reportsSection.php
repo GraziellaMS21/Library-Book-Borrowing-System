@@ -72,8 +72,8 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
     <title>Library Reports</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
     <link rel="stylesheet" href="../../../public/assets/css/admin.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="../../../public/assets/js/chart.js"></script>
+    <link rel="stylesheet" href="../../../public/assets/fontawesome-free-7.1.0-web/css/all.min.css">
 
 
     <style>
