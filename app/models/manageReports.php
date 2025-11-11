@@ -328,42 +328,51 @@ class Reports extends Database
         return $result['total_borrowers'] ?? 0;
     }
 
-    public function getSummaryAverageReturnDelay()
+    /**
+     * NEW: Calculates total number of books ever borrowed
+     */
+    public function getSummaryTotalBorrows()
     {
-        $sql = "SELECT AVG(DATEDIFF(return_date, expected_return_date))AS avg_delay_days
+        $sql = "SELECT SUM(no_of_copies) AS total_borrows
                 FROM borrowing_details
-                WHERE borrow_status = 'Returned' 
-                  AND return_date > expected_return_date";
+                WHERE (borrow_request_status = 'Approved' OR borrow_status IN ('Borrowed', 'Returned'))";
         $query = $this->connect()->prepare($sql);
         $query->execute();
-        return $query->fetch(PDO::FETCH_ASSOC);
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result['total_borrows'] ?? 0;
     }
+
+    /**
+     * NEW: Calculates on-time return rate
+     */
+    public function getOnTimeReturnRate()
+    {
+        $sql = "SELECT 
+                    COUNT(CASE WHEN borrow_status = 'Returned' AND return_date <= expected_return_date THEN 1 END) AS on_time_returns,
+                    COUNT(CASE WHEN borrow_status = 'Returned' THEN 1 END) AS total_returns
+                FROM borrowing_details
+                WHERE return_date IS NOT NULL AND expected_return_date IS NOT NULL";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+
+        $on_time = $result['on_time_returns'] ?? 0;
+        $total = $result['total_returns'] ?? 0;
+
+        if ($total == 0) {
+            return ['rate' => 0]; // Avoid division by zero
+        }
+
+        $rate = ($on_time / $total) * 100;
+        return ['rate' => $rate];
+    }
+
     public function getSummaryTotalCategories()
     {
         $sql = "SELECT COUNT(categoryID) AS total_categories FROM category";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         return $query->fetch(PDO::FETCH_ASSOC);
-    }
-
-    public function getLibraryUtilizationRate()
-    {
-        $sql_total = "SELECT SUM(book_copies) AS total_copies FROM books";
-        $query_total = $this->connect()->prepare($sql_total);
-        $query_total->execute();
-        $total_copies = $query_total->fetchColumn() ?? 0;
-
-        $sql_borrowed = "SELECT SUM(no_of_copies) AS total_borrowed FROM borrowing_details WHERE borrow_status = 'Borrowed'";
-        $query_borrowed = $this->connect()->prepare($sql_borrowed);
-        $query_borrowed->execute();
-        $total_borrowed = $query_borrowed->fetchColumn() ?? 0;
-
-        if ($total_copies == 0) {
-            return ['utilization_rate' => 0];
-        }
-
-        $utilization_rate = ($total_borrowed / $total_copies) * 100;
-        return ['utilization_rate' => $utilization_rate];
     }
 }
 ?>

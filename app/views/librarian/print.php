@@ -17,7 +17,7 @@ $borrowObj = new BorrowDetails();
 $reportsObj = new Reports();
 $user_id = $_SESSION['user_id'];
 
-// --- START: Copied from reportsSection.php ---
+// --- START: Data fetching synced with reportsSection.php ---
 
 // --- 1. DATA FOR CARDS (From other models) ---
 $total_book_copies = $bookObj->countTotalBookCopies();
@@ -27,16 +27,20 @@ $total_borrowers = $reportsObj->countTotalActiveBorrowers();
 
 // --- 2. FETCH OVERVIEW SUMMARY CARDS (From Reports model) ---
 $fine_collection_summary = $reportsObj->getFineCollectionSummary(); // Used for card + chart
-$summary_avg_duration = $reportsObj->getSummaryAverageBorrowDuration();
-$summary_top_author = $reportsObj->getSummaryMostBorrowedAuthor();
+$summary_avg_duration = $reportsObj->getSummaryAverageBorrowDuration(); // (Available if needed)
+$summary_top_author = $reportsObj->getSummaryMostBorrowedAuthor(); // (Available if needed)
 $top_5_categories = $reportsObj->getTopPopularCategories(5); // Used for card + chart
 
-// --- 3. NEW OVERVIEW CARDS ---
-$summary_avg_delay = $reportsObj->getSummaryAverageReturnDelay();
+// --- 3. NEW OVERVIEW CARDS (Synced with reportsSection.php) ---
+$summary_total_borrows_ever = $reportsObj->getSummaryTotalBorrows();
+$summary_on_time_rate = $reportsObj->getOnTimeReturnRate();
 $summary_total_categories = $reportsObj->getSummaryTotalCategories();
-$summary_utilization_rate = $reportsObj->getLibraryUtilizationRate();
 
-// --- 4. DATA FOR CHARTS & TABLES ---
+// Calculate Avg Borrowing per User (Synced with reportsSection.php)
+$avg_borrowing_per_user = ($total_borrowers > 0) ? ($summary_total_borrows_ever / $total_borrowers) : 0;
+
+
+// --- 4. DATA FOR CHARTS & TABLES (Already synced) ---
 // I. Borrowing Reports
 $monthly_borrow_return_trend = $reportsObj->getMonthlyBorrowReturnTrend();
 $top_5_books = $reportsObj->getTopBorrowedBooks(5);
@@ -62,7 +66,7 @@ $avg_borrow_duration = $reportsObj->getAverageBorrowDurationByCategory();
 $overdue_books_summary = $reportsObj->getOverdueBooksSummary();
 $late_returns_trend = $reportsObj->getLateReturnsTrend();
 
-// --- END: Copied from reportsSection.php ---
+// --- END: Data fetching synced ---
 
 ?>
 <!DOCTYPE html>
@@ -120,43 +124,34 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
             }
 
             .report-chart-container,
-            table,
-            .info-grid {
+            table {
                 page-break-inside: avoid;
             }
 
             /* Ensure charts and tables use full available width */
+            .grid-cols-2 {
+                display: block !important;
+            }
+
+            /* 2. Update your existing rule for spacing */
+            .report-chart-container,
+            table {
+                page-break-inside: avoid;
+                /* Add some bottom margin for spacing between stacked charts */
+                margin-bottom: 1cm;
+            }
+
+            /* * This existing rule is correct and ensures 
+             * the container fills the new block layout.
+             */
             .report-chart-container {
                 width: 100%;
             }
 
-            /* Make grid items stack vertically for better page flow */
-            .print-stack {
-                grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
-            }
-
-            /* UPDATED: Ensure dark info cards print correctly */
-            .info {
-                /* This style is defined in admin.css, but we re-state it for print safety */
-                background-color: #3C3C3C !important;
-                /* Dark background */
-                color: white !important;
-                /* White text */
-                box-shadow: none !important;
-                /* Remove shadow for print */
-                border: 1px solid #4B5563;
-                /* Add a simple border */
-            }
-
-            .info .title {
-                color: #D1D5DB !important;
-                /* Light gray text for titles */
-            }
-
-            .info span {
-                color: #931C19 !important;
-                /* Red text for numbers */
-            }
+            /* * REMOVED: .print-stack, .info, .info .title, .info span
+             * The .print-stack class was forcing a single column.
+             * The .info styles are no longer needed as the cards are now a simple list.
+            */
         }
     </style>
 </head>
@@ -178,198 +173,102 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
 
         <div id="overview" class="mb-8">
             <h2 class="font-extrabold text-3xl text-red-900 border-b-2 border-red-800 pb-2 mb-4">OVERVIEW</h2>
-            <div class="report-chart-container mt-4">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 info-grid">
 
-                    <div class="info p-6 rounded-lg shadow flex items-start">
-                        <div class="text-5xl text-white mr-4">
-                            <i class="fas fa-book"></i>
-                        </div>
-                        <div class="flex flex-col items-end text-white w-full">
-                            <span class="text-2xl font-semibold"><?= htmlspecialchars($total_book) ?></span>
-                            <h2 class="title text-sm text-gray-300">Total Distinct Books</h2>
-                        </div>
-                    </div>
-
-                    <div class="info p-6 rounded-lg shadow flex items-start">
-                        <div class="text-5xl text-white mr-4">
-                            <i class="fas fa-book-open"></i>
-                        </div>
-                        <div class="flex flex-col items-end text-white w-full">
-                            <span class="text-2xl font-semibold"><?= htmlspecialchars($total_book_copies) ?></span>
-                            <h2 class="title text-sm text-gray-300">Total Available Book Copies</h2>
-                        </div>
-                    </div>
-
-                    <div class="info p-6 rounded-lg shadow flex items-start">
-                        <div class="text-5xl text-white mr-4">
-                            <i class="fas fa-book-reader"></i>
-                        </div>
-                        <div class="flex flex-col items-end text-white w-full">
-                            <span class="text-4xl font-bold text-red-900">
-                                <?= htmlspecialchars($total_borrowed_books ?? 0) ?>
-                            </span>
-                            <h2 class="title text-sm text-gray-300 font-semibold">Total Borrowed Books</h2>
-                        </div>
-                    </div>
-
-                    <div class="info p-6 rounded-lg shadow flex items-start">
-                        <div class="text-5xl text-white mr-4">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="flex flex-col items-end text-white w-full">
-                            <span class="text-4xl font-bold text-red-900">
-                                <?= htmlspecialchars($total_borrowers ?? 0) ?>
-                            </span>
-                            <h2 class="title text-sm text-gray-300 font-semibold">Total Borrowers</h2>
-                        </div>
-                    </div>
-
-                    <div class="info p-6 rounded-lg shadow flex items-start">
-                        <div class="text-5xl text-white mr-4">
-                            <i class="fas fa-history"></i>
-                        </div>
-                        <div class="flex flex-col items-end text-white w-full">
-                            <span class="text-4xl font-bold text-red-900">
-                                <?= number_format($summary_avg_delay['avg_delay_days'] ?? 0, 1) ?>
-                                <span class="text-3xl text-gray-400">days</span>
-                            </span>
-                            <h2 class="title text-sm text-gray-300 font-semibold">Average Return Delay</h2>
-                        </div>
-                    </div>
-
-                    <div class="info p-6 rounded-lg shadow flex items-start">
-                        <div class="text-5xl text-white mr-4">
-                            <i class="fas fa-bookmark"></i>
-                        </div>
-                        <div class="flex flex-col items-end text-white w-full">
-                            <span class="text-4xl font-bold text-red-900">
-                                <?= htmlspecialchars($summary_total_categories['total_categories'] ?? 0) ?>
-                            </span>
-                            <h2 class="title text-sm text-gray-300 font-semibold">Total Categories</h2>
-                        </div>
-                    </div>
-
-                    <div class="info p-6 rounded-lg shadow flex items-start">
-                        <div class="text-5xl text-white mr-4">
-                            <i class="fas fa-chart-pie"></i>
-                        </div>
-                        <div class="flex flex-col items-end text-white w-full">
-                            <span class="text-4xl font-bold text-red-900">
-                                <?= number_format($summary_utilization_rate['utilization_rate'] ?? 0, 1) ?>%
-                            </span>
-                            <h2 class="title text-sm text-gray-300 font-semibold">Library Utilization Rate
-                            </h2>
-                        </div>
-                    </div>
-
-                    <div class="info p-6 rounded-lg shadow flex items-start">
-                        <div class="text-5xl text-white mr-4">
-                            <i class="fas fa-money-bill-wave"></i>
-                        </div>
-                        <div class="flex flex-col items-end text-white w-full">
-                            <span class="text-4xl font-bold text-red-900">
-                                ₱<?= number_format($fine_collection_summary['total_collected'] ?? 0, 2) ?>
-                            </span>
-                            <h2 class="title text-sm text-gray-300 font-semibold">Total Fines Collected
-                            </h2>
-                        </div>
-                    </div>
-                </div>
+            <div class="report-chart-container mt-4" style="min-height: auto;">
+                <ul class="list-disc list-inside space-y-3 text-lg">
+                    <li><strong>Total Distinct Books:</strong> <?= htmlspecialchars($total_book) ?></li>
+                    <li><strong>Total Available Book Copies:</strong> <?= htmlspecialchars($total_book_copies) ?></li>
+                    <li><strong>Total Borrowed Books:</strong> <?= htmlspecialchars($total_borrowed_books ?? 0) ?></li>
+                    <li><strong>Total Borrowers:</strong> <?= htmlspecialchars($total_borrowers ?? 0) ?></li>
+                    <li><strong>Average Borrowing per User:</strong> <?= number_format($avg_borrowing_per_user, 1) ?>
+                    </li>
+                    <li><strong>Total Categories:</strong>
+                        <?= htmlspecialchars($summary_total_categories['total_categories'] ?? 0) ?></li>
+                    <li><strong>On-Time Return Rate:</strong>
+                        <?= number_format($summary_on_time_rate['rate'] ?? 0, 1) ?>%</li>
+                    <li><strong>Total Fines Collected:</strong>
+                        ₱<?= number_format($fine_collection_summary['total_collected'] ?? 0, 2) ?></li>
+                </ul>
             </div>
         </div>
-        <div id="borrowing" class="mb-8">
-            <h2 class="font-extrabold text-3xl text-red-900 border-b-2 border-red-800 pb-2 mb-4">BORROWING REPORTS</h2>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4 print-stack">
+
+        <div id="user-activity" class="mb-8">
+            <h2 class="font-extrabold text-3xl text-red-900 border-b-2 border-red-800 pb-2 mb-4">USER & BORROWING
+                ACTIVITY</h2>
+
+            <div class="grid grid-cols-2 gap-6 mt-4">
                 <div class="report-chart-container">
-                    <h2 class="text-xl font-bold text-red-800 mb-4">1. Monthly Borrowing Trend (Last 12 Mo.)</h2>
+                    <h2 class="text-xl font-bold text-red-800 mb-4">1. Monthly Borrowing Trend</h2>
                     <canvas id="monthlyBorrowReturnChart"></canvas>
                 </div>
                 <div class="report-chart-container">
-                    <h2 class="text-xl font-bold text-red-800 mb-4">2. Top 5 Categories (All Time)</h2>
-                    <canvas id="borrowTrendCategoryChart"></canvas>
+                    <h2 class="text-xl font-bold text-red-800 mb-4">2. User Registration Trend</h2>
+                    <canvas id="userRegTrendChart"></canvas>
                 </div>
                 <div class="report-chart-container">
-                    <h2 class="text-xl font-bold text-red-800 mb-4">3. Top 5 Most Borrowed Books</h2>
-                    <canvas id="topBooksChart"></canvas>
-                </div>
-                <div class="report-chart-container">
-                    <h2 class="text-xl font-bold text-red-800 mb-4">4. Borrowing Activity by Department</h2>
-                    <canvas id="borrowByDeptChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div id="fines" class="mb-8">
-            <h2 class="font-extrabold text-3xl text-red-900 border-b-2 border-red-800 pb-2 mb-4">FINE AND PAYMENT
-                REPORTS</h2>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4 print-stack">
-                <div class="report-chart-container">
-                    <h2 class="text-xl font-bold text-red-800 mb-4">1. Fine Collection Over Time (Last 12 Mo.)</h2>
-                    <canvas id="monthlyFineTrendChart"></canvas>
-                </div>
-                <div class="report-chart-container">
-                    <h2 class="text-xl font-bold text-red-800 mb-4">2. Top 5 Users with Unpaid Fines</h2>
-                    <canvas id="topUnpaidFinesChart"></canvas>
-                </div>
-                <div class="report-chart-container lg:col-span-2">
-                    <h2 class="text-xl font-bold text-red-800 mb-4">3. Fine Collection Summary</h2>
-                    <canvas id="fineSummaryChart" class="max-h-80 mx-auto"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div id="user" class="mb-8">
-            <h2 class="font-extrabold text-3xl text-red-900 border-b-2 border-red-800 pb-2 mb-4">USER REPORTS</h2>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4 print-stack">
-                <div class="report-chart-container">
-                    <h2 class="text-xl font-bold text-red-800 mb-4">1. Top 5 Most Active Borrowers</h2>
+                    <h2 class="text-xl font-bold text-red-800 mb-4">3. Top 5 Most Active Borrowers</h2>
                     <canvas id="topBorrowersChart"></canvas>
                 </div>
                 <div class="report-chart-container">
-                    <h2 class="text-xl font-bold text-red-800 mb-4">2. User Registration Trend (Last 12 Mo.)</h2>
-                    <canvas id="userRegTrendChart"></canvas>
+                    <h2 class="text-xl font-bold text-red-800 mb-4">4. Borrowing Activity by Dept.</h2>
+                    <canvas id="borrowByDeptChart"></canvas>
                 </div>
-                <div class="report-chart-container lg:col-span-2">
-                    <h2 class="text-xl font-bold text-red-800 mb-4">3. Borrower Type Breakdown</h2>
+                <div class="report-chart-container col-span-2">
+                    <h2 class="text-xl font-bold text-red-800 mb-4">5. Borrower Type Breakdown</h2>
                     <canvas id="borrowerTypeChart" class="max-h-80 mx-auto"></canvas>
                 </div>
             </div>
         </div>
 
-        <div id="inventory" class="mb-8">
-            <h2 class="font-extrabold text-3xl text-red-900 border-b-2 border-red-800 pb-2 mb-4">BOOK INVENTORY REPORTS
-            </h2>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4 print-stack">
+        <div id="collection-inventory" class="mb-8">
+            <h2 class="font-extrabold text-3xl text-red-900 border-b-2 border-red-800 pb-2 mb-4">COLLECTION & INVENTORY
+                REPORTS</h2>
+
+            <div class="grid grid-cols-2 gap-6 mt-4">
                 <div class="report-chart-container">
-                    <h2 class="text-xl font-bold text-red-800 mb-4">1. Book Status Overview</h2>
+                    <h2 class="text-xl font-bold text-red-800 mb-4">1. Top 5 Most Borrowed Books</h2>
+                    <canvas id="topBooksChart"></canvas>
+                </div>
+                <div class="report-chart-container">
+                    <h2 class="text-xl font-bold text-red-800 mb-4">2. Top 5 Popular Categories</h2>
+                    <canvas id="borrowTrendCategoryChart"></canvas>
+                </div>
+                <div class="report-chart-container">
+                    <h2 class="text-xl font-bold text-red-800 mb-4">3. Book Status Overview</h2>
                     <canvas id="bookStatusChart" class="max-h-80 mx-auto"></canvas>
                 </div>
                 <div class="report-chart-container">
-                    <h2 class="text-xl font-bold text-red-800 mb-4">2. Books per Category</h2>
+                    <h2 class="text-xl font-bold text-red-800 mb-4">4. Books per Category (Inventory)</h2>
                     <canvas id="booksPerCategoryChart"></canvas>
-                </div>
-                <div class="report-chart-container">
-                    <h2 class="text-xl font-bold text-red-800 mb-4">3. Average Borrow Duration by Category</h2>
-                    <div class="relative flex-grow">
-                        <canvas id="avgBorrowDurationChart"></canvas>
-                    </div>
                 </div>
             </div>
         </div>
 
-        <div id="overdue" class="mb-8">
-            <h2 class="font-extrabold text-3xl text-red-900 border-b-2 border-red-800 pb-2 mb-4">OVERDUE AND LATE RETURN
+        <div id="fines-compliance" class="mb-8">
+            <h2 class="font-extrabold text-3xl text-red-900 border-b-2 border-red-800 pb-2 mb-4">FINES & COMPLIANCE
                 REPORTS</h2>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4 print-stack">
+
+            <div class="grid grid-cols-2 gap-6 mt-4">
                 <div class="report-chart-container">
-                    <h2 class="text-xl font-bold text-red-800 mb-4">2. Late Returns Trend (Last 12 Mo.)</h2>
+                    <h2 class="text-xl font-bold text-red-800 mb-4">1. Fine Collection Over Time</h2>
+                    <canvas id="monthlyFineTrendChart"></canvas>
+                </div>
+                <div class="report-chart-container">
+                    <h2 class="text-xl font-bold text-red-800 mb-4">2. Late Returns Trend</h2>
                     <div class="relative flex-grow">
                         <canvas id="lateReturnsChart"></canvas>
                     </div>
                 </div>
                 <div class="report-chart-container">
-                    <h2 class="text-xl font-bold text-red-800 mb-4">1. Overdue Books Summary</h2>
+                    <h2 class="text-xl font-bold text-red-800 mb-4">3. Top 5 Users with Unpaid Fines</h2>
+                    <canvas id="topUnpaidFinesChart"></canvas>
+                </div>
+                <div class="report-chart-container">
+                    <h2 class="text-xl font-bold text-red-800 mb-4">4. Fine Collection Summary</h2>
+                    <canvas id="fineSummaryChart" class="max-h-80 mx-auto"></canvas>
+                </div>
+                <div class="report-chart-container col-span-2">
+                    <h2 class="text-xl font-bold text-red-800 mb-4">5. Overdue Books Summary</h2>
                     <div class="overflow-x-auto">
                         <table>
                             <thead>
@@ -383,12 +282,12 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php if (empty($overdue_books_summary)) : ?>
+                                <?php if (empty($overdue_books_summary)): ?>
                                     <tr>
                                         <td colspan="6" class="text-center py-4">No overdue books found.</td>
                                     </tr>
-                                <?php else : ?>
-                                    <?php foreach ($overdue_books_summary as $item) : ?>
+                                <?php else: ?>
+                                    <?php foreach ($overdue_books_summary as $item): ?>
                                         <tr>
                                             <td><?= htmlspecialchars($item['book_title']) ?></td>
                                             <td><?= htmlspecialchars($item['fName'] . ' ' . $item['lName']) ?></td>
@@ -405,9 +304,10 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                 </div>
             </div>
         </div>
+
     </div>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
 
             // --- Chart Colors (from reportsSection.php) ---
             const chartColors = {
@@ -436,15 +336,11 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                 return months;
             }
 
-            function alignMonthlyData(rawData, valueKey) {
-                const allMonths = getLast12Months();
-                const lookup = {};
-                rawData.forEach(d => lookup[d.month] = d[valueKey]);
-                return allMonths.map(month => lookup[month] || 0);
-            }
-
             // --- COMMON MONTH LIST FOR ALL MONTHLY CHARTS ---
             const months = getLast12Months();
+
+            // Set all chart animations to 0 for print
+            Chart.defaults.animation.duration = 0;
 
             // === I. Borrowing Reports ===
 
@@ -476,9 +372,6 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                 },
                 options: {
                     responsive: true,
-                    animation: {
-                        duration: 0
-                    },
                     scales: {
                         y: {
                             beginAtZero: true,
@@ -504,9 +397,6 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                 },
                 options: {
                     responsive: true,
-                    animation: {
-                        duration: 0
-                    },
                     plugins: {
                         legend: {
                             display: false
@@ -537,9 +427,6 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                 options: {
                     indexAxis: 'y',
                     responsive: true,
-                    animation: {
-                        duration: 0
-                    },
                     scales: {
                         x: {
                             beginAtZero: true,
@@ -568,10 +455,7 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                     }]
                 },
                 options: {
-                    responsive: true,
-                    animation: {
-                        duration: 0
-                    }
+                    responsive: true
                 }
             });
 
@@ -601,9 +485,6 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                 },
                 options: {
                     responsive: true,
-                    animation: {
-                        duration: 0
-                    },
                     scales: {
                         x: {
                             stacked: true
@@ -631,9 +512,6 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                 options: {
                     indexAxis: 'y',
                     responsive: true,
-                    animation: {
-                        duration: 0
-                    },
                     scales: {
                         x: {
                             beginAtZero: true
@@ -659,10 +537,7 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                     }]
                 },
                 options: {
-                    responsive: true,
-                    animation: {
-                        duration: 0
-                    }
+                    responsive: true
                 }
             });
 
@@ -683,9 +558,6 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                 options: {
                     indexAxis: 'y',
                     responsive: true,
-                    animation: {
-                        duration: 0
-                    },
                     scales: {
                         x: {
                             beginAtZero: true,
@@ -720,9 +592,6 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                 },
                 options: {
                     responsive: true,
-                    animation: {
-                        duration: 0
-                    }, // Added for print
                     scales: {
                         y: {
                             beginAtZero: true,
@@ -751,10 +620,7 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                     }]
                 },
                 options: {
-                    responsive: true,
-                    animation: {
-                        duration: 0
-                    }
+                    responsive: true
                 }
             });
 
@@ -772,10 +638,7 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                     }]
                 },
                 options: {
-                    responsive: true,
-                    animation: {
-                        duration: 0
-                    }
+                    responsive: true
                 }
             });
 
@@ -793,9 +656,6 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                 },
                 options: {
                     responsive: true,
-                    animation: {
-                        duration: 0
-                    },
                     scales: {
                         y: {
                             beginAtZero: true,
@@ -827,10 +687,7 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                 options: {
                     indexAxis: 'y',
                     responsive: true,
-                    animation: {
-                        duration: 0
-                    },
-                    maintainAspectRatio: false, /* ⬅️ FIX ADDED */
+                    maintainAspectRatio: false,
                     scales: {
                         x: {
                             beginAtZero: true
@@ -865,10 +722,7 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                 },
                 options: {
                     responsive: true,
-                    animation: {
-                        duration: 0
-                    },
-                    maintainAspectRatio: false, /* ⬅️ FIX ADDED */
+                    maintainAspectRatio: false,
                     scales: {
                         y: {
                             beginAtZero: true,
