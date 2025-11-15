@@ -14,7 +14,7 @@ $current_tab = trim(htmlspecialchars($_GET["tab"] ?? 'pending'));
 
 
 if ($borrowID && in_array($action, ['accept', 'reject'])) {
-    
+
     $current_detail = $borrowObj->fetchBorrowDetail($borrowID);
     if (!$current_detail) {
         $_SESSION["errors"] = ["general" => "Borrow detail not found for processing."];
@@ -29,23 +29,32 @@ if ($borrowID && in_array($action, ['accept', 'reject'])) {
         $borrowObj->borrow_request_status = 'Approved';
         $borrowObj->borrow_status = NULL;
         if (!$bookObj->decrementBookCopies($book_id_to_update, $copies_to_move)) {
-             $_SESSION["errors"] = ["general" => "Failed to update book stock (decrement)."];
-             header("Location: ../../app/views/librarian/dashboard.php");
-             exit;
+            $_SESSION["errors"] = ["general" => "Failed to update book stock (decrement)."];
+            header("Location: ../../app/views/librarian/dashboard.php");
+            exit;
         }
 
     } elseif ($action === 'reject') {
         $borrowObj->borrow_request_status = 'Rejected';
         $borrowObj->borrow_status = NULL;
         if ($current_detail['borrow_request_status'] === 'Approved' || $current_detail['borrow_request_status'] === 'Pending') {
-             if (!$bookObj->incrementBookCopies($book_id_to_update, $copies_to_move)) {
-                 $_SESSION["errors"] = ["general" => "Failed to update book stock (increment) on rejection."];
-                 header("Location: ../../app/views/librarian/dashboard.php");
-                 exit;
-             }
+            if (!$bookObj->incrementBookCopies($book_id_to_update, $copies_to_move)) {
+                $_SESSION["errors"] = ["general" => "Failed to update book stock (increment) on rejection."];
+                header("Location: ../../app/views/librarian/dashboard.php");
+                exit;
+            }
         }
+    } elseif ($action === 'return') {
+        $borrowObj->borrow_request_status = NULL;
+        $borrowObj->borrow_status = 'Returned';
+        if (!$bookObj->incrementBookCopies($book_id_to_update, $copies_to_move)) {
+            $_SESSION["errors"] = ["general" => "Failed to update book stock (increment) on rejection."];
+            header("Location: ../../app/views/librarian/dashboard.php");
+            exit;
+        }
+
     }
-    
+
     foreach ($current_detail as $key => $value) {
         if (property_exists($borrowObj, $key)) {
             $borrowObj->$key = ($value === 'NULL' || $value === null) ? null : $value;

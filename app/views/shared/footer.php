@@ -8,7 +8,7 @@
         <div class="footer-center flex gap-6 text-sm font-semibold">
             <a href="#">Home</a>
             <a href="#">About</a>
-            <a href="#">Contact</a>
+            <a href="contact.php">Contact</a>
         </div>
 
         <div class="footer-right text-sm text-center md:text-right opacity-90">

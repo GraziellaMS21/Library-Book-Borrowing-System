@@ -253,7 +253,7 @@ $borrow_details = $borrowObj->viewBorrowDetails('', 'pending');
 
 
                 <h2 class="font-extrabold text-3xl pl-8 pt-4 text-red-900">ACTIVITY FEED</h2>
-                <section class="section mt-8">
+                <!-- <section class="section mt-8">
                     <h2 class="text-2xl font-bold mb-4">Books Due Today
                         (<?= htmlspecialchars($books_due_today_count) ?>)</h2>
                     <div class="view bg-white p-4 rounded-lg shadow-md">
@@ -301,9 +301,9 @@ $borrow_details = $borrowObj->viewBorrowDetails('', 'pending');
                                 endif;
                                 ?>
                             </tbody>
-                        </table>
-                    </div>
-                </section>
+                        </table> -->
+                    <!-- </div>
+                </section> -->
                 <section class="section mt-8">
                     <h2 class="text-2xl font-bold mb-4">Pending Borrow Requests
                         (<?= htmlspecialchars($pending_borrow_requests_count) ?>)</h2>

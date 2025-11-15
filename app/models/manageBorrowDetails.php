@@ -809,7 +809,7 @@ public function getTopUnpaidFinesUsers($limit = 5)
 
     public function getBooksDueToday() {
         // CURDATE() gets today's date (e.g., '2025-11-11')
-        $sql = "SELECT bd.*, u.fName, u.lName, b.book_title
+        $sql = "SELECT bd.*, u.fName, u.lName, b.book_title, b.book_condition
                 FROM borrowing_details bd
                 JOIN users u ON bd.userID = u.userID
                 JOIN books b ON bd.bookID = b.bookID

@@ -76,6 +76,9 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                 <div class="section manage_users h-full">
                     <div class="title flex w-full items-center justify-between mb-4">
                         <h1 class="text-red-800 font-bold text-4xl">MANAGE USERS</h1>
+
+                        <a href="userList.php" target="_blank" class="addBtn">Print
+                            User List</a>
                     </div>
 
                     <div class="tabs flex border-b border-gray-200 mb-6">
