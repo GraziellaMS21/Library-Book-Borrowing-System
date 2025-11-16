@@ -41,10 +41,10 @@ if ($active_tab === 'returned') {
 
     $rejected = $borrowObj->fetchUserBorrowDetails($userID, 'Rejected');
     $cancelled = $borrowObj->fetchUserBorrowDetails($userID, 'Cancelled');
-    $rejected_requests = array_filter($rejected, fn($borrow) => $borrow['borrow_request_status'] === 'Rejected' && $borrow['user_notified'] == 0);
+    $rejected_requests = array_filter($rejected, fn($borrow) => $borrow['borrow_request_status'] === 'Rejected');
 
 
-    $cancelled_requests = array_filter($cancelled, fn($borrow) => $borrow['borrow_request_status'] === 'Cancelled' && $borrow['user_notified'] == 0);
+    $cancelled_requests = array_filter($cancelled, fn($borrow) => $borrow['borrow_request_status'] === 'Cancelled');
 
 
     $borrowed_books = array_merge($pending_requests, $approved_requests, $rejected_requests, $cancelled_requests);
@@ -364,16 +364,6 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                                     <a class="px-2 py-1 rounded text-white bg-red-800 hover:bg-red-900 text-sm font-medium"
                                                         href="../../../app/controllers/borrowBookController.php?action=cancel&id=<?= $book['borrowID'] ?>">
                                                         Cancel
-                                                    </a>
-                                                <?php elseif ($book['borrow_request_status'] == 'Rejected' && $book['user_notified'] == 0): ?>
-                                                    <a class="px-2 py-1 rounded text-white bg-green-600 hover:bg-green-700 text-sm font-medium"
-                                                        href="../../../app/controllers/borrowBookController.php?action=mark_as_read&id=<?= $book['borrowID'] ?>&tab=pending">
-                                                        Mark as Read
-                                                    </a>
-                                                <?php elseif ($book['borrow_request_status'] == 'Cancelled' && $book['user_notified'] == 0): ?>
-                                                    <a class="px-2 py-1 rounded text-white bg-green-600 hover:bg-green-700 text-sm font-medium"
-                                                        href="../../../app/controllers/borrowBookController.php?action=mark_as_read&id=<?= $book['borrowID'] ?>&tab=pending">
-                                                        Mark as Read
                                                     </a>
                                                 <?php else: ?>
                                                     <span class="text-gray-400 text-sm">N/A</span>

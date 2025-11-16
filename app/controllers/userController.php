@@ -1,6 +1,13 @@
 <?php
 session_start();
 require_once(__DIR__ . "/../models/manageUsers.php");
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+//required files
+require_once __DIR__ . '/../libraries/phpmailer/src/Exception.php';
+require_once __DIR__ . '/../libraries/phpmailer/src/PHPMailer.php';
+require_once __DIR__ . '/../libraries/phpmailer/src/SMTP.php';
 $userObj = new User();
 $user = [];
 $errors = [];
@@ -111,27 +118,106 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-if ($action === 'approveReject' && $userID && isset($_GET['status'])) {
-    $newStatus = trim($_GET['status']);
+if ($action === 'approve' && $userID) {
+    if ($userObj->updateUserStatus($userID, "Approved", "Active")) {
+        $mail = new PHPMailer(true);
+        $user = $userObj->fetchUser($userID);
 
-    if (!in_array($newStatus, ['Approved', 'Rejected'])) {
-        $_SESSION["errors"] = ["general" => "Invalid status action."];
-        header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}");
-        exit;
-    }
+        //Server settings
+        $mail->isSMTP();                              //Send using SMTP
+        $mail->Host = 'smtp.gmail.com';       //Set the SMTP server to send through
+        $mail->SMTPAuth = true;             //Enable SMTP authentication
+        $mail->Username = 'graziellamssaavedra06@gmail.com';   //SMTP write your email
+        $mail->Password = 'cpybynwckiipsszp';      //SMTP password
+        $mail->SMTPSecure = 'ssl';            //Enable implicit SSL encryption
+        $mail->Port = 465;
 
-    if ($userObj->updateUserStatus($userID, $newStatus, "")) {
-        header("Location: ../../app/views/librarian/usersSection.php?" . "tab={$currentTab}");
+        //Recipients
+        $mail->setFrom('graziellamssaavedra06@gmail.com');     //Add a recipient email  
+        $mail->addAddress($user["email"], $user["fName"] . ' ' . $user["lName"]); // Sender Email and name
+        $mail->addReplyTo('graziellamssaavedra06@gmail.com'); // reply to sender email
+
+        //Content
+        $mail->isHTML(true);               //Set email format to HTML
+        $mail->Subject = "Library Book Borrowing System User Registration Accepted";   // email subject headings
+        $mail->Body = "You can now log in to your account and start browsing! "; //email message
+
+        // Success sent message alert
+        $mail->send();
+
+        header("Location: ../../app/views/librarian/usersSection.php?tab=approved");
         exit;
     } else {
-        $_SESSION["errors"] = ["db_error" => "Failed to update user status due to a database error."];
+        $_SESSION["errors"] = ["db_error" => "Failed to block user due to a database error."];
         header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}");
         exit;
     }
 }
 
+if ($action === 'reject' && $userID) {
+    if ($userObj->updateUserStatus($userID, "Rejected", "Inactive")) {
+        $mail = new PHPMailer(true);
+        $user = $userObj->fetchUser($userID);
+
+        //Server settings
+        $mail->isSMTP();                              //Send using SMTP
+        $mail->Host = 'smtp.gmail.com';       //Set the SMTP server to send through
+        $mail->SMTPAuth = true;             //Enable SMTP authentication
+        $mail->Username = 'graziellamssaavedra06@gmail.com';   //SMTP write your email
+        $mail->Password = 'cpybynwckiipsszp';      //SMTP password
+        $mail->SMTPSecure = 'ssl';            //Enable implicit SSL encryption
+        $mail->Port = 465;
+
+        //Recipients
+        $mail->setFrom('graziellamssaavedra06@gmail.com');     //Add a recipient email  
+        $mail->addAddress($user["email"], $user["fName"] . ' ' . $user["lName"]); // Sender Email and name
+        $mail->addReplyTo('graziellamssaavedra06@gmail.com'); // reply to sender email
+
+        //Content
+        $mail->isHTML(true);               //Set email format to HTML
+        $mail->Subject = "Library Book Borrowing System User Registration Rejected";   // email subject headings
+        $mail->Body = "Your Account Was Rejected for the Following Reasons! "; //email message
+
+        // Success sent message alert
+        $mail->send();
+
+        header("Location: ../../app/views/librarian/usersSection.php?tab=reject");
+        exit;
+    } else {
+        $_SESSION["errors"] = ["db_error" => "Failed to block user due to a database error."];
+        header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}");
+        exit;
+    }
+}
+
+
 if ($action === 'block' && $userID) {
     if ($userObj->updateUserStatus($userID, "", "Blocked")) {
+        $mail = new PHPMailer(true);
+        $user = $userObj->fetchUser($userID);
+
+        //Server settings
+        $mail->isSMTP();                              //Send using SMTP
+        $mail->Host = 'smtp.gmail.com';       //Set the SMTP server to send through
+        $mail->SMTPAuth = true;             //Enable SMTP authentication
+        $mail->Username = 'graziellamssaavedra06@gmail.com';   //SMTP write your email
+        $mail->Password = 'cpybynwckiipsszp';      //SMTP password
+        $mail->SMTPSecure = 'ssl';            //Enable implicit SSL encryption
+        $mail->Port = 465;
+
+        //Recipients
+        $mail->setFrom('graziellamssaavedra06@gmail.com');     //Add a recipient email  
+        $mail->addAddress($user["email"], $user["fName"] . ' ' . $user["lName"]); // Sender Email and name
+        $mail->addReplyTo('graziellamssaavedra06@gmail.com'); // reply to sender email
+
+        //Content
+        $mail->isHTML(true);               //Set email format to HTML
+        $mail->Subject = "User Account Blocked";   // email subject headings
+        $mail->Body = "Your Account Was Blocked! "; //email message
+
+        // Success sent message alert
+        $mail->send();
+
         header("Location: ../../app/views/librarian/usersSection.php?tab=blocked");
         exit;
     } else {
@@ -143,6 +229,31 @@ if ($action === 'block' && $userID) {
 
 if ($action === 'unblock' && $userID) {
     if ($userObj->updateUserStatus($userID, "Approved", "Active")) {
+        $mail = new PHPMailer(true);
+        $user = $userObj->fetchUser($userID);
+
+        //Server settings
+        $mail->isSMTP();                              //Send using SMTP
+        $mail->Host = 'smtp.gmail.com';       //Set the SMTP server to send through
+        $mail->SMTPAuth = true;             //Enable SMTP authentication
+        $mail->Username = 'graziellamssaavedra06@gmail.com';   //SMTP write your email
+        $mail->Password = 'cpybynwckiipsszp';      //SMTP password
+        $mail->SMTPSecure = 'ssl';            //Enable implicit SSL encryption
+        $mail->Port = 465;
+
+        //Recipients
+        $mail->setFrom('graziellamssaavedra06@gmail.com');     //Add a recipient email  
+        $mail->addAddress($user["email"], $user["fName"] . ' ' . $user["lName"]); // Sender Email and name
+        $mail->addReplyTo('graziellamssaavedra06@gmail.com'); // reply to sender email
+
+        //Content
+        $mail->isHTML(true);               //Set email format to HTML
+        $mail->Subject = "User Account is Active Again";   // email subject headings
+        $mail->Body = "You can now log in to your account and start browsing! "; //email message
+
+        // Success sent message alert
+        $mail->send();
+
         header("Location: ../../app/views/librarian/usersSection.php?tab=approved");
         exit;
     } else {
@@ -167,6 +278,8 @@ if ($action === 'delete' && $userID) {
         exit;
     }
 }
+
+
 
 // If no action was performed or POST/GET was malformed, redirect.
 if (!isset($_GET['action']) && !isset($_POST['action']) && $_SERVER["REQUEST_METHOD"] != "POST") {

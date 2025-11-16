@@ -176,11 +176,11 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                                         <td class="action text-center">
 
                                             <?php if ($current_tab == 'pending'): ?>
-                                                <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=approveReject&id=<?= $user['userID'] ?>&status=Approved"
+                                                <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=approve&id=<?= $user['userID'] ?>&status=Approved"
                                                     class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1">
                                                     Approve
                                                 </a>
-                                                <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=approveReject&id=<?= $user['userID'] ?>&status=Rejected"
+                                                <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=reject&id=<?= $user['userID'] ?>&status=Rejected"
                                                     class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1">
                                                     Reject
                                                 </a>

@@ -1,4 +1,39 @@
+<?php
+
+require_once(__DIR__ . "/../../models/manageNotifications.php");
+
+$unread_notif_count = 0;
+$unread_notif_list = [];
+
+// Only fetch notifications if the user is logged in
+if (isset($_SESSION["user_id"])) {
+    $userID = $_SESSION["user_id"];
+    $notificationObj_header = new Notification(); // Use a unique name to avoid variable conflicts
+    $unread_notif_count = $notificationObj_header->getUnreadNotificationCount($userID);
+    $unread_notif_list = $notificationObj_header->getUnreadNotifications($userID);
+}
+
+// Helper function for "time ago"
+if (!function_exists('timeAgo')) {
+    function timeAgo($dateString) {
+        $date = new DateTime($dateString);
+        $now = new DateTime();
+        $diff = $now->diff($date);
+
+        if ($diff->y > 0) return $diff->y . " year" . ($diff->y > 1 ? "s" : "") . " ago";
+        if ($diff->m > 0) return $diff->m . " month" . ($diff->m > 1 ? "s" : "") . " ago";
+        if ($diff->d > 0) return $diff->d . " day" . ($diff->d > 1 ? "s" : "") . " ago";
+        if ($diff->h > 0) return $diff->h . " hour" . ($diff->h > 1 ? "s" : "") . " ago";
+        if ($diff->i > 0) return $diff->i . " minute" . ($diff->i > 1 ? "s" : "") . " ago";
+        return "Just now";
+    }
+}
+?>
+
 <div class="color-layer"></div>
+
+<link rel="stylesheet" href="../../../public/assets/fontawesome-free-7.1.0-web/css/all.min.css">
+</header>
 <header>
     <nav class="navbar flex justify-between items-center bg-white fixed top-0 left-0 w-full z-10">
         <div class="logo-section flex items-center gap-3">
@@ -7,18 +42,75 @@
         </div>
         <!-- Desktop Navigation Links -->
         <ul id="nav-menu" class="hidden md:flex items-center nav-links gap-8">
-            <li><a href="catalogue.php">Catalogue</a></li>
-            <li><a href="myBorrowedBooks.php">My Borrowed Books</a></li>
-            <li><a href="myList.php">My List</a></li>
+            <li><a href="catalogue.php"><i class="fa-solid fa-book text-red-900"></i> Catalogue</a></li>
+            <li><a href="myList.php"><i class="fa-solid fa-bookmark text-red-900"></i> My List</a></li>
+
+            <li class="relative">
+                <!-- 
+                  This button now uses an 'onclick' to submit a hidden form.
+                  This is how we mark as read without JSON or a page redirect.
+                -->
+                <button id="notif-dropdown-btn" class="dropdownBtn" 
+                        onclick="toggleDropdown('notif-dropdown'); markNotifsAsRead();"
+                        class="flex items-center text-red-900 focus:outline-none relative">
+                    <i class="fa-solid fa-bell text-red-900"></i>
+                    
+                    <!-- PHP renders the count badge -->
+                    <?php if ($unread_notif_count > 0): ?>
+                        <span id="notif-count" class="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                            <?= $unread_notif_count ?>
+                        </span>
+                    <?php endif; ?>
+                    
+                    Notifications
+                </button>
+                
+                <!-- Dropdown Content - Rendered by PHP -->
+                <div id="notif-dropdown"
+                    class="absolute right-0 mt-3 p-4 w-80 bg-white rounded-lg shadow-xl border border-red-900 z-30 hidden overflow-y-auto max-h-96">
+                   
+                    <div id="notif-list">
+                        <?php if (empty($unread_notif_list)): ?>
+                            <!-- This matches the "empty" format from myBorrowedBooks.php -->
+                            <div class="py-5 text-center">
+                                <p class="text-sm text-gray-500">No new notifications.</p>
+                            </div>
+                        <?php else: ?>
+                            <!-- Loop through notifications and display them -->
+                            <?php foreach ($unread_notif_list as $notif): ?>
+                                <div class="notif-item p-2 border-b border-gray-100 hover:bg-gray-50">
+                                    <div class="flex justify-between items-start">
+                                        <strong class="text-sm text-gray-900"><?= htmlspecialchars($notif['title']) ?></strong>
+                                        
+                                        <!-- PHP renders the "View Details" button -->
+                                        <?php if (!empty($notif['link'])): ?>
+                                            <a href="<?= htmlspecialchars($notif['link']) ?>" class="text-xs text-red-900 hover:underline ml-2 flex-shrink-0">View Details</a>
+                                        <?php endif; ?>
+                                    </div>
+                                    <p class="text-sm text-gray-600 whitespace-normal"><?= htmlspecialchars($notif['message']) ?></p>
+                                    <p class="text-xs text-gray-400 mt-1"><?= timeAgo($notif['created_at']) ?></p>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <div class="border-t border-gray-200 mt-2 pt-2">
+                        <a href="myBorrowedBooks.php" id="viewNotif" class="text-sm text-center block text-red-900">View All Notifications</a>
+                    </div>
+                </div>
+            </li>
 
             <!-- Account: Dropdown Container -->
             <li class="relative">
-                <button id="account-dropdown-btn" onclick="toggleDropdown('account-dropdown')"
-                    class="flex items-center focus:outline-none">Account</button>
+                <button id="account-dropdown-btn" class="dropdownBtn" onclick="toggleDropdown('account-dropdown')"
+                    class="flex items-center focus:outline-none"><i class="fa-solid fa-user text-red-900"></i>
+                    Account</button>
                 <!-- Dropdown Content -->
                 <div id="account-dropdown"
                     class="absolute right-0 mt-3 p-4 w-60 bg-white rounded-lg shadow-xl border border-red-900 z-30 hidden">
                     <a href="profile.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Profile</a>
+                    <a href="myBorrowedBooks.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My
+                        Borrowed Books</a>
                     <a href="settings.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
                     <div class="border-t border-gray-100 my-1"></div>
                     <a href="../../controllers/logout.php"
@@ -55,3 +147,30 @@
         </div>
     </nav>
 </header>
+
+<!-- 
+  This hidden iframe and form system allows us to "mark as read" 
+  without a page reload and without using JSON.
+-->
+<iframe name="notification_target" class="hidden" src="about:blank"></iframe>
+
+<form action="../../controllers/notificationController.php" method="POST" target="notification_target" id="notif_form" class="hidden">
+    <input type="hidden" name="action" value="mark_all_read">
+</form>
+
+<script>
+    // This is the only JavaScript needed.
+    function markNotifsAsRead() {
+        const notifCountSpan = document.getElementById('notif-count');
+        // Check if the count badge exists
+        if (notifCountSpan) {
+            // Submit the hidden form
+            document.getElementById('notif_form').submit();
+            // Hide the badge immediately for a fast UI response
+            notifCountSpan.classList.add('hidden');
+        }
+    }
+
+    // Your existing toggleDropdown function (assuming it exists)
+    // function toggleDropdown(id) { ... }
+</script>

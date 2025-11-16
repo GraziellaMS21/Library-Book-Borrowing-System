@@ -1,8 +1,7 @@
 @font-face {
-  font-family: 'Licorice';
-  src: url('../fonts/Licorice-Regular.ttf') format('truetype');
+  font-family: "Licorice";
+  src: url("../fonts/Licorice-Regular.ttf") format("truetype");
 }
-
 
 header {
   margin-bottom: 9rem;
@@ -35,12 +34,12 @@ header {
 }
 
 .nav-links li,
-#account-dropdown-btn {
+.dropdownBtn {
   display: inline-block;
 }
 
 .nav-links a,
-#account-dropdown-btn {
+.dropdownBtn {
   position: relative;
   text-decoration: none;
   color: #610101;
@@ -52,7 +51,7 @@ header {
 }
 
 .nav-links a::after,
-#account-dropdown-btn::after {
+.dropdownBtn::after {
   content: "";
   position: absolute;
   left: 0;
@@ -65,13 +64,23 @@ header {
 }
 
 .nav-links a:hover,
-#account-dropdown-btn:hover {
+.dropdownBtn:hover {
   color: #931c19;
   transform: scale(1.05);
 }
 
+#notif-dropdown {
+  width: 500px;
+}
+
+#notif-dropdown-btn:hover,
+#viewNotif:hover {
+  transform: none;
+  border: none;
+}
+
 .nav-links a:hover::after,
-#account-dropdown-btn:hover::after {
+.dropdownBtn:hover::after {
   width: 100%;
 }
 

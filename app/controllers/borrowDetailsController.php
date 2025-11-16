@@ -4,10 +4,20 @@ date_default_timezone_set('Asia/Manila');
 require_once(__DIR__ . "/../models/manageBorrowDetails.php");
 require_once(__DIR__ . "/../models/manageBook.php");
 require_once(__DIR__ . "/../models/manageUsers.php");
+require_once(__DIR__ . "/../models/manageNotifications.php");
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+//required files
+require_once __DIR__ . '/../libraries/phpmailer/src/Exception.php';
+require_once __DIR__ . '/../libraries/phpmailer/src/PHPMailer.php';
+require_once __DIR__ . '/../libraries/phpmailer/src/SMTP.php';
 
 $borrowObj = new BorrowDetails();
 $bookObj = new Book();
 $userObj = new User();
+$notificationObj = new Notification();
 $errors = [];
 
 $action = $_POST["action"] ?? $_GET["action"] ?? null;
@@ -76,15 +86,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $current_detail = $borrowObj->fetchBorrowDetail($borrowID);
             }
 
-            // Determine the comparison date for fine calculation:
-            // 1. If return_date is set in the form, use it.
-            // 2. If return_date is NOT set, use today's date to calculate current late fine.
             $comparison_date = $borrowObj->return_date ?: date("Y-m-d");
 
-            // 🌟 MODIFIED LOGIC: Recalculate fine if the submitted fine is zero/minimal 
-            // AND expected_return_date is set. This covers:
-            // 1. Recalculate button clicked (fine_amount set to 0.00)
-            // 2. User manually resets fine_amount to 0.00 and saves.
             if (
                 $borrowObj->fine_amount <= 0.01 &&
                 $borrowObj->expected_return_date
@@ -153,6 +156,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
             if (empty($errors) && $borrowObj->editBorrowDetail($borrowID)) {
+
+                // $mail = new PHPMailer(true);
+                // $user = $userObj->fetchUser($current_detail['userID']);
+
+                // //Server settings
+                // $mail->isSMTP();                              //Send using SMTP
+                // $mail->Host = 'smtp.gmail.com';       //Set the SMTP server to send through
+                // $mail->SMTPAuth = true;             //Enable SMTP authentication
+                // $mail->Username = 'graziellamssaavedra06@gmail.com';   //SMTP write your email
+                // $mail->Password = 'cpybynwckiipsszp';      //SMTP password
+                // $mail->SMTPSecure = 'ssl';            //Enable implicit SSL encryption
+                // $mail->Port = 465;
+
+                // //Recipients
+                // $mail->setFrom('graziellamssaavedra06@gmail.com');     //Add a recipient email  
+                // $mail->addAddress($user["email"], $user["fName"] . ' ' . $user["lName"]); // Sender Email and name
+                // $mail->addReplyTo('graziellamssaavedra06@gmail.com'); // reply to sender email
+
+                // //Content
+                // $mail->isHTML(true);               //Set email format to HTML
+                // $mail->Subject = "Book Returned";   // email subject headings
+                // $mail->Body = "Book Successfully Returned! "; //email message
+
+                // // Success sent message alert
+                // $mail->send();
                 header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=returned&success=returned");
                 exit;
             } else {
@@ -191,6 +219,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
             if (empty($errors) && $borrowObj->editBorrowDetail($borrowID)) {
+
+                // $mail = new PHPMailer(true);
+                // $user = $userObj->fetchUser($current_detail['userID']);
+
+                // //Server settings
+                // $mail->isSMTP();                              //Send using SMTP
+                // $mail->Host = 'smtp.gmail.com';       //Set the SMTP server to send through
+                // $mail->SMTPAuth = true;             //Enable SMTP authentication
+                // $mail->Username = 'graziellamssaavedra06@gmail.com';   //SMTP write your email
+                // $mail->Password = 'cpybynwckiipsszp';      //SMTP password
+                // $mail->SMTPSecure = 'ssl';            //Enable implicit SSL encryption
+                // $mail->Port = 465;
+
+                // //Recipients
+                // $mail->setFrom('graziellamssaavedra06@gmail.com');     //Add a recipient email  
+                // $mail->addAddress($user["email"], $user["fName"] . ' ' . $user["lName"]); // Sender Email and name
+                // $mail->addReplyTo('graziellamssaavedra06@gmail.com'); // reply to sender email
+
+                // //Content
+                // $mail->isHTML(true);               //Set email format to HTML
+                // $mail->Subject = "Book Fine Paid";   // email subject headings
+                // $mail->Body = "Thank You! "; //email message
+
+                // // Success sent message alert
+                // $mail->send();
                 header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=returned&success=returned");
                 exit;
             } else {
@@ -223,7 +276,32 @@ if ($borrowID) {
         $userID_to_block = $current_detail['userID'] ?? null;
 
         if ($userID_to_block && $userObj->updateUserStatus($userID_to_block, "", 'Blocked')) {
-            header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=currently_borrowed&success=blocked");
+
+            $mail = new PHPMailer(true);
+            $user = $userObj->fetchUser($current_detail['userID']);
+
+            //Server settings
+            $mail->isSMTP();                              //Send using SMTP
+            $mail->Host = 'smtp.gmail.com';       //Set the SMTP server to send through
+            $mail->SMTPAuth = true;             //Enable SMTP authentication
+            $mail->Username = 'graziellamssaavedra06@gmail.com';   //SMTP write your email
+            $mail->Password = 'cpybynwckiipsszp';      //SMTP password
+            $mail->SMTPSecure = 'ssl';            //Enable implicit SSL encryption
+            $mail->Port = 465;
+
+            //Recipients
+            $mail->setFrom('graziellamssaavedra06@gmail.com');     //Add a recipient email  
+            $mail->addAddress($user["email"], $user["fName"] . ' ' . $user["lName"]); // Sender Email and name
+            $mail->addReplyTo('graziellamssaavedra06@gmail.com'); // reply to sender email
+
+            //Content
+            $mail->isHTML(true);               //Set email format to HTML
+            $mail->Subject = "Your Account Was Blocked";   // email subject headings
+            $mail->Body = "Blocked! "; //email message
+
+            // Success sent message alert
+            $mail->send();
+            header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=borrowed&success=blocked");
             exit;
         } else {
             $_SESSION["errors"] = ["general" => "Failed to block user. User ID not found or database error."];
@@ -276,33 +354,48 @@ if ($borrowID) {
             }
             if (!$bookObj->decrementBookCopies($book_id_to_update, $copies_to_move)) {
                 $_SESSION["errors"] = ["general" => "Failed to update book stock (decrement)."];
+                $notificationObj->userID = $borrowerUserID;
+                $notificationObj->title = "Request Approved";
+                $notificationObj->message = "Your request for '{$bookTitle}' is approved and ready for pickup.";
+                $notificationObj->link = "../../app/views/borrower/myBorrowedBooks.php?tab=pending";
+                $notificationObj->addNotification();
+
                 header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}");
                 exit;
             }
+
+
         } elseif ($action === 'reject') {
             $borrowObj->borrow_request_status = 'Rejected';
             $borrowObj->borrow_status = NULL;
-            $borrowObj->user_notified = 0;
             $final_redirect_tab = 'rejected';
+
             if ($current_detail['borrow_request_status'] === 'Approved' || $current_detail['borrow_request_status'] === 'Pending') {
                 if (!$bookObj->incrementBookCopies($book_id_to_update, $copies_to_move)) {
                     $_SESSION["errors"] = ["general" => "Failed to update book stock (increment) on admin reject."];
+
+                    $notificationObj->userID = $borrowerUserID;
+                    $notificationObj->title = "Request Rejected";
+                    $notificationObj->message = "Your request for '{$bookTitle}' has been rejected.";
+                    $notificationObj->link = "../../app/views/borrower/myBorrowedBooks.php?tab=returned&subtab=Rejected";
+                    $notificationObj->addNotification();
+
                     header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}");
                     exit;
                 }
             }
+
         } elseif ($action === 'pickup') {
             $borrowObj->borrow_request_status = 'Approved';
             $borrowObj->borrow_status = 'Borrowed';
             $borrowObj->pickup_date = date("Y-m-d");
             $final_redirect_tab = 'borrowed';
 
-            
+
         } elseif ($action === 'cancel') {
             $borrowObj->borrow_request_status = 'Cancelled';
             $borrowObj->borrow_status = NULL;
             $borrowObj->return_date = NULL;
-            $borrowObj->user_notified = 0;
             $final_redirect_tab = 'cancelled';
             if ($current_detail['borrow_request_status'] === 'Approved' && $current_detail['borrow_status'] !== 'Borrowed') {
                 if (!$bookObj->incrementBookCopies($book_id_to_update, $copies_to_move)) {

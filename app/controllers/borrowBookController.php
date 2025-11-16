@@ -3,10 +3,21 @@ session_start();
 require_once(__DIR__ . "/../models/manageBorrowDetails.php");
 require_once(__DIR__ . "/../models/manageBook.php");
 require_once(__DIR__ . "/../models/manageList.php");
+require_once(__DIR__ . "/../models/manageNotifications.php");
+
 
 $borrowObj = new BorrowDetails();
 $bookObj = new Book();
+$notificationObj = new Notification();
 $borrowListObj = new BorrowLists();
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+//required files
+require_once __DIR__ . '/../libraries/phpmailer/src/Exception.php';
+require_once __DIR__ . '/../libraries/phpmailer/src/PHPMailer.php';
+require_once __DIR__ . '/../libraries/phpmailer/src/SMTP.php';
+
 $errors = [];
 
 $action = $_GET["action"] ?? null;
@@ -55,7 +66,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $borrowObj->fine_amount = 0.00;
                     $borrowObj->fine_reason = NULL;
                     $borrowObj->fine_status = NULL;
-                    $borrowObj->user_notified = NULL;
 
                     if ($borrowObj->addBorrowDetail()) {
                         $total_success_copies += $copies_requested;
@@ -95,6 +105,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $detail['return_date'] = null;
         $detail['returned_condition'] = null;
         $detail['borrow_request_status'] = 'Pending';
+        $detail['borrow_status'] = null;
         $detail['fine_amount'] = 0.00;
         $detail['fine_reason'] = null;
         $detail['fine_status'] = null;
@@ -126,7 +137,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $borrowObj->fine_amount = $detail['fine_amount'];
             $borrowObj->fine_reason = $detail['fine_reason'];
             $borrowObj->fine_status = $detail['fine_status'];
-            $borrowObj->user_notified = null;
 
             if ($borrowObj->addBorrowDetail()) {
                 $success_count = $detail['no_of_copies'];
@@ -151,10 +161,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $detail['fine_reason'] = trim(htmlspecialchars($_POST["fine_reason"] ?? NULL));
         $detail['fine_status'] = trim(htmlspecialchars($_POST["fine_status"] ?? NULL));
 
-        $detail['user_notified'] = 1;
-        if (in_array($detail['borrow_request_status'], ['Rejected', 'Cancelled'])) {
-            $detail['user_notified'] = 0;
-        }
 
         if (empty($detail['userID']))
             $errors['userID'] = "User ID is required.";
@@ -180,7 +186,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $borrowObj->fine_amount = $detail['fine_amount'];
             $borrowObj->fine_reason = $detail['fine_reason'];
             $borrowObj->fine_status = $detail['fine_status'];
-            $borrowObj->user_notified = $detail['user_notified'];
 
             if ($borrowObj->borrow_status === 'Returned' && $borrowObj->return_date) {
 
@@ -237,17 +242,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
 } else {
-    if ($action === 'mark_as_read' && $borrowID) {
-        $current_tab = $_GET['tab'] ?? 'pending';
-        if ($borrowObj->updateBorrowerNotifiedStatus($borrowID, 1)) {
-            header("Location: ../../app/views/borrower/myBorrowedBooks.php?tab={$current_tab}&success=read");
-            exit;
-        } else {
-            $_SESSION["errors"] = ["general" => "Failed to mark as read."];
-            header("Location: ../../app/views/borrower/myBorrowedBooks.php?tab={$current_tab}");
-            exit;
-        }
-    }
 
     if ($action === 'cancel' && $borrowID) {
 
@@ -259,9 +253,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $borrow_request_status = "Cancelled";
             $borrow_status = NULL;
             $return_date = NULL;
-            $user_notified = 0;
 
-            if ($borrowObj->updateBorrowDetails($borrowID, $borrow_status, $borrow_request_status, $return_date, $user_notified)) {
+            if ($borrowObj->updateBorrowDetails($borrowID, $borrow_status, $borrow_request_status, $return_date)) {
                 if ($detail['borrow_request_status'] === 'Approved') {
                     $book_id_to_update = $detail['bookID'];
                     $copies_to_move = $detail['no_of_copies'];
@@ -269,6 +262,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $bookObj->incrementBookCopies($book_id_to_update, $copies_to_move);
                 }
 
+                // $mail = new PHPMailer(true);
+
+                // //Server settings
+                // $mail->isSMTP();                              //Send using SMTP
+                // $mail->Host = 'smtp.gmail.com';       //Set the SMTP server to send through
+                // $mail->SMTPAuth = true;             //Enable SMTP authentication
+                // $mail->Username = 'graziellamssaavedra06@gmail.com';   //SMTP write your email
+                // $mail->Password = 'cpybynwckiipsszp';      //SMTP password
+                // $mail->SMTPSecure = 'ssl';            //Enable implicit SSL encryption
+                // $mail->Port = 465;
+
+                // //Recipients
+                // $mail->setFrom('graziellamssaavedra06@gmail.com');      // Sender Email and name
+                // $mail->addAddress('graziellamssaavedra06@gmail.com');     //Add a recipient email  
+                // $mail->addReplyTo($detail["email"], $detail["name"]); // reply to sender email
+
+                // //Content
+                // $mail->isHTML(true);               //Set email format to HTML
+                // $mail->Subject = "Cancel Book Request";   // email subject headings
+                // $mail->Body = "trip ko"; //email message
+
+                // // Success sent message alert
+                // $mail->send();
+
+                $adminUserID = 1;
+                $borrowerName = $detail["name"] ?? 'A user'; 
+                $bookTitle = $detail["book_title"] ?? 'a book'; 
+                
+                $notificationObj->userID = $adminUserID;
+                $notificationObj->title = "Request Cancelled by User";
+                $notificationObj->message = "{$borrowerName} cancelled their request for '{$bookTitle}'.";
+                $notificationObj->link = "../../app/views/librarian/borrowDetailsSection.php?tab=cancelled";
+                $notificationObj->addNotification();
                 header("Location: ../../app/views/borrower/myBorrowedBooks.php?tab=pending&success=cancelled");
                 exit;
             } else {

@@ -11,6 +11,19 @@ function toggleMenu() {
   }
 }
 
+// function toggleNotif() {
+//   const menu = document.getElementById("notif-menu");
+//   if (menu.classList.contains("-translate-y-full")) {
+//     // Open menu
+//     menu.classList.remove("-translate-y-full");
+//     menu.classList.add("translate-y-0");
+//   } else {
+//     // Close menu
+//     menu.classList.remove("translate-y-0");
+//     menu.classList.add("-translate-y-full");
+//   }
+// }
+
 // New function to handle the desktop Account dropdown
 function toggleDropdown(dropdownId) {
   const dropdown = document.getElementById(dropdownId);
@@ -22,6 +35,9 @@ function toggleDropdown(dropdownId) {
 document.addEventListener("click", (event) => {
   const dropdown = document.getElementById("account-dropdown");
   const button = document.getElementById("account-dropdown-btn");
+  const notifDropdown = document.getElementById("notif-dropdown");
+  const notifButton = document.getElementById("notif-dropdown-btn");
+
 
   // Check if the click occurred outside the button and the dropdown
   if (
@@ -31,6 +47,15 @@ document.addEventListener("click", (event) => {
     !button.contains(event.target)
   ) {
     dropdown.classList.add("hidden");
+  }
+
+  if (
+    notifDropdown &&
+    notifButton &&
+    !notifDropdown.contains(event.target) &&
+    !notifButton.contains(event.target)
+  ) {
+    notifDropdown.classList.add("hidden");
   }
 });
 
@@ -45,3 +70,4 @@ function closeModal(modalID) {
   document.getElementById(modalID).classList.add("hidden");
   document.getElementById(modalID).classList.remove("flex");
 }
+
