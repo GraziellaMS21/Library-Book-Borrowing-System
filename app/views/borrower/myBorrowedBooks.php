@@ -39,15 +39,7 @@ if ($active_tab === 'returned') {
     //Approved requests that have NOT been borrowed yet
     $approved_requests = array_filter($borrowed_books_raw, fn($borrow) => $borrow['borrow_request_status'] === 'Approved' && $borrow['borrow_status'] !== 'Borrowed');
 
-    $rejected = $borrowObj->fetchUserBorrowDetails($userID, 'Rejected');
-    $cancelled = $borrowObj->fetchUserBorrowDetails($userID, 'Cancelled');
-    $rejected_requests = array_filter($rejected, fn($borrow) => $borrow['borrow_request_status'] === 'Rejected');
-
-
-    $cancelled_requests = array_filter($cancelled, fn($borrow) => $borrow['borrow_request_status'] === 'Cancelled');
-
-
-    $borrowed_books = array_merge($pending_requests, $approved_requests, $rejected_requests, $cancelled_requests);
+    $borrowed_books = array_merge($pending_requests, $approved_requests);
 
 } elseif ($active_tab === 'unpaid') {
     // Fetch books with unpaid fines

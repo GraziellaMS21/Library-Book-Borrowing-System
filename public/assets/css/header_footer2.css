@@ -79,6 +79,11 @@ header {
   border: none;
 }
 
+.markRead::after,
+.viewDetails::after {
+  display: none !important;
+}
+
 .nav-links a:hover::after,
 .dropdownBtn:hover::after {
   width: 100%;

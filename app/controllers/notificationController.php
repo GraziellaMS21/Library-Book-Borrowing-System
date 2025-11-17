@@ -1,7 +1,7 @@
 <?php
 session_start();
 // FIX: The file is named manageNotifications.php, not Notification.php
-require_once(__DIR__ . "/../models/manageNotifications.php"); 
+require_once(__DIR__ . "/../models/manageNotifications.php");
 
 // Ensure user is logged in
 if (!isset($_SESSION["user_id"])) {
@@ -9,11 +9,16 @@ if (!isset($_SESSION["user_id"])) {
 }
 
 $userID = $_SESSION["user_id"];
-$action = $_POST['action'] ?? ''; // Switched to POST
+$action = $_GET['action'] ?? '';
+$notifID = $_GET['id'] ?? '';
+$page = $_GET['page'];
 
-if ($action === 'mark_all_read') {
+if ($action === 'markRead') {
     $notificationObj = new Notification();
-    $notificationObj->markAllAsRead($userID);
+    $notificationObj->markAsRead( $notifID);
+
+    header("Location: ../../app/views/borrower/{$page}");
+    exit;
 }
 
 // Intentionally output nothing.
