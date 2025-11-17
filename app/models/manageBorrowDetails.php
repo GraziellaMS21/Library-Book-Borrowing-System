@@ -18,13 +18,15 @@ class BorrowDetails extends Database
     public $fine_amount = 0.00;
     public $fine_reason = "";
     public $fine_status = "";
+    public $status_reason = "";
 
     protected $db;
 
     public function addBorrowDetail()
     {
-        $sql = "INSERT INTO borrowing_details (userID, bookID, no_of_copies, request_date, pickup_date, return_date, expected_return_date, returned_condition, borrow_request_status, borrow_status, fine_amount, fine_reason, fine_status)
-                VALUES (:userID, :bookID, :no_of_copies, :request_date, :pickup_date, :return_date, :expected_return_date, :returned_condition, :borrow_request_status, :borrow_status, :fine_amount, :fine_reason, :fine_status)";
+        // [UPDATED] Added status_reason to INSERT
+        $sql = "INSERT INTO borrowing_details (userID, bookID, no_of_copies, request_date, pickup_date, return_date, expected_return_date, returned_condition, borrow_request_status, borrow_status, fine_amount, fine_reason, fine_status, status_reason)
+                VALUES (:userID, :bookID, :no_of_copies, :request_date, :pickup_date, :return_date, :expected_return_date, :returned_condition, :borrow_request_status, :borrow_status, :fine_amount, :fine_reason, :fine_status, :status_reason)";
         $query = $this->connect()->prepare($sql);
 
         $query->bindParam(":userID", $this->userID);
@@ -40,6 +42,8 @@ class BorrowDetails extends Database
         $query->bindParam(":fine_amount", $this->fine_amount);
         $query->bindParam(":fine_reason", $this->fine_reason);
         $query->bindParam(":fine_status", $this->fine_status);
+        // [ADDED] Bind param
+        $query->bindParam(":status_reason", $this->status_reason);
         return $query->execute();
     }
 
@@ -173,6 +177,7 @@ class BorrowDetails extends Database
 
     public function editBorrowDetail($borrowID)
     {
+        // [UPDATED] Added status_reason to UPDATE
         $sql = "UPDATE borrowing_details
                 SET userID = :userID,
                     bookID = :bookID,
@@ -186,7 +191,8 @@ class BorrowDetails extends Database
                     borrow_status = :borrow_status,
                     fine_amount = :fine_amount,
                     fine_reason = :fine_reason,
-                    fine_status = :fine_status
+                    fine_status = :fine_status,
+                    status_reason = :status_reason
                 WHERE borrowID = :borrowID";
         $query = $this->connect()->prepare($sql);
 
@@ -203,6 +209,8 @@ class BorrowDetails extends Database
         $query->bindParam(":fine_amount", $this->fine_amount);
         $query->bindParam(":fine_reason", $this->fine_reason);
         $query->bindParam(":fine_status", $this->fine_status);
+        // [ADDED] Bind param
+        $query->bindParam(":status_reason", $this->status_reason);
         $query->bindParam(":borrowID", $borrowID);
 
         return $query->execute();
@@ -346,7 +354,7 @@ class BorrowDetails extends Database
 
     public function updateBorrowDetails($borrowID, $borrow_status, $borrow_request_status, $return_date)
     {
-        $sql = "UPDATE borrowing_details SET borrow_request_status = :borrow_request_status, borrow_status = :borrow_status, return_date = :return_date = WHERE borrowID = :borrowID";
+        $sql = "UPDATE borrowing_details SET borrow_request_status = :borrow_request_status, borrow_status = :borrow_status, return_date = :return_date WHERE borrowID = :borrowID";
         $query = $this->connect()->prepare($sql);
 
         $query->bindParam(":borrow_request_status", $borrow_request_status);
@@ -502,7 +510,7 @@ class BorrowDetails extends Database
         return $result['total_borrowed'] ?? 0;
     }
 
-     public function countTotalBooksForPickUp()
+    public function countTotalBooksForPickUp()
     {
         $sql = "SELECT SUM(no_of_copies) AS total_borrowed 
                 FROM borrowing_details 
@@ -537,23 +545,23 @@ class BorrowDetails extends Database
         $result = $query->fetch(PDO::FETCH_ASSOC);
         return $result['total_fines'] ?? 0.00;
     }
-    
-     public function getCollectedFinesLast7Days()
-{
-    $sql = "SELECT DATE(return_date) AS fine_date, 
+
+    public function getCollectedFinesLast7Days()
+    {
+        $sql = "SELECT DATE(return_date) AS fine_date, 
                    SUM(fine_amount) AS total_fines
             FROM borrowing_details
             WHERE fine_status = 'Paid'
               AND return_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
             GROUP BY DATE(return_date)
             ORDER BY fine_date ASC";
-    
-    $query = $this->connect()->prepare($sql);
-    $query->execute();
-    return $query->fetchAll(PDO::FETCH_ASSOC);
-}
 
-    
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+
     public function getTopBorrowedBookName()
     {
         $sql = "SELECT b.book_title
@@ -611,7 +619,7 @@ class BorrowDetails extends Database
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
- 
+
     public function getMonthlyBorrowingTrend()
     {
         $sql = "SELECT 
@@ -632,8 +640,8 @@ class BorrowDetails extends Database
      * FOR: Dashboard Chart - Borrow Status Breakdown
      */
     public function getBorrowStatusBreakdown()
-{
-    $sql = "SELECT 
+    {
+        $sql = "SELECT 
                CASE
                    WHEN borrow_status = 'Borrowed' AND (expected_return_date >= CURDATE() OR expected_return_date IS NULL) THEN 'Borrowed'
                    WHEN borrow_status = 'Borrowed' AND expected_return_date < CURDATE() THEN 'Overdue'
@@ -645,12 +653,12 @@ class BorrowDetails extends Database
             WHERE borrow_status IS NOT NULL
             GROUP BY status_label";
 
-    $query = $this->connect()->prepare($sql);
-    $query->execute();
-    return $query->fetchAll(PDO::FETCH_ASSOC);
-}
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
 
-public function getTopUnpaidFinesUsers($limit = 5)
+    public function getTopUnpaidFinesUsers($limit = 5)
     {
         $sql = "SELECT 
                     u.fName, 
@@ -740,7 +748,7 @@ public function getTopUnpaidFinesUsers($limit = 5)
         }
 
         $sql .= " ORDER BY bd.request_date DESC";
-        
+
         $query = $this->connect()->prepare($sql);
         $query->execute($params);
         return $query->fetchAll(PDO::FETCH_ASSOC);
@@ -772,7 +780,7 @@ public function getTopUnpaidFinesUsers($limit = 5)
                          WHERE (borrow_request_status = 'Approved' OR borrow_status IN ('Borrowed', 'Returned'))
                          AND MONTH(request_date) = MONTH(CURDATE())
                          AND YEAR(request_date) = YEAR(CURDATE())";
-        
+
         $query_borrowed = $this->connect()->prepare($sql_borrowed);
         $query_borrowed->execute();
         $borrowed = $query_borrowed->fetch(PDO::FETCH_ASSOC)['total_borrowed'] ?? 0;
@@ -782,7 +790,7 @@ public function getTopUnpaidFinesUsers($limit = 5)
                          WHERE borrow_status = 'Returned'
                          AND MONTH(return_date) = MONTH(CURDATE())
                          AND YEAR(return_date) = YEAR(CURDATE())";
-        
+
         $query_returned = $this->connect()->prepare($sql_returned);
         $query_returned->execute();
         $returned = $query_returned->fetch(PDO::FETCH_ASSOC)['total_returned'] ?? 0;
@@ -793,7 +801,8 @@ public function getTopUnpaidFinesUsers($limit = 5)
         ];
     }
 
-    public function getBooksDueToday() {
+    public function getBooksDueToday()
+    {
         // CURDATE() gets today's date (e.g., '2025-11-11')
         $sql = "SELECT bd.*, u.fName, u.lName, b.book_title, b.book_condition
                 FROM borrowing_details bd
@@ -805,8 +814,8 @@ public function getTopUnpaidFinesUsers($limit = 5)
 
         $stmt = $this->connect()->prepare($sql);
         $stmt->execute();
-        
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    
+
 }

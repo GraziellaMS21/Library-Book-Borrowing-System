@@ -5,11 +5,6 @@ require_once(__DIR__ . "/../models/manageBook.php");
 require_once(__DIR__ . "/../models/manageList.php");
 require_once(__DIR__ . "/../models/manageNotifications.php");
 
-
-$borrowObj = new BorrowDetails();
-$bookObj = new Book();
-$notificationObj = new Notification();
-$borrowListObj = new BorrowLists();
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
@@ -17,6 +12,11 @@ use PHPMailer\PHPMailer\Exception;
 require_once __DIR__ . '/../libraries/phpmailer/src/Exception.php';
 require_once __DIR__ . '/../libraries/phpmailer/src/PHPMailer.php';
 require_once __DIR__ . '/../libraries/phpmailer/src/SMTP.php';
+
+$borrowObj = new BorrowDetails();
+$bookObj = new Book();
+$notificationObj = new Notification();
+$borrowListObj = new BorrowLists();
 
 $errors = [];
 
@@ -262,39 +262,80 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $bookObj->incrementBookCopies($book_id_to_update, $copies_to_move);
                 }
 
-                // $mail = new PHPMailer(true);
-
-                // //Server settings
-                // $mail->isSMTP();                              //Send using SMTP
-                // $mail->Host = 'smtp.gmail.com';       //Set the SMTP server to send through
-                // $mail->SMTPAuth = true;             //Enable SMTP authentication
-                // $mail->Username = 'graziellamssaavedra06@gmail.com';   //SMTP write your email
-                // $mail->Password = 'cpybynwckiipsszp';      //SMTP password
-                // $mail->SMTPSecure = 'ssl';            //Enable implicit SSL encryption
-                // $mail->Port = 465;
-
-                // //Recipients
-                // $mail->setFrom('graziellamssaavedra06@gmail.com');      // Sender Email and name
-                // $mail->addAddress('graziellamssaavedra06@gmail.com');     //Add a recipient email  
-                // $mail->addReplyTo($detail["email"], $detail["name"]); // reply to sender email
-
-                // //Content
-                // $mail->isHTML(true);               //Set email format to HTML
-                // $mail->Subject = "Cancel Book Request";   // email subject headings
-                // $mail->Body = "trip ko"; //email message
-
-                // // Success sent message alert
-                // $mail->send();
-
+                // --- NOTIFICATION & EMAIL LOGIC ---
                 $adminUserID = 1;
-                $borrowerName = $detail["name"] ?? 'A user'; 
+                $borrowerName = $detail["fName"] . ' ' . $detail["lName"]  ?? 'A user'; 
                 $bookTitle = $detail["book_title"] ?? 'a book'; 
-                
+                $userEmail = $detail["email"] ?? '';
+
+                // 1. In-App Notification for Admin
                 $notificationObj->userID = $adminUserID;
                 $notificationObj->title = "Request Cancelled by User";
                 $notificationObj->message = "{$borrowerName} cancelled their request for '{$bookTitle}'.";
                 $notificationObj->link = "../../app/views/librarian/borrowDetailsSection.php?tab=cancelled";
                 $notificationObj->addNotification();
+
+                // 2. Email Notification for Admin
+                // Note: Sending email to the ADMIN about the cancellation
+                try {
+                    $mail = new PHPMailer(true);
+                    $mail->isSMTP();
+                    $mail->Host = 'smtp.gmail.com';
+                    $mail->SMTPAuth = true;
+                    $mail->Username = 'graziellamssaavedra06@gmail.com';
+                    $mail->Password = 'cpybynwckiipsszp';
+                    $mail->SMTPSecure = 'ssl';
+                    $mail->Port = 465;
+
+                    $mail->setFrom('graziellamssaavedra06@gmail.com', 'Library System Alert');
+                    // Send to Admin (or yourself for now)
+                    $mail->addAddress('graziellamssaavedra06@gmail.com'); 
+
+                    $mail->isHTML(true);
+                    $mail->Subject = "User Cancelled Request: {$borrowerName}";
+
+                    $mail->Body = <<<EOT
+                    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f7; padding: 40px 20px; margin: 0;">
+                        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                            <div style="background-color: #718096; padding: 20px; text-align: center;">
+                                <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Cancellation Alert</h2>
+                            </div>
+                            <div style="padding: 30px; color: #4a5568;">
+                                <p style="font-size: 16px; margin-top: 0;">Hello Admin,</p>
+                                <p style="line-height: 1.6; font-size: 16px;">
+                                    A user has voluntarily cancelled their book borrow request.
+                                </p>
+                                <div style="background-color: #EDF2F7; border-left: 4px solid #718096; padding: 15px 20px; margin: 25px 0; border-radius: 4px;">
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="padding-bottom: 5px; color: #4A5568; font-weight: bold; font-size: 14px; width: 30%;">User:</td>
+                                            <td style="padding-bottom: 5px; color: #2D3748;">{$borrowerName}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding-bottom: 5px; color: #4A5568; font-weight: bold; font-size: 14px;">Book:</td>
+                                            <td style="padding-bottom: 5px; color: #2D3748;">{$bookTitle}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #4A5568; font-weight: bold; font-size: 14px;">Date:</td>
+                                            <td style="color: #2D3748;">{$detail['request_date']}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <p style="line-height: 1.6; margin-bottom: 25px;">
+                                    The request status has been updated to <strong>Cancelled</strong> and book stock has been adjusted if necessary.
+                                </p>
+                                <div style="text-align: center; margin-bottom: 10px;">
+                                    <a href="#" style="background-color: #718096; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; display: inline-block;">View Dashboard</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+EOT;
+                    $mail->send();
+                } catch (Exception $e) {
+                    // Log error silently so it doesn't break the redirect
+                }
+
                 header("Location: ../../app/views/borrower/myBorrowedBooks.php?tab=pending&success=cancelled");
                 exit;
             } else {

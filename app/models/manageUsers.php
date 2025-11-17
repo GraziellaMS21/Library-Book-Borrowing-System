@@ -16,7 +16,7 @@ class User extends Database
     public $date_registered = "";
     public $role = "";
     public $registration_status = "";
-
+    public $status_reason = "";
     protected $db;
 
     public function viewUser($search = "", $userType = "", $statusFilter = "")
@@ -188,28 +188,38 @@ class User extends Database
         return $query->execute();
     }
 
-    public function updateUserStatus($userID, $newRegStatus, $newAccStatus)
+    public function updateUserStatus($userID, $newRegStatus, $newAccStatus, $status_reason = null)
     {
+        $sql = "UPDATE users SET ";
+        $params = [];
+
+        // Build dynamic SQL based on what is being updated
         if ($newRegStatus != "" && $newAccStatus != "") {
-            $sql = "UPDATE users SET registration_status = :newRegStatus,  account_status = :newAccStatus WHERE userID = :userID";
+            $sql .= "registration_status = :newRegStatus, account_status = :newAccStatus";
+            $params[':newRegStatus'] = $newRegStatus;
+            $params[':newAccStatus'] = $newAccStatus;
         } else if ($newRegStatus != "") {
-            $sql = "UPDATE users SET registration_status = :newRegStatus WHERE userID = :userID";
+            $sql .= "registration_status = :newRegStatus";
+            $params[':newRegStatus'] = $newRegStatus;
         } else {
-            $sql = "UPDATE users SET account_status = :newAccStatus WHERE userID = :userID";
+            $sql .= "account_status = :newAccStatus";
+            $params[':newAccStatus'] = $newAccStatus;
         }
+
+        // Only update reason if provided (usually for Block/Reject)
+        if ($status_reason !== null) {
+            $sql .= ", status_reason = :status_reason";
+            $params[':status_reason'] = $status_reason;
+        }
+
+        $sql .= " WHERE userID = :userID";
+        $params[':userID'] = $userID;
 
         $query = $this->connect()->prepare($sql);
 
-        if ($newRegStatus != "" && $newAccStatus != "") {
-            $query->bindParam(":newRegStatus", $newRegStatus);
-            $query->bindParam(":newAccStatus", $newAccStatus);
-        } else if ($newRegStatus != "") {
-            $query->bindParam(":newRegStatus", $newRegStatus);
-        } else {
-            $query->bindParam(":newAccStatus", $newAccStatus);
+        foreach ($params as $key => $value) {
+            $query->bindValue($key, $value);
         }
-
-        $query->bindParam(":userID", $userID);
 
         return $query->execute();
     }

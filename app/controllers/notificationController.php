@@ -1,6 +1,6 @@
 <?php
 session_start();
-// FIX: The file is named manageNotifications.php, not Notification.php
+date_default_timezone_set('Asia/Manila');
 require_once(__DIR__ . "/../models/manageNotifications.php");
 
 // Ensure user is logged in
@@ -18,6 +18,21 @@ if ($action === 'markRead') {
     $notificationObj->markAsRead( $notifID);
 
     header("Location: ../../app/views/borrower/{$page}");
+    exit;
+} // Inside notificationController.php
+
+if ($action === 'markAllRead') {
+    if (isset($_SESSION['user_id'])) {
+        $notifObj = new Notification();
+        // You need to create this method in your model
+        $notifObj->markAllAsRead($_SESSION['user_id']); 
+    }
+    // If this was an AJAX request, just exit so we don't redirect
+    if (isset($_GET['ajax'])) {
+        echo "success";
+        exit;
+    }
+    header("Location: " . $_SERVER['HTTP_REFERER']);
     exit;
 }
 

@@ -9,7 +9,7 @@ require_once(__DIR__ . "/../models/manageNotifications.php");
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-//required files
+// Required files for PHPMailer
 require_once __DIR__ . '/../libraries/phpmailer/src/Exception.php';
 require_once __DIR__ . '/../libraries/phpmailer/src/PHPMailer.php';
 require_once __DIR__ . '/../libraries/phpmailer/src/SMTP.php';
@@ -24,6 +24,35 @@ $action = $_POST["action"] ?? $_GET["action"] ?? null;
 $borrowID = $_POST["borrowID"] ?? $_GET["id"] ?? null;
 $current_tab = trim(htmlspecialchars($_POST["current_tab"] ?? $_GET["tab"] ?? 'currently_borrowed'));
 
+// ---------------------------------------------------------
+//  1. PROCESS STATUS REASON (Checkboxes + Textarea)
+// ---------------------------------------------------------
+$status_reason_str = NULL;
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $reasons = [];
+    
+    // Capture Checkboxes
+    if (isset($_POST['reason_presets']) && is_array($_POST['reason_presets'])) {
+        foreach($_POST['reason_presets'] as $preset) {
+            $reasons[] = htmlspecialchars($preset);
+        }
+    }
+    
+    // Capture Custom Textarea
+    if (!empty($_POST['reason_custom'])) {
+        $reasons[] = htmlspecialchars(trim($_POST['reason_custom']));
+    }
+
+    // Combine into one string (e.g., "Unpaid Fines; Other notes...")
+    if (!empty($reasons)) {
+        $status_reason_str = implode("; ", $reasons);
+    }
+}
+
+// ---------------------------------------------------------
+//  POST REQUEST HANDLING
+// ---------------------------------------------------------
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $detail['borrowID'] = $borrowID;
     $detail['userID'] = trim(htmlspecialchars($_POST["userID"] ?? ''));
@@ -39,30 +68,35 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $detail['fine_amount'] = (float) trim(htmlspecialchars($_POST["fine_amount"] ?? 0.00));
     $detail['fine_reason'] = trim(htmlspecialchars($_POST["fine_reason"] ?? NULL));
     $detail['fine_status'] = trim(htmlspecialchars($_POST["fine_status"] ?? NULL));
+    
+    // Assign the processed reason string to the data array
+    $detail['status_reason'] = $status_reason_str;
 
-    // Fetch existing details for edit/return/paid actions to carry over bookID/userID if not posted
-    if ($action === 'edit' || $action === 'return' || $action === 'paid') {
+    // Fetch existing details for actions that might not submit all fields (to prevent overwriting with blanks)
+    if (in_array($action, ['edit', 'return', 'paid', 'reject', 'cancel', 'blockUser'])) {
         $current_detail = $borrowObj->fetchBorrowDetail($borrowID);
         if ($current_detail) {
             $detail['userID'] = $detail['userID'] ?: $current_detail['userID'];
             $detail['bookID'] = $detail['bookID'] ?: $current_detail['bookID'];
+            // If no new reason was provided in this POST, keep the old one
+            $detail['status_reason'] = $detail['status_reason'] ?: $current_detail['status_reason'];
         }
     }
 
-    // Validation
-    if (empty($detail['userID']) && $action !== 'return' && $action !== 'paid' && $action !== 'edit') {
+    // Validations
+    if (empty($detail['userID']) && !in_array($action, ['return', 'paid', 'edit', 'reject', 'cancel', 'blockUser'])) {
         $errors['userID'] = "User ID is required.";
     }
-    if (empty($detail['bookID']) && $action !== 'return' && $action !== 'paid' && $action !== 'edit') {
+    if (empty($detail['bookID']) && !in_array($action, ['return', 'paid', 'edit', 'reject', 'cancel', 'blockUser'])) {
         $errors['bookID'] = "Book ID is required.";
     }
-    if (empty($detail['expected_return_date']) && $action !== 'return' && $action !== 'paid') {
+    if (empty($detail['expected_return_date']) && !in_array($action, ['return', 'paid', 'reject', 'cancel', 'blockUser'])) {
         $errors['expected_return_date'] = "Expected Return Date is required.";
     }
     if ($detail['fine_amount'] < 0) {
         $errors['fine_amount'] = "Fine amount cannot be negative.";
     }
-    if ($detail['no_of_copies'] < 1 && $action !== 'return' && $action !== 'paid') {
+    if ($detail['no_of_copies'] < 1 && !in_array($action, ['return', 'paid', 'reject', 'cancel', 'blockUser'])) {
         $errors['no_of_copies'] = "At least one copy must be requested.";
     }
     if (($action === 'return' || $action === 'paid') && empty($detail['returned_condition'])) {
@@ -77,6 +111,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
 
+        // --- EDIT ACTION ---
         if ($action === 'edit' && $borrowID) {
             if (!isset($current_detail) || !$current_detail) {
                 $current_detail = $borrowObj->fetchBorrowDetail($borrowID);
@@ -84,6 +119,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             $comparison_date = $borrowObj->return_date ?: date("Y-m-d");
 
+            // Auto-calculate fines if editing dates
             if ($borrowObj->fine_amount <= 0.01 && $borrowObj->expected_return_date) {
                 $fine_results = $borrowObj->calculateFinalFine(
                     $borrowObj->expected_return_date,
@@ -108,6 +144,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $errors["general"] = "Failed to edit detail due to a database error.";
             }
 
+        // --- RETURN ACTION ---
         } elseif ($action === 'return' && $borrowID) {
             if (!isset($current_detail) || !$current_detail) {
                 $errors['general'] = "Cannot find loan detail to process return.";
@@ -147,6 +184,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             } else {
                 $errors["general"] = $errors["general"] ?? "Failed to complete book return process.";
             }
+
+        // --- PAID ACTION ---
         } elseif ($action === 'paid' && $borrowID) {
             if (!isset($current_detail) || !$current_detail) {
                 $errors['general'] = "Cannot find loan detail to process payment.";
@@ -180,6 +219,138 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             } else {
                 $errors["general"] = $errors["general"] ?? "Failed to complete book return process.";
             }
+        
+        // --- BLOCK USER ACTION ---
+        } elseif ($action === 'blockUser' && $borrowID) {
+            $userID_to_block = $borrowObj->userID; 
+
+            // 1. Save the status reason to the borrow detail first
+            $borrowObj->status_reason = $status_reason_str; 
+            $borrowObj->editBorrowDetail($borrowID); 
+
+            if ($userID_to_block && $userObj->updateUserStatus($userID_to_block, "", 'Blocked')) {
+
+                // 2. Prepare Email with Reason
+                $mail = new PHPMailer(true);
+                $user = $userObj->fetchUser($userID_to_block);
+                $fullName = htmlspecialchars($user["fName"] . ' ' . $user["lName"]);
+                
+                // Use the processed reason or a default
+                $reasonForBlock = $status_reason_str ?: "Violation of library policies, overdue books, or unpaid fines.";
+
+                try {
+                    $mail->isSMTP();
+                    $mail->Host = 'smtp.gmail.com';
+                    $mail->SMTPAuth = true;
+                    $mail->Username = 'graziellamssaavedra06@gmail.com';
+                    $mail->Password = 'cpybynwckiipsszp'; 
+                    $mail->SMTPSecure = 'ssl';
+                    $mail->Port = 465;
+
+                    $mail->setFrom('graziellamssaavedra06@gmail.com', 'Library Administration');
+                    $mail->addAddress($user["email"], $fullName);
+                    
+                    $mail->isHTML(true);
+                    $mail->Subject = "Important: Your Library Account Status";
+
+                    // Inject reason into Email Body
+                    $mail->Body = <<<EOT
+                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f7; padding: 40px 20px; margin: 0;">
+                    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                        <div style="background-color: #D9534F; padding: 20px; text-align: center;">
+                            <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Action Required</h2>
+                        </div>
+                        <div style="padding: 30px; color: #4a5568;">
+                            <p style="font-size: 16px; margin-top: 0;">Hello <strong>{$fullName}</strong>,</p>
+                            <p style="line-height: 1.6; font-size: 16px; color: #4a5568;">
+                                We are writing to let you know that your library access has been temporarily <strong style="color: #D9534F;">suspended</strong>.
+                            </p>
+                            <div style="background-color: #FFF5F5; border-left: 4px solid #D9534F; padding: 15px 20px; margin: 25px 0; border-radius: 4px;">
+                                <p style="margin: 0; font-size: 14px; color: #C53030; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Reason for suspension</p>
+                                <p style="margin: 5px 0 0 0; font-size: 16px; color: #2D3748;">{$status_reason}</p>
+                            </div>
+                            <p style="line-height: 1.6; margin-bottom: 25px;">
+                                To restore your access, please resolve this issue with the administration office as soon as possible.
+                            </p>
+                            <div style="text-align: center; margin-bottom: 20px;">
+                                <a href="#" style="background-color: #2D3748; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; display: inline-block;">Contact Support</a>
+                            </div>
+                            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+                            <p style="font-size: 12px; color: #a0aec0; text-align: center;">
+                                This is an automated message from the Library System.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+EOT;
+                    $mail->AltBody = "Dear {$fullName},\n\nYour account has been BLOCKED.\nReason: {$reasonForBlock}\n\nPlease contact the library administration.";
+
+                    $mail->send();
+                } catch (Exception $e) { 
+                    // Log mail error if needed
+                }
+
+                header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=borrowed&success=blocked");
+                exit;
+            } else {
+                $errors["general"] = "Failed to block user.";
+            }
+
+        // --- CANCEL AND REJECT ACTIONS ---
+        } elseif (in_array($action, ['reject', 'cancel'])) {
+            
+            $final_redirect_tab = $current_tab;
+            $borrowerUserID = $borrowObj->userID;
+            $book_info = $bookObj->fetchBook($borrowObj->bookID);
+            $bookTitle = $book_info['book_title'] ?? 'Book';
+            $book_id_to_update = $borrowObj->bookID;
+            $copies_to_move = $borrowObj->no_of_copies;
+
+            // 1. Ensure reason is saved to object
+            $borrowObj->status_reason = $status_reason_str; 
+
+            if ($action === 'reject') {
+                $borrowObj->borrow_request_status = 'Rejected';
+                $borrowObj->borrow_status = NULL;
+                $final_redirect_tab = 'rejected';
+
+                // Return stock if it was previously reserved
+                if ($current_detail['borrow_request_status'] === 'Approved') {
+                     $bookObj->incrementBookCopies($book_id_to_update, $copies_to_move);
+                }
+
+                // 2. Reject Notification with Reason
+                $notificationObj->userID = $borrowerUserID;
+                $notificationObj->title = "Request Rejected";
+                $notificationObj->message = "Your request for '{$bookTitle}' has been rejected. Reason: " . ($status_reason_str ?: "Reason not specified");
+                $notificationObj->link = "../../../app/views/borrower/myBorrowedBooks.php?tab=returned&subtab=Rejected";
+                $notificationObj->addNotification();
+
+            } elseif ($action === 'cancel') {
+                $borrowObj->borrow_request_status = 'Cancelled';
+                $borrowObj->borrow_status = NULL;
+                $borrowObj->return_date = NULL;
+                $final_redirect_tab = 'cancelled';
+
+                // Restock
+                if ($current_detail['borrow_request_status'] === 'Approved' && $current_detail['borrow_status'] !== 'Borrowed') {
+                    $bookObj->incrementBookCopies($book_id_to_update, $copies_to_move);
+                }
+
+                // 3. Cancel Notification with Reason
+                $notificationObj->userID = $borrowerUserID;
+                $notificationObj->title = "Request Cancelled";
+                $notificationObj->message = "Your request for '{$bookTitle}' has been cancelled by the librarian. Reason: " . ($status_reason_str ?: "Reason not specified");
+                $notificationObj->link = "../../../app/views/borrower/myBorrowedBooks.php?tab=returned&subtab=Cancelled";
+                $notificationObj->addNotification();
+            }
+
+            if ($borrowObj->editBorrowDetail($borrowID)) {
+                header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$final_redirect_tab}&success={$action}");
+                exit;
+            } else {
+                $errors["general"] = "Failed to update detail status.";
+            }
         }
     }
 
@@ -191,7 +362,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             'return' => 'return',
             'edit' => 'edit',
             'paid' => 'paid',
-            default => '',
+            default => '', 
         };
 
         header("Location: ../../app/views/librarian/borrowDetailsSection.php?modal={$modal_param}&id={$borrowID}&tab={$current_tab}");
@@ -199,62 +370,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
+// ---------------------------------------------------------
+//  GET REQUEST HANDLING (Accept, Pickup, Delete)
+// ---------------------------------------------------------
 if ($borrowID) {
-    if ($action === 'blockUser') {
-        $current_detail = $borrowObj->fetchBorrowDetail($borrowID);
-        $userID_to_block = $current_detail['userID'] ?? null;
-
-        if ($userID_to_block && $userObj->updateUserStatus($userID_to_block, "", 'Blocked')) {
-
-            // Existing Email Logic for Blocking...
-            $mail = new PHPMailer(true);
-            $user = $userObj->fetchUser($current_detail['userID']);
-
-            try {
-                $mail->isSMTP();
-                $mail->Host = 'smtp.gmail.com';
-                $mail->SMTPAuth = true;
-                $mail->Username = 'graziellamssaavedra06@gmail.com';
-                $mail->Password = 'cpybynwckiipsszp';
-                $mail->SMTPSecure = 'ssl';
-                $mail->Port = 465;
-
-                $mail->setFrom('graziellamssaavedra06@gmail.com');
-                $mail->addAddress($user["email"], $user["fName"] . ' ' . $user["lName"]);
-                $mail->addReplyTo('graziellamssaavedra06@gmail.com');
-
-                $mail->isHTML(true);
-                $mail->Subject = "Your Account Was Blocked";
-                $mail->Body = "Blocked! ";
-                $mail->send();
-            } catch (Exception $e) {
-                // Fail silently or log error regarding email
-            }
-
-            header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=borrowed&success=blocked");
-            exit;
-        } else {
-            $_SESSION["errors"] = ["general" => "Failed to block user. User ID not found or database error."];
-            header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=currently_borrowed");
-            exit;
-        }
-    }
-
-    // Fetch detail again for other actions
     $current_detail = $borrowObj->fetchBorrowDetail($borrowID);
     if (!$current_detail) {
         $_SESSION["errors"] = ["general" => "Borrow detail not found."];
         header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}");
         exit;
     }
+
     foreach ($current_detail as $key => $value) {
         if (property_exists($borrowObj, $key)) {
             $borrowObj->$key = ($value === 'NULL' || $value === null) ? null : $value;
         }
     }
-
-    $book_id_to_update = $current_detail['bookID'];
-    $copies_to_move = (int) ($current_detail['no_of_copies'] ?? 1);
 
     if ($action === 'delete') {
         if ($borrowObj->deleteBorrowDetail($borrowID)) {
@@ -267,14 +398,12 @@ if ($borrowID) {
         }
     }
 
-    // --- FIX STARTS HERE: Accept, Reject, Pickup, Cancel Logic with Notifications ---
-    if (in_array($action, ['accept', 'reject', 'pickup', 'cancel'])) {
+    if (in_array($action, ['accept', 'pickup'])) {
         $final_redirect_tab = $current_tab;
-
-        // 1. Fetch Book Title and User ID (Needed for Notification Message)
         $borrowerUserID = $current_detail['userID'];
-        $book_info = $bookObj->fetchBook($book_id_to_update);
+        $book_info = $bookObj->fetchBook($borrowObj->bookID);
         $bookTitle = $book_info['book_title'] ?? 'Book';
+        $copies_to_move = (int)$borrowObj->no_of_copies;
 
         if ($action === 'accept') {
             $borrowObj->borrow_request_status = 'Approved';
@@ -288,38 +417,16 @@ if ($borrowID) {
                 exit;
             }
 
-            // Try to decrement stock
-            if (!$bookObj->decrementBookCopies($book_id_to_update, $copies_to_move)) {
+            if (!$bookObj->decrementBookCopies($borrowObj->bookID, $copies_to_move)) {
                 $_SESSION["errors"] = ["general" => "Failed to update book stock (decrement)."];
                 header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}");
                 exit;
             }
 
-            // SUCCESS: Send Notification (Code moved OUTSIDE the error block)
             $notificationObj->userID = $borrowerUserID;
             $notificationObj->title = "Request Approved";
             $notificationObj->message = "Your request for '{$bookTitle}' is approved and ready for pickup.";
             $notificationObj->link = "../../../app/views/borrower/myBorrowedBooks.php?tab=pending";
-            $notificationObj->addNotification();
-
-        } elseif ($action === 'reject') {
-            $borrowObj->borrow_request_status = 'Rejected';
-            $borrowObj->borrow_status = NULL;
-            $final_redirect_tab = 'rejected';
-
-            if ($current_detail['borrow_request_status'] === 'Approved' || $current_detail['borrow_request_status'] === 'Pending') {
-                if (!$bookObj->incrementBookCopies($book_id_to_update, $copies_to_move)) {
-                    $_SESSION["errors"] = ["general" => "Failed to update book stock (increment) on admin reject."];
-                    header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}");
-                    exit;
-                }
-            }
-
-            // SUCCESS: Send Notification
-            $notificationObj->userID = $borrowerUserID;
-            $notificationObj->title = "Request Rejected";
-            $notificationObj->message = "Your request for '{$bookTitle}' has been rejected.";
-            $notificationObj->link = "../../../app/views/borrower/myBorrowedBooks.php?tab=returned&subtab=Rejected";
             $notificationObj->addNotification();
 
         } elseif ($action === 'pickup') {
@@ -328,32 +435,10 @@ if ($borrowID) {
             $borrowObj->pickup_date = date("Y-m-d");
             $final_redirect_tab = 'borrowed';
 
-            // SUCCESS: Send Notification
             $notificationObj->userID = $borrowerUserID;
             $notificationObj->title = "Book Picked Up";
             $notificationObj->message = "You have successfully picked up '{$bookTitle}'.";
             $notificationObj->link = "../../../app/views/borrower/myBorrowedBooks.php?tab=borrowed";
-            $notificationObj->addNotification();
-
-        } elseif ($action === 'cancel') {
-            $borrowObj->borrow_request_status = 'Cancelled';
-            $borrowObj->borrow_status = NULL;
-            $borrowObj->return_date = NULL;
-            $final_redirect_tab = 'cancelled';
-
-            if ($current_detail['borrow_request_status'] === 'Approved' && $current_detail['borrow_status'] !== 'Borrowed') {
-                if (!$bookObj->incrementBookCopies($book_id_to_update, $copies_to_move)) {
-                    $_SESSION["errors"] = ["general" => "Failed to update book stock (increment) on admin cancel."];
-                    header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}");
-                    exit;
-                }
-            }
-
-            // SUCCESS: Send Notification
-            $notificationObj->userID = $borrowerUserID;
-            $notificationObj->title = "Request Cancelled";
-            $notificationObj->message = "Your request for '{$bookTitle}' has been cancelled by the librarian.";
-            $notificationObj->link = "../../../app/views/borrower/myBorrowedBooks.php?tab=returned&subtab=Cancelled";
             $notificationObj->addNotification();
         }
 

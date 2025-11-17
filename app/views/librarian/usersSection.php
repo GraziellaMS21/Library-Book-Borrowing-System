@@ -11,6 +11,16 @@ $userTypes = $userObj->fetchUserTypes();
 
 $old = $_SESSION["old"] ?? [];
 $errors = $_SESSION["errors"] ?? [];
+$success_modal = $_GET['success'] ?? false;
+$success_message = "";
+if ($success_modal) {
+    if ($success_modal === 'delete') $success_message = "User deleted successfully.";
+    elseif ($success_modal === 'block') $success_message = "User blocked successfully.";
+    elseif ($success_modal === 'reject') $success_message = "Registration rejected successfully.";
+    elseif ($success_modal === 'approve') $success_message = "User approved successfully.";
+    elseif ($success_modal === 'unblock') $success_message = "User unblocked successfully.";
+    elseif ($success_modal === 'edit') $success_message = "User details updated successfully.";
+}
 
 unset($_SESSION["old"], $_SESSION["errors"]);
 
@@ -28,8 +38,6 @@ if ($current_modal === 'edit') {
     $open_modal = 'editUserModal';
 } elseif ($current_modal === 'view') {
     $open_modal = 'viewDetailsUserModal';
-} elseif ($current_modal === 'block') {
-    $open_modal = 'blockConfirmUserModal';
 } elseif ($current_modal === 'delete') {
     $open_modal = 'deleteConfirmModal';
 }
@@ -37,15 +45,11 @@ if ($current_modal === 'edit') {
 if (!empty($open_modal)) {
     if ($open_modal == 'editUserModal' && !empty($old)) {
         $modal_user = $old;
-    } else { //view
+    } else { //view or clean edit
         $modal_user = $userObj->fetchUser($user_id) ?: [];
     }
-    if ($open_modal != 'viewDetailsUserModal') { //delete 
+    if ($open_modal != 'viewDetailsUserModal') { 
         $modal_user['userID'] = $user_id;
-    }
-    if (empty($modal_user['status']) && !empty($user_id)) { //block
-        $data = $userObj->fetchUser($user_id);
-        $modal_user['status'] = $data['status'] ?? 'N/A';
     }
 }
 
@@ -54,7 +58,6 @@ $userTypeID = isset($_GET['userType']) ? trim($_GET['userType']) : "";
 
 $users = $userObj->viewUser($search, $userTypeID, $current_tab);
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -65,6 +68,11 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
     <title>Librarian Dashboard - Manage Users</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
     <link rel="stylesheet" href="../../../public/assets/css/admin.css" />
+    <style>
+        .modal { display: none; position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal.open { display: block; }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; border-radius: 8px; }
+    </style>
 </head>
 
 <body>
@@ -77,27 +85,19 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                     <div class="title flex w-full items-center justify-between mb-4">
                         <h1 class="text-red-800 font-bold text-4xl">MANAGE USERS</h1>
 
-                        <a href="userList.php" target="_blank" class="addBtn">Print
-                            User List</a>
+                        <a href="userList.php" target="_blank" class="addBtn">Print User List</a>
                     </div>
 
                     <div class="tabs flex border-b border-gray-200 mb-6">
-                        <a href="?tab=pending" class="tab-btn <?= $current_tab == 'pending' ? 'active' : '' ?>">Pending
-                            Registers</a>
-                        <a href="?tab=approved"
-                            class="tab-btn <?= $current_tab == 'approved' ? 'active' : '' ?>">Approved
-                            Users</a>
-                        <a href="?tab=rejected"
-                            class="tab-btn <?= $current_tab == 'rejected' ? 'active' : '' ?>">Rejected
-                            Users</a>
-                        <a href="?tab=blocked" class="tab-btn <?= $current_tab == 'blocked' ? 'active' : '' ?>">Blocked
-                            Accounts</a>
+                        <a href="?tab=pending" class="tab-btn <?= $current_tab == 'pending' ? 'active' : '' ?>">Pending Registers</a>
+                        <a href="?tab=approved" class="tab-btn <?= $current_tab == 'approved' ? 'active' : '' ?>">Approved Users</a>
+                        <a href="?tab=rejected" class="tab-btn <?= $current_tab == 'rejected' ? 'active' : '' ?>">Rejected Users</a>
+                        <a href="?tab=blocked" class="tab-btn <?= $current_tab == 'blocked' ? 'active' : '' ?>">Blocked Accounts</a>
                     </div>
 
                     <form method="GET" class="search flex gap-2 items-center mb-6">
                         <input type="hidden" name="tab" value="<?= $current_tab ?>">
-                        <input type="text" name="search" placeholder="Search by name or email" value="<?= $search ?>"
-                            class="border rounded-lg p-2 flex-grow">
+                        <input type="text" name="search" placeholder="Search by name or email" value="<?= $search ?>" class="border rounded-lg p-2 flex-grow">
                         <select name="userType" class="border rounded-lg p-2">
                             <option value="">All Types</option>
                             <?php foreach ($userTypes as $type) { ?>
@@ -106,25 +106,16 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                                 </option>
                             <?php } ?>
                         </select>
-                        <button type="submit"
-                            class="bg-red-800 text-white rounded-lg px-4 py-2 hover:bg-red-700">Search</button>
+                        <button type="submit" class="bg-red-800 text-white rounded-lg px-4 py-2 hover:bg-red-700">Search</button>
                     </form>
 
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">
                         <?php
                         switch ($current_tab) {
-                            case 'pending':
-                                echo 'Pending User Registrations';
-                                break;
-                            case 'approved':
-                                echo 'Approved System Users';
-                                break;
-                            case 'rejected':
-                                echo 'Rejected User Registrations';
-                                break;
-                            case 'blocked':
-                                echo 'Blocked Accounts';
-                                break;
+                            case 'pending': echo 'Pending User Registrations'; break;
+                            case 'approved': echo 'Approved System Users'; break;
+                            case 'rejected': echo 'Rejected User Registrations'; break;
+                            case 'blocked': echo 'Blocked Accounts'; break;
                         }
                         ?>
                     </h2>
@@ -155,6 +146,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                             <?php else:
                                 foreach ($users as $user) {
                                     $image_url = !empty($user["imageID_dir"]) ? "../../../" . $user["imageID_dir"] : null;
+                                    $fullName = htmlspecialchars($user["fName"] . ' ' . $user["lName"]);
                                     ?>
                                     <tr>
                                         <td><?= $no++ ?></td>
@@ -162,11 +154,8 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                                         <td><?= $user["fName"] ?></td>
                                         <td><?= $user["email"] ?></td>
                                         <td class="text-center">
-                                            <?php
-                                            if ($image_url) { ?>
-                                                <img src="<?= $image_url ?>" alt="ID"
-                                                    class="w-16 h-16 object-cover rounded mx-auto border border-gray-300"
-                                                    title="<?= $user["imageID_name"] ?>">
+                                            <?php if ($image_url) { ?>
+                                                <img src="<?= $image_url ?>" alt="ID" class="w-16 h-16 object-cover rounded mx-auto border border-gray-300" title="<?= $user["imageID_name"] ?>">
                                             <?php } else { ?>
                                                 <span class="text-gray-500 text-xs">N/A</span>
                                             <?php } ?>
@@ -176,69 +165,39 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                                         <td class="action text-center">
 
                                             <?php if ($current_tab == 'pending'): ?>
-                                                <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=approve&id=<?= $user['userID'] ?>&status=Approved"
-                                                    class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1">
-                                                    Approve
-                                                </a>
-                                                <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=reject&id=<?= $user['userID'] ?>&status=Rejected"
-                                                    class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1">
+                                                <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=approve&id=<?= $user['userID'] ?>" class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1">Approve</a>
+                                                
+                                                <button class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1 cursor-pointer open-modal-btn"
+                                                        data-target="rejectUserModal"
+                                                        data-id="<?= $user['userID'] ?>"
+                                                        data-name="<?= $fullName ?>">
                                                     Reject
-                                                </a>
-                                                <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">
-                                                    View
-                                                </a>
+                                                </button>
+
+                                                <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">View</a>
 
                                             <?php elseif ($current_tab == 'approved'): ?>
-                                                <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=edit&id=<?= $user['userID'] ?>">Edit</a>
+                                                <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=edit&id=<?= $user['userID'] ?>">Edit</a>
 
-                                                <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">
-                                                    View
-                                                </a>
-
-                                                <a class="actionBtn bg-amber-500 hover:bg-amber-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=block&id=<?= $user['userID'] ?>">
+                                                <button class="actionBtn bg-amber-500 hover:bg-amber-600 text-sm inline-block mb-1 cursor-pointer open-modal-btn"
+                                                        data-target="blockUserModal"
+                                                        data-id="<?= $user['userID'] ?>"
+                                                        data-name="<?= $fullName ?>">
                                                     Block
-                                                </a>
+                                                </button>
 
-                                                <a class="actionBtn  bg-red-500 hover:bg-red-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=delete&id=<?= $user['userID'] ?>">
-                                                    Delete
-                                                </a>
+                                                <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">View</a>
+                                                <a class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=delete&id=<?= $user['userID'] ?>">Delete</a>
 
                                             <?php elseif ($current_tab == 'blocked'): ?>
-                                                <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1"
-                                                    href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=unblock&id=<?= $user['userID'] ?>">
-                                                    Unblock
-                                                </a>
+                                                <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1" href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=unblock&id=<?= $user['userID'] ?>">Unblock</a>
+                                                <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">View</a>
+                                                <a class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=delete&id=<?= $user['userID'] ?>">Delete</a>
 
-                                                <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">
-                                                    View
-                                                </a>
-
-                                                <a class="actionBtn  bg-red-500 hover:bg-red-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=delete&id=<?= $user['userID'] ?>">
-                                                    Delete
-                                                </a>
-
-                                            <?php else: ?>
-                                                <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=approveReject&id=<?= $user['userID'] ?>&status=Approved"
-                                                    class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1">
-                                                    Approve
-                                                </a>
-
-                                                <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">
-                                                    View
-                                                </a>
-
-                                                <a class="actionBtn  bg-red-500 hover:bg-red-600 text-sm inline-block mb-1"
-                                                    href="usersSection.php?tab=<?= $current_tab ?>&modal=delete&id=<?= $user['userID'] ?>">
-                                                    Delete
-                                                </a>
+                                            <?php else: // Rejected/Others ?>
+                                                <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=approve&id=<?= $user['userID'] ?>" class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1">Approve</a>
+                                                <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">View</a>
+                                                <a class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=delete&id=<?= $user['userID'] ?>">Delete</a>
                                             <?php endif; ?>
 
                                         </td>
@@ -254,60 +213,122 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
         </main>
     </div>
 
+    <div id="rejectUserModal" class="modal">
+        <div class="modal-content max-w-md">
+            <span class="close close-modal text-3xl cursor-pointer float-right">&times;</span>
+            <h2 class="text-2xl font-bold mb-4 text-red-700">Reject Registration</h2>
+            <form action="../../../app/controllers/userController.php" method="POST">
+                <input type="hidden" name="action" value="reject">
+                <input type="hidden" name="tab" value="<?= $current_tab ?>">
+                <input type="hidden" name="userID" id="reject_userID">
+
+                <p class="mb-4 text-gray-700">
+                    Reason for rejecting <span class="font-bold user-name-span"></span>:
+                </p>
+
+                <div class="bg-gray-100 p-4 rounded mb-4 text-sm">
+                    <label class="flex items-center mb-2 cursor-pointer">
+                        <input type="checkbox" name="reason_presets[]" value="Invalid ID Image / Unclear" class="mr-2"> Invalid / Unclear ID
+                    </label>
+                    <label class="flex items-center mb-2 cursor-pointer">
+                        <input type="checkbox" name="reason_presets[]" value="Incomplete Information" class="mr-2"> Incomplete Information
+                    </label>
+                    <label class="flex items-center mb-2 cursor-pointer">
+                        <input type="checkbox" name="reason_presets[]" value="Not a verified student" class="mr-2"> Not a verified student/faculty
+                    </label>
+                    <label class="flex items-center mb-2 cursor-pointer">
+                        <input type="checkbox" name="reason_presets[]" value="Duplicate Account" class="mr-2"> Duplicate Account
+                    </label>
+                </div>
+
+                <label class="font-semibold block mb-1">Other Reason:</label>
+                <textarea name="reason_custom" rows="3" class="w-full border rounded p-2" placeholder="Type specific details..."></textarea>
+
+                <input type="submit" value="Confirm Reject" class="mt-4 bg-red-700 text-white font-bold py-2 px-4 rounded w-full cursor-pointer hover:bg-red-800">
+            </form>
+        </div>
+    </div>
+
+    <div id="blockUserModal" class="modal">
+        <div class="modal-content max-w-md">
+            <span class="close close-modal text-3xl cursor-pointer float-right">&times;</span>
+            <h2 class="text-2xl font-bold mb-4 text-yellow-700">Block User Account</h2>
+            <form action="../../../app/controllers/userController.php" method="POST">
+                <input type="hidden" name="action" value="block">
+                <input type="hidden" name="tab" value="<?= $current_tab ?>">
+                <input type="hidden" name="userID" id="block_userID">
+
+                <p class="mb-4 text-gray-700">
+                    Reason for blocking <span class="font-bold user-name-span"></span>:
+                </p>
+
+                <div class="bg-gray-100 p-4 rounded mb-4 text-sm">
+                    <label class="flex items-center mb-2 cursor-pointer">
+                        <input type="checkbox" name="reason_presets[]" value="Unpaid Overdue Fines" class="mr-2"> Unpaid Overdue Fines
+                    </label>
+                    <label class="flex items-center mb-2 cursor-pointer">
+                        <input type="checkbox" name="reason_presets[]" value="Lost Books" class="mr-2"> Lost Books
+                    </label>
+                    <label class="flex items-center mb-2 cursor-pointer">
+                        <input type="checkbox" name="reason_presets[]" value="Library Policy Violation" class="mr-2"> Policy Violation (Noise/Conduct)
+                    </label>
+                    <label class="flex items-center mb-2 cursor-pointer">
+                        <input type="checkbox" name="reason_presets[]" value="Identity Theft Suspicion" class="mr-2"> Identity Theft Suspicion
+                    </label>
+                </div>
+
+                <label class="font-semibold block mb-1">Additional Details:</label>
+                <textarea name="reason_custom" rows="3" class="w-full border rounded p-2" placeholder="Type specific details..."></textarea>
+
+                <input type="submit" value="Confirm Block" class="mt-4 bg-yellow-600 text-white font-bold py-2 px-4 rounded w-full cursor-pointer hover:bg-yellow-700">
+            </form>
+        </div>
+    </div>
+
     <div id="editUserModal" class="modal <?= $open_modal == 'editUserModal' ? 'open' : '' ?>">
         <div class="modal-content">
             <span class="close close-times" data-modal="editUserModal" data-tab="<?= $current_tab ?>">&times;</span>
             <h2 class="text-2xl font-bold mb-4">Edit User</h2>
-            <form id="editUserForm"
-                action="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=edit&id=<?= $modal_user['userID'] ?? $user_id ?>"
-                method="POST" enctype="multipart/form-data">
+            <form id="editUserForm" action="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=edit&id=<?= $modal_user['userID'] ?? $user_id ?>" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="userID" value="<?= $modal_user['userID'] ?? $user_id ?>">
                 <input type="hidden" name="existing_image_name" value="<?= $modal_user["imageID_name"] ?? "" ?>">
                 <input type="hidden" name="existing_image_dir" value="<?= $modal_user["imageID_dir"] ?? "" ?>">
 
                 <div class="input">
                     <label for="lName">Last Name<span>*</span> : </label>
-                    <input type="text" class="input-field" name="lName" id="edit_lName"
-                        value="<?= $modal_user["lName"] ?? "" ?>">
+                    <input type="text" class="input-field" name="lName" id="edit_lName" value="<?= $modal_user["lName"] ?? "" ?>">
                     <p class="errors text-red-500 text-sm"><?= $errors["lName"] ?? "" ?></p>
                 </div>
                 <div class="input">
                     <label for="fName">First Name<span>*</span> : </label>
-                    <input type="text" class="input-field" name="fName" id="edit_fName"
-                        value="<?= $modal_user["fName"] ?? "" ?>">
+                    <input type="text" class="input-field" name="fName" id="edit_fName" value="<?= $modal_user["fName"] ?? "" ?>">
                     <p class="errors text-red-500 text-sm"><?= $errors["fName"] ?? "" ?></p>
                 </div>
                 <div class="input col-span-2">
                     <label for="middleIn">Middle Initial : </label>
-                    <input type="text" class="input-field" name="middleIn" id="edit_middleIn"
-                        value="<?= $modal_user["middleIn"] ?? "" ?>">
+                    <input type="text" class="input-field" name="middleIn" id="edit_middleIn" value="<?= $modal_user["middleIn"] ?? "" ?>">
                 </div>
 
                 <div class="input col-span-2">
                     <label for="new_imageID">Upload New ID Image (Optional): </label>
                     <input type="file" class="input-field" name="new_imageID" id="edit_new_imageID" accept="image/*">
-                    <p class="text-xs text-gray-500 mt-1">Current File:
-                        <?= $modal_user["imageID_name"] ?? "None" ?>
-                    </p>
+                    <p class="text-xs text-gray-500 mt-1">Current File: <?= $modal_user["imageID_name"] ?? "None" ?></p>
                     <p class="errors text-red-500 text-sm"><?= $errors["new_imageID"] ?? "" ?></p>
                 </div>
 
                 <div class="input">
                     <label for="contact_no">Contact No. : </label>
-                    <input type="text" class="input-field" name="contact_no" id="edit_contact_no"
-                        value="<?= $modal_user["contact_no"] ?? "" ?>">
+                    <input type="text" class="input-field" name="contact_no" id="edit_contact_no" value="<?= $modal_user["contact_no"] ?? "" ?>">
                 </div>
                 <div class="input">
                     <label for="email">Email<span>*</span> : </label>
-                    <input type="email" class="input-field" name="email" id="edit_email"
-                        value="<?= $modal_user["email"] ?? "" ?>">
+                    <input type="email" class="input-field" name="email" id="edit_email" value="<?= $modal_user["email"] ?? "" ?>">
                     <p class="errors text-red-500 text-sm"><?= $errors["email"] ?? "" ?></p>
                 </div>
 
                 <div class="input col-span-2">
                     <label for="college_department">College/Department : </label>
-                    <input type="text" class="input-field" name="college_department" id="edit_college_department"
-                        value="<?= $modal_user["college_department"] ?? '' ?>">
+                    <input type="text" class="input-field" name="college_department" id="edit_college_department" value="<?= $modal_user["college_department"] ?? '' ?>">
                 </div>
 
                 <div class="input">
@@ -316,11 +337,8 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                         <option value="">---Select Type---</option>
                         <?php foreach ($userTypes as $type) {
                             $selected = (($modal_user['userTypeID'] ?? '') == $type['userTypeID']) ? 'selected' : '';
-                            ?>
-                            <option value="<?= $type['userTypeID'] ?>" <?= $selected ?>>
-                                <?= $type['type_name'] ?>
-                            </option>
-                        <?php } ?>
+                            echo "<option value='{$type['userTypeID']}' {$selected}>{$type['type_name']}</option>";
+                        } ?>
                     </select>
                     <p class="errors text-red-500 text-sm"><?= $errors["userTypeID"] ?? "" ?></p>
                 </div>
@@ -328,13 +346,10 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                     <label for="role">Role<span>*</span> : </label>
                     <select name="role" id="edit_role" class="input-field">
                         <option value="">---Select Role---</option>
-                        <?php
-                        $roles = ["Borrower", "Admin"];
-                        foreach ($roles as $role) {
+                        <?php foreach (["Borrower", "Admin"] as $role) {
                             $selected = (($modal_user['role'] ?? '') == $role) ? 'selected' : '';
                             echo "<option value='{$role}' {$selected}>{$role}</option>";
-                        }
-                        ?>
+                        } ?>
                     </select>
                     <p class="errors text-red-500 text-sm"><?= $errors["role"] ?? "" ?></p>
                 </div>
@@ -343,42 +358,28 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
 
                 <br>
                 <div class="cancelConfirmBtns">
-
-                    <button type="button" data-modal="editBookModal" data-tab="<?= $current_tab ?>"
-                        class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 cursor-pointer">
-                        Cancel
-                    </button>
-
-                    <input type="submit" value="Save Changes"
-                        class="font-bold cursor-pointer mt-4 border-none rounded-lg bg-red-800 text-white p-2 w-full hover:bg-red-700">
-
+                    <button type="button" data-modal="editUserModal" data-tab="<?= $current_tab ?>" class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 cursor-pointer">Cancel</button>
+                    <input type="submit" value="Save Changes" class="font-bold cursor-pointer mt-4 border-none rounded-lg bg-red-800 text-white p-2 w-full hover:bg-red-700">
                 </div>
             </form>
         </div>
     </div>
 
-
     <div id="viewDetailsUserModal" class="modal <?= $open_modal == 'viewDetailsUserModal' ? 'open' : '' ?>">
         <div class="modal-content">
-            <span class="close close-times" data-modal="viewDetailsUserModal"
-                data-tab="<?= $current_tab ?>">&times;</span>
+            <span class="close close-times" data-modal="viewDetailsUserModal" data-tab="<?= $current_tab ?>">&times;</span>
             <h2 class="text-2xl font-bold mb-4">User Details</h2>
             <div class="user-details grid grid-cols-2 gap-y-2 gap-x-4 text-base">
-
                 <div class="col-span-2 mb-4 relative justify-items-center">
                     <p class="font-semibold mb-2">ID Image:</p>
                     <?php
                     $modal_image_url = !empty($modal_user['imageID_dir']) ? "../../../" . $modal_user['imageID_dir'] : null;
-
                     if ($modal_image_url) { ?>
-                        <img src="<?= $modal_image_url ?>" alt="User ID Image"
-                            class="max-w-xs max-h-40 border rounded shadow-md">
+                        <img src="<?= $modal_image_url ?>" alt="User ID Image" class="max-w-xs max-h-40 border rounded shadow-md">
                     <?php } else { ?>
                         <p class="text-gray-500">No ID Image Uploaded</p>
                     <?php } ?>
-                    <button type="button" id="openImage" class="enlarge">
-                        <i class="fa-solid fa-expand" style="color: #ffffff;"></i>
-                    </button>
+                    <button type="button" id="openImage" class="enlarge"><i class="fa-solid fa-expand" style="color: #ffffff;"></i></button>
                 </div>
 
                 <p class="col-span-2"><strong>Last Name:</strong> <?= $modal_user['lName'] ?? 'N/A' ?></p>
@@ -386,68 +387,32 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                 <p class="col-span-2"><strong>First Name:</strong> <?= $modal_user['fName'] ?? 'N/A' ?></p>
                 <p><strong>Email:</strong> <?= $modal_user['email'] ?? 'N/A' ?></p>
                 <p><strong>Contact No.:</strong> <?= $modal_user['contact_no'] ?? 'N/A' ?></p>
-
                 <p><strong>User Type:</strong> <?= $modal_user['type_name'] ?? 'N/A' ?></p>
                 <p><strong>Role:</strong> <?= $modal_user['role'] ?? 'N/A' ?></p>
                 <p><strong>College/Department:</strong> <?= $modal_user['college_department'] ?? 'N/A' ?></p>
-
-                <p><strong>Account Status:</strong> <span
-                        class="font-bold text-red-800"><?= $modal_user['account_status'] ?? 'N/A' ?></span></p>
-
-                <p><strong>Date Registered:</strong>
-                    <?= $modal_user['date_registered'] ?? 'N/A' ?>
-                </p>
-
+                <p><strong>Account Status:</strong> <span class="font-bold text-red-800"><?= $modal_user['account_status'] ?? 'N/A' ?></span></p>
+                <p><strong>Date Registered:</strong> <?= $modal_user['date_registered'] ?? 'N/A' ?></p>
+                <?php if(!empty($modal_user['status_reason'])): ?>
+                    <p class="col-span-2"><strong>Status Reason:</strong> <span class="text-red-700"><?= htmlspecialchars($modal_user['status_reason']) ?></span></p>
+                <?php endif; ?>
             </div>
             <div class="mt-6 text-right">
-                <button type="button" data-modal="viewDetailsUserModal" data-tab="<?= $current_tab ?>"
-                    class="close viewBtn bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">Close</button>
+                <button type="button" data-modal="viewDetailsUserModal" data-tab="<?= $current_tab ?>" class="close viewBtn bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">Close</button>
             </div>
         </div>
     </div>
-
-    <div id="blockConfirmUserModal"
-        class="modal delete-modal <?= $open_modal == 'blockConfirmUserModal' ? 'open' : '' ?>">
-        <div class="modal-content max-w-sm">
-            <h2 class="text-xl font-bold mb-4 text-yellow-700">Confirm Block</h2>
-            <p class="mb-6 text-gray-700">
-                Are you sure you want to <strong>block</strong> the user:
-                <span
-                    class="font-semibold italic"><?= ($modal_user['fName'] ?? '') . ' ' . ($modal_user['lName'] ?? 'this user') ?></span>?
-                This user will be unable to log in until their status is changed back to Approved.
-            </p>
-            <div class="flex justify-end space-x-4">
-                <button type="button" data-modal="blockConfirmUserModal" data-tab="<?= $current_tab ?>"
-                    class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">
-                    Cancel
-                </button>
-                <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=block&id=<?= $modal_user['userID'] ?? $user_id ?>"
-                    class="bg-yellow-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-yellow-700 cursor-pointer">
-                    Confirm Block
-                </a>
-            </div>
-        </div>
-    </div>
-
 
     <div id="deleteConfirmModal" class="modal delete-modal <?= $open_modal == 'deleteConfirmModal' ? 'open' : '' ?>">
         <div class="modal-content max-w-sm">
             <h2 class="text-xl font-bold mb-4 text-red-700">Confirm Deletion</h2>
             <p class="mb-6 text-gray-700">
                 Are you sure you want to **delete** the user:
-                <span
-                    class="font-semibold italic"><?= ($modal_user['fName'] ?? '') . ' ' . ($modal_user['lName'] ?? 'this user') ?></span>?
+                <span class="font-semibold italic"><?= ($modal_user['fName'] ?? '') . ' ' . ($modal_user['lName'] ?? 'this user') ?></span>?
                 This action cannot be undone.
             </p>
             <div class="cancelConfirmBtns">
-                <button type="button" data-modal="deleteConfirmModal" data-tab="<?= $current_tab ?>"
-                    class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">
-                    Cancel
-                </button>
-                <a href="../../../app/controllers/bookController.php?action=delete&id=<?= $modal_user['userID'] ?>"
-                    class="text-white px-4 py-2 rounded-lg font-semibold cursor-pointer">
-                    Confirm Delete
-                </a>
+                <button type="button" data-modal="deleteConfirmModal" data-tab="<?= $current_tab ?>" class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">Cancel</button>
+                <a href="../../../app/controllers/userController.php?action=delete&id=<?= $modal_user['userID'] ?? $user_id ?>&tab=<?= $current_tab ?>" class="text-white px-4 py-2 rounded-lg font-semibold cursor-pointer bg-red-600 hover:bg-red-700">Confirm Delete</a>
             </div>
         </div>
     </div>
@@ -456,31 +421,22 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
         <div class="modal-content max-w-sm text-center">
             <span class="close close-times" data-modal="success-modal">&times;</span>
             <h3 class="text-xl font-bold text-red-800 mb-2">Success!</h3>
-            <p class="text-gray-700">
-                <?= $success_message ?> Book Success!
-            </p>
-            <button type="button" data-modal="success-modal"
-                class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">
-                Close
-            </button>
+            <p class="text-gray-700"><?= $success_message ?></p>
+            <button type="button" data-modal="success-modal" class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 mt-4">Close</button>
         </div>
     </div>
 
     <div id="imageEnlargeModal" class="modal hidden">
         <div class="modal-content !max-w-4xl text-center">
-            <span class="close-times" id="closeImage">&times;</span>
+            <span class="close-times cursor-pointer float-right text-2xl" id="closeImage">&times;</span>
             <p class="font-semibold mb-2">Image:</p>
             <?php
             $modal_image_url = !empty($modal_user['imageID_dir']) ? "../../../" . $modal_user['imageID_dir'] : null;
-
-
             if ($modal_image_url) { ?>
-                <img src="<?= $modal_image_url ?>" alt="Book Cover Image"
-                    class="w-full h-auto max-h-[80vh] object-contain mx-auto">
+                <img src="<?= $modal_image_url ?>" alt="Book Cover Image" class="w-full h-auto max-h-[80vh] object-contain mx-auto">
             <?php } else { ?>
-                <p class="text-gray-500">No Book Cover Uploaded</p>
+                <p class="text-gray-500">No ID Image Uploaded</p>
             <?php } ?>
-            <!-- </div> -->
         </div>
     </div>
 
@@ -488,25 +444,60 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
 <script src="../../../public/assets/js/modal.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", () => {
+        // Image Enlarge Logic
         const closeImage = document.getElementById("closeImage");
         const imageEnlargeModal = document.getElementById("imageEnlargeModal");
         const openImage = document.getElementById("openImage");
 
+        if(openImage && imageEnlargeModal) {
+            openImage.addEventListener("click", () => {
+                imageEnlargeModal.style.display = 'block';
+            });
+            closeImage.addEventListener("click", () => {
+                imageEnlargeModal.style.display = 'none';
+            });
+            window.addEventListener('click', (e) => {
+                if (e.target === imageEnlargeModal) {
+                    imageEnlargeModal.style.display = 'none';
+                }
+            });
+        }
 
-        openImage.addEventListener("click", () => {
-            imageEnlargeModal.style.display = 'flex';
-        })
+        // Open Modals & Pass Data (Reject, Block)
+        document.querySelectorAll('.open-modal-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const userId = this.getAttribute('data-id');
+                const userName = this.getAttribute('data-name');
+                const modal = document.getElementById(targetId);
+                
+                if (modal) {
+                    modal.style.display = 'block';
+                    modal.classList.add('open');
 
-        closeImage.addEventListener("click", () => {
-            imageEnlargeModal.style.display = 'none';
-        })
+                    // Pass ID to hidden input
+                    if (targetId === 'rejectUserModal') document.getElementById('reject_userID').value = userId;
+                    if (targetId === 'blockUserModal') document.getElementById('block_userID').value = userId;
 
-        window.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.style.display = 'none';
-            }
+                    // Pass User Name to display span
+                    if (userName) {
+                        const nameSpan = modal.querySelector('.user-name-span');
+                        if (nameSpan) nameSpan.textContent = userName;
+                    }
+                }
+            });
         });
-    })
-</script>
 
+        // Generic Close for New Modals
+        document.querySelectorAll('.close-modal').forEach(span => {
+            span.addEventListener('click', function() {
+                const modal = this.closest('.modal');
+                if(modal) {
+                    modal.style.display = 'none';
+                    modal.classList.remove('open');
+                }
+            });
+        });
+    });
+</script>
 </html>
