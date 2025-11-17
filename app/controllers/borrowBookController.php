@@ -263,6 +263,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
 
                 // --- NOTIFICATION & EMAIL LOGIC ---
+                
                 $adminUserID = 1;
                 $borrowerName = $detail["fName"] . ' ' . $detail["lName"]  ?? 'A user'; 
                 $bookTitle = $detail["book_title"] ?? 'a book'; 
