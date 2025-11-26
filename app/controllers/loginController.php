@@ -2,10 +2,19 @@
 session_start();
 require_once(__DIR__ . '/../models/userLogin.php');
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+//required files
+require_once __DIR__ . '/../libraries/phpmailer/src/Exception.php';
+require_once __DIR__ . '/../libraries/phpmailer/src/PHPMailer.php';
+require_once __DIR__ . '/../libraries/phpmailer/src/SMTP.php';
+
 $loginObj = new Login();
 
 $login = [];
 $errors = [];
+$action = $_GET["action"];
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $login["email"] = trim(htmlspecialchars($_POST["email"] ?? ""));
@@ -29,6 +38,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit;
             } elseif ($result["registration_status"] === "Rejected") {
                 header("Location: ../../app/views/borrower/login.php?status=rejected");
+                exit;
+            } elseif ($result["account_status"] === "Blocked") {
+                // PASS THE USER ID VIA URL FOR THE LOGIN PAGE TO LOOK UP THE FINE STATUS
+                header("Location: ../../app/views/borrower/login.php?status=blocked&userID=" . $result['userID']);
                 exit;
             } elseif ($result["account_status"] === "Blocked") {
                 // PASS THE USER ID VIA URL FOR THE LOGIN PAGE TO LOOK UP THE FINE STATUS
