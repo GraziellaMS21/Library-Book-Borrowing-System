@@ -53,7 +53,8 @@ if (!$book) {
 
 // Extract essential book details (used for display and passing to JS)
 $book_title = htmlspecialchars($book['book_title']);
-$author = htmlspecialchars($book['author']);
+// FIXED: Use 'author_names' which comes from the GROUP_CONCAT in fetchBook
+$author = htmlspecialchars($book['author_names'] ?? 'N/A'); 
 $category_name = htmlspecialchars($book['category_name']);
 $publication_name = htmlspecialchars($book['publication_name']);
 $publication_year = htmlspecialchars($book['publication_year']);
@@ -244,7 +245,6 @@ $modal_available_copies = $copies;
             </div>
         </div>
 
-        <!-- BORROW MODAL (STAFF/ADMIN ONLY) -->
         <div id="borrow-modal" class="modal <?= $open_modal == 'borrow-modal' ? 'open' : '' ?>">
             <div class="modal-content">
                 <span class="close-times" onclick="closeModalAndRedirect()">&times;</span>
@@ -253,7 +253,6 @@ $modal_available_copies = $copies;
                 <p class="text-gray-700 mb-3">Book: <strong id="modal-borrow-book-title">
                         <?= $modal_book_title ?>
                     </strong></p>
-                <!-- NOTE: Action points to the controller for actual borrow logic -->
                 <form id="borrow-form" method="GET" action="../../../app/controllers/borrowBookController.php">
                     <input type="hidden" name="action" value="borrow">
                     <input type="hidden" name="source" value="viewBook.php">
@@ -283,7 +282,6 @@ $modal_available_copies = $copies;
             </div>
         </div>
 
-        <!-- ADD TO LIST MODAL (STAFF/ADMIN ONLY) -->
         <div id="list-modal" class="modal <?= $open_modal == 'list-modal' ? 'open' : '' ?>">
             <div class="modal-content">
                 <span class="close-times" onclick="closeModalAndRedirect()">&times;</span>
@@ -292,7 +290,6 @@ $modal_available_copies = $copies;
                 <p class="text-gray-700 mb-3">Book: <strong id="modal-list-book-title">
                         <?= $modal_book_title ?>
                     </strong></p>
-                <!-- NOTE: Action points to controller for list logic -->
                 <form id="list-form" onsubmit="event.preventDefault(); confirmAddToList()">
                     <input type="hidden" id="modal-list-book-id" value="<?= $modal_book_id ?>">
 
@@ -320,7 +317,6 @@ $modal_available_copies = $copies;
             </div>
         </div>
 
-        <!-- SUCCESS MODAL (Status Redirect) -->
         <div id="success-modal" class="modal <?= $list_status == 'added' ? 'open' : '' ?>">
             <div class="modal-content max-w-sm text-center">
                 <span class="close-times" onclick="closeStatusModal()">&times;</span>
@@ -334,7 +330,6 @@ $modal_available_copies = $copies;
             </div>
         </div>
 
-        <!-- MESSAGE MODAL (Error/Existing Status Redirect) -->
         <div id="message-modal" class="modal <?= ($list_status && $list_status != 'added') ? 'open' : '' ?>">
             <div class="modal-content max-w-xs mx-4">
                 <span class="close-times" onclick="closeStatusModal()">&times;</span>

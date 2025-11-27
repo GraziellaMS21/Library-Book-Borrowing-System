@@ -315,7 +315,7 @@ foreach ($books_data as $book) {
                 <div class="flex-grow leading-tight">
                   <h3 class="text-xl font-bold text-red-800 mb-1 break-words"><a
                       href="viewBook.php?bookID=<?= $book["bookID"] ?>"><?= $book['book_title'] ?></a></h3>
-                  <p class="text-sm text-gray-700 break-words"><strong>Author:</strong> <?= $book['author'] ?></p>
+                  <p class="text-sm text-gray-700 break-words"><strong>Author:</strong> <?= htmlspecialchars($book['author_names'] ?? 'N/A') ?></p>
                   <p class="text-sm text-gray-700"><strong>Year:</strong>
                     <?= $book['publication_year'] ?></p>
 

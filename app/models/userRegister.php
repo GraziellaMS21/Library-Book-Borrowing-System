@@ -8,7 +8,10 @@ class Register extends Database
     public $middleIn = "";
     public $contact_no = "";
     public $id_number = "";
-    public $college_department = "";
+    
+    // CHANGED: Renamed from $college_department to $departmentID to match database foreign key
+    public $departmentID = ""; 
+    
     public $imageID_name = "";
     public $imageID_dir = "";
     public $email = "";
@@ -22,8 +25,9 @@ class Register extends Database
 
     public function addUser()
     {
-        $sql = "INSERT INTO users (lName, fName, middleIn, id_number, college_department, imageID_name, imageID_dir, contact_no, email, password, role, userTypeID, date_registered, registration_status) 
-                VALUES (:lName, :fName, :middleIn, :id_number, :college_department, :imageID_name, :imageID_dir, :contact_no, :email, :password, :role, :userTypeID, :date_registered, :registration_status)";
+        // CHANGED: SQL Query now uses departmentID instead of college_department
+        $sql = "INSERT INTO users (lName, fName, middleIn, id_number, departmentID, imageID_name, imageID_dir, contact_no, email, password, role, userTypeID, date_registered, registration_status) 
+                VALUES (:lName, :fName, :middleIn, :id_number, :departmentID, :imageID_name, :imageID_dir, :contact_no, :email, :password, :role, :userTypeID, :date_registered, :registration_status)";
 
         $query = $this->connect()->prepare($sql);
 
@@ -31,7 +35,10 @@ class Register extends Database
         $query->bindParam(":fName", $this->fName);
         $query->bindParam(":middleIn", $this->middleIn);
         $query->bindParam(":id_number", $this->id_number);
-        $query->bindParam(":college_department", $this->college_department);
+        
+        // CHANGED: Bind the new property
+        $query->bindParam(":departmentID", $this->departmentID);
+        
         $query->bindParam(":imageID_name", $this->imageID_name);
         $query->bindParam(":imageID_dir", $this->imageID_dir);
         $query->bindParam(":contact_no", $this->contact_no);
@@ -61,6 +68,14 @@ class Register extends Database
             return null;
     }
 
+    public function fetchDepartments()
+    {
+        $sql = "SELECT * FROM departments ORDER BY department_name ASC";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        return $query->fetchAll();
+    }
+
     public function isEmailExist($email)
     {
         $sql = "SELECT COUNT(userID) as total_users FROM users WHERE email = :email ";
@@ -78,3 +93,4 @@ class Register extends Database
             return false;
     }
 }
+?>

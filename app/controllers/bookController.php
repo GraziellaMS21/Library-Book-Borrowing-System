@@ -11,7 +11,16 @@ $upload_dir = __DIR__ . "/../../public/uploads/book_cover_images/";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $book["book_title"] = trim(htmlspecialchars($_POST["book_title"]));
-    $book["author"] = trim(htmlspecialchars($_POST["author"]));
+
+    // CAPTURE AUTHORS ARRAY
+    $authorsInput = $_POST["authors"] ?? [];
+    // Remove empty strings
+    $authorsInput = array_filter($authorsInput, function ($a) {
+        return !empty(trim($a)); });
+
+    // Save to book array for session persistence if error occurs
+    $book["authors"] = $authorsInput;
+
     $book["categoryID"] = trim(htmlspecialchars($_POST["categoryID"]));
     $book["publication_name"] = trim(htmlspecialchars($_POST["publication_name"]));
     $book["publication_year"] = trim(htmlspecialchars($_POST["publication_year"]));
@@ -20,9 +29,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $book["book_condition"] = trim(htmlspecialchars($_POST["book_condition"]));
     $book["replacement_cost"] = trim(htmlspecialchars($_POST["replacement_cost"]));
 
-    if (empty($book["author"])) {
-        $errors["author"] = "Author is required";
+
+    // VALIDATION
+    if (empty($authorsInput)) {
+        $errors["author"] = "At least one Author is required";
     }
+
     if (empty($book["categoryID"])) {
         $errors["categoryID"] = "Please Select a Category";
     }
@@ -47,7 +59,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (empty($book["book_condition"])) {
         $errors["book_condition"] = "Please Describe Book Condition";
     }
-    // NEW: Validate Replacement Cost
     if (empty($book["replacement_cost"]) || !is_numeric($book["replacement_cost"]) || $book["replacement_cost"] <= 0) {
         $errors["replacement_cost"] = "Replacement cost is required and must be a positive number.";
     }
@@ -72,7 +83,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (empty(array_filter($errors))) {
             if (move_uploaded_file($_FILES["book_cover"]["tmp_name"], $book_cover_full_path)) {
                 $bookObj->book_title = $book["book_title"];
-                $bookObj->author = $book["author"];
                 $bookObj->categoryID = $book["categoryID"];
                 $bookObj->publication_name = $book["publication_name"];
                 $bookObj->publication_year = $book["publication_year"];
@@ -82,9 +92,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $bookObj->date_added = date("Y-m-d");
                 $bookObj->book_cover_name = $book["book_cover_name"];
                 $bookObj->book_cover_dir = "public/uploads/book_cover_images/" . basename($book["book_cover_name"]);
-                $bookObj->replacement_cost = $book["replacement_cost"]; // NEW
+                $bookObj->replacement_cost = $book["replacement_cost"];
 
-                if ($bookObj->addBook()) {
+                // Pass authors array here
+                if ($bookObj->addBook($authorsInput, $book["publication_name"])) {
                     header("Location: ../../app/views/librarian/booksSection.php?success=add");
                     exit;
                 } else {
@@ -150,21 +161,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if (empty(array_filter($errors))) {
             $bookObj->book_title = $book["book_title"];
-            $bookObj->author = $book["author"];
+            // No need to set $bookObj->author anymore, we pass $authorsInput directly
             $bookObj->categoryID = $book["categoryID"];
             $bookObj->publication_name = $book["publication_name"];
             $bookObj->publication_year = $book["publication_year"];
             $bookObj->ISBN = $book["ISBN"];
             $bookObj->book_copies = $book["book_copies"];
             $bookObj->book_condition = $book["book_condition"];
-            $bookObj->replacement_cost = $book["replacement_cost"]; // NEW
+            $bookObj->replacement_cost = $book["replacement_cost"];
 
             $bookObj->book_cover_name = $new_cover_name;
             $bookObj->book_cover_dir = $new_cover_dir;
 
             $update_image = ($new_cover_name != $existing_cover_name);
 
-            if ($bookObj->editBook($bookID, $update_image)) {
+            // PASS $authorsInput to editBook
+            if ($bookObj->editBook($bookID, $authorsInput, $update_image)) {
                 header("Location: ../../app/views/librarian/booksSection.php?success=edit");
                 exit;
             } else {
@@ -194,11 +206,10 @@ if ($action === 'delete' && isset($_GET['id'])) {
         header("Location: ../../app/views/librarian/booksSection.php?success=delete");
         exit;
     } else {
-        // Changed alert to session error and redirect
         $_SESSION["errors"] = ["general" => "Failed to delete book."];
         header("Location: ../../app/views/librarian/booksSection.php?error=delete");
         exit;
     }
-    
+
 }
 ?>

@@ -7,7 +7,7 @@
       </div>
 
       <ul class="nav-links flex gap-8 list-none">
-          <li><a href="#">Home</a></li>
+          <li><a href="../index.php">Home</a></li>
           <li><a href="#">About</a></li>
           <li><a href="#">Services</a></li>
           <li><a href="contact.php">Contact</a></li>

@@ -3,11 +3,9 @@ require_once(__DIR__ . "/../../config/database.php");
 
 class Book extends Database
 {
-
     public $book_title = "";
-    public $author = "";
     public $categoryID = "";
-    public $publication_name = "";
+    public $publication_name = ""; 
     public $publication_year = "";
     public $ISBN = "";
     public $book_copies = "";
@@ -18,66 +16,174 @@ class Book extends Database
     public $replacement_cost = "";
 
     protected $db;
-    public function addBook()
+
+    // --- HELPER FUNCTION FOR AUTHOR FORMATTING ---
+    private function formatAuthorString($author_names) {
+        if (empty($author_names)) return "";
+        
+        $authors = explode(', ', $author_names);
+        $count = count($authors);
+
+        if ($count == 2) {
+            return $authors[0] . ' and ' . $authors[1];
+        } elseif ($count > 2) {
+            $last = array_pop($authors);
+            return implode(', ', $authors) . ', and ' . $last;
+        }
+        return $author_names;
+    }
+    // ---------------------------------------------
+
+    public function addBook($authorsArray, $publisherName)
     {
-        $sql = "INSERT INTO books (book_title, author, categoryID, publication_name, publication_year, ISBN, book_copies, book_condition, date_added, book_cover_name, book_cover_dir, replacement_cost) VALUES (:book_title, :author, :categoryID, :publication_name, :publication_year, :ISBN, :book_copies, :book_condition, :date_added, :book_cover_name, :book_cover_dir, :replacement_cost)";
-        $query = $this->connect()->prepare($sql);
+        $pdo = $this->connect();
+        try {
+            $pdo->beginTransaction();
+            $pubID = $this->getOrCreatePublisher($publisherName);
 
+            $sql = "INSERT INTO books (book_title, publisherID, categoryID, publication_year, ISBN, book_copies, book_condition, date_added, book_cover_name, book_cover_dir, replacement_cost) 
+                    VALUES (:book_title, :publisherID, :categoryID, :publication_year, :ISBN, :book_copies, :book_condition, :date_added, :book_cover_name, :book_cover_dir, :replacement_cost)";
+            
+            $query = $pdo->prepare($sql);
+            $query->bindValue(":book_title", $this->book_title);
+            $query->bindValue(":publisherID", $pubID);
+            $query->bindValue(":categoryID", $this->categoryID);
+            $query->bindValue(":publication_year", $this->publication_year);
+            $query->bindValue(":ISBN", $this->ISBN);
+            $query->bindValue(":book_copies", $this->book_copies);
+            $query->bindValue(":book_condition", $this->book_condition);
+            $query->bindValue(":date_added", $this->date_added);
+            $query->bindValue(":book_cover_name", $this->book_cover_name);
+            $query->bindValue(":book_cover_dir", $this->book_cover_dir);
+            $query->bindValue(":replacement_cost", $this->replacement_cost);
+            $query->execute();
+            
+            $newBookID = $pdo->lastInsertId();
 
-        $query->bindParam(":book_title", $this->book_title);
-        $query->bindParam(":author", $this->author);
-        $query->bindParam(":categoryID", $this->categoryID);
-        $query->bindParam(":publication_name", $this->publication_name);
-        $query->bindParam(":publication_year", $this->publication_year);
-        $query->bindParam(":ISBN", $this->ISBN);
-        $query->bindParam(":book_copies", $this->book_copies);
-        $query->bindParam(":book_condition", $this->book_condition);
-        $query->bindParam(":date_added", $this->date_added);
-        $query->bindParam(":book_cover_name", $this->book_cover_name);
-        $query->bindParam(":book_cover_dir", $this->book_cover_dir);
-        $query->bindParam(":replacement_cost", $this->replacement_cost);
-        return $query->execute();
+            $sqlAuthor = "INSERT INTO book_authors (bookID, authorID) VALUES (:bookID, :authorID)";
+            $stmtAuthor = $pdo->prepare($sqlAuthor);
+
+            foreach ($authorsArray as $authorName) {
+                if(!empty(trim($authorName))) {
+                    $authID = $this->getOrCreateAuthor($authorName);
+                    $stmtAuthor->execute([':bookID' => $newBookID, ':authorID' => $authID]);
+                }
+            }
+            $pdo->commit();
+            return true;
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            return false;
+        }
+    }
+
+    public function editBook($pid, $authorsArray, $update_image = false)
+    {
+        $pdo = $this->connect();
+        try {
+            $pdo->beginTransaction();
+            $pubID = $this->getOrCreatePublisher($this->publication_name);
+
+            $sql = "UPDATE books SET 
+                    book_title = :book_title, 
+                    publisherID = :publisherID, 
+                    categoryID = :categoryID, 
+                    publication_year = :publication_year, 
+                    ISBN = :ISBN, 
+                    book_copies = :book_copies, 
+                    book_condition = :book_condition, 
+                    replacement_cost = :replacement_cost";
+
+            if ($update_image) {
+                $sql .= ", book_cover_name = :book_cover_name, book_cover_dir = :book_cover_dir";
+            }
+            $sql .= " WHERE bookID = :bookID";
+
+            $query = $pdo->prepare($sql);
+            $query->bindValue(":book_title", $this->book_title);
+            $query->bindValue(":publisherID", $pubID);
+            $query->bindValue(":categoryID", $this->categoryID);
+            $query->bindValue(":publication_year", $this->publication_year);
+            $query->bindValue(":ISBN", $this->ISBN);
+            $query->bindValue(":book_copies", $this->book_copies);
+            $query->bindValue(":book_condition", $this->book_condition);
+            $query->bindValue(":replacement_cost", $this->replacement_cost);
+            $query->bindValue(":bookID", $pid);
+
+            if ($update_image) {
+                $query->bindValue(":book_cover_name", $this->book_cover_name);
+                $query->bindValue(":book_cover_dir", $this->book_cover_dir);
+            }
+            $query->execute();
+
+            // Update Authors
+            $delSql = "DELETE FROM book_authors WHERE bookID = :bookID";
+            $delQuery = $pdo->prepare($delSql);
+            $delQuery->execute([':bookID' => $pid]);
+
+            $sqlAuthor = "INSERT INTO book_authors (bookID, authorID) VALUES (:bookID, :authorID)";
+            $stmtAuthor = $pdo->prepare($sqlAuthor);
+
+            foreach ($authorsArray as $authorName) {
+                if(!empty(trim($authorName))) {
+                    $authID = $this->getOrCreateAuthor($authorName);
+                    $stmtAuthor->execute([':bookID' => $pid, ':authorID' => $authID]);
+                }
+            }
+            $pdo->commit();
+            return true;
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            return false;
+        }
     }
 
     public function viewBook($search = "", $category = "")
     {
-        if ($search != "" && $category != "") { //both search and category exists
-            $sql = "SELECT b.*, c.category_name
-                FROM books b 
-                JOIN category c ON b.categoryID = c.categoryID
-                WHERE b.book_title LIKE CONCAT('%', :search, '%') 
-                  AND c.categoryID = :category
-                ORDER BY b.book_title ASC";
-        } else if ($search != "") { // only search of books or category exist
-            $sql = "SELECT b.*, c.category_name
-                FROM books b 
-                JOIN category c ON b.categoryID = c.categoryID
-                WHERE b.book_title LIKE CONCAT('%', :search, '%')
-                ORDER BY b.book_title ASC";
-        } else if ($category != "") { //searching for books by category
-            $sql = "SELECT b.*, c.category_name
-                FROM books b 
-                JOIN category c ON b.categoryID = c.categoryID
-                WHERE c.categoryID = :category
-                ORDER BY b.book_title ASC";
-        } else { //general search
-            $sql = "SELECT b.*, c.category_name
-                FROM books b 
-                JOIN category c ON b.categoryID = c.categoryID
-                ORDER BY b.book_title ASC";
+        $sql = "SELECT b.*, 
+                   c.category_name, 
+                   p.publisher_name,
+                   GROUP_CONCAT(a.author_name SEPARATOR ', ') AS author_names
+            FROM books b 
+            LEFT JOIN category c ON b.categoryID = c.categoryID
+            LEFT JOIN publishers p ON b.publisherID = p.publisherID
+            LEFT JOIN book_authors ba ON b.bookID = ba.bookID
+            LEFT JOIN authors a ON ba.authorID = a.authorID";
+
+        $conditions = [];
+
+        if ($search != "") {
+            $conditions[] = "(b.book_title LIKE CONCAT('%', :search, '%') 
+                      OR a.author_name LIKE CONCAT('%', :search, '%'))";
         }
+        if ($category != "") {
+            $conditions[] = "c.categoryID = :category";
+        }
+
+        if (count($conditions) > 0) {
+            $sql .= " WHERE " . implode(" AND ", $conditions);
+        }
+
+        $sql .= " GROUP BY b.bookID ORDER BY b.book_title ASC";
 
         $query = $this->connect()->prepare($sql);
 
-        if ($search != "") {
+        if ($search != "")
             $query->bindParam(":search", $search);
-        }
-        if ($category != "") {
+        if ($category != "")
             $query->bindParam(":category", $category);
-        }
 
         if ($query->execute()) {
-            return $query->fetchAll();
+            $results = $query->fetchAll();
+
+            // Format author names for display
+            foreach ($results as &$row) {
+                if (!empty($row['author_names'])) {
+                    $row['author_names'] = $this->formatAuthorString($row['author_names']);
+                }
+            }
+
+            return $results;
         } else {
             return null;
         }
@@ -86,7 +192,6 @@ class Book extends Database
     public function deleteBook($pid)
     {
         $book = $this->fetchBook($pid);
-
         $sql = "DELETE FROM books WHERE bookID = :id";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":id", $pid);
@@ -101,40 +206,71 @@ class Book extends Database
         return $result;
     }
 
-    public function editBook($pid, $update_image = false)
+    // Updated to support multiple authors
+    public function showThreeBooks($categoryID)
     {
-        $sql = "UPDATE books SET book_title = :book_title,  author = :author,  categoryID = :categoryID, publication_name = :publication_name,  publication_year = :publication_year,  ISBN = :ISBN, book_copies = :book_copies, book_condition = :book_condition, replacement_cost = :replacement_cost";
-
-        if ($update_image) {
-            $sql .= ", book_cover_name = :book_cover_name, book_cover_dir = :book_cover_dir";
-        }
-        $sql .= " WHERE bookID = :bookID";
+        $sql = "SELECT b.*, c.category_name,
+                       GROUP_CONCAT(a.author_name SEPARATOR ', ') as author_names
+                FROM books b 
+                JOIN category c ON b.categoryID = c.categoryID 
+                LEFT JOIN book_authors ba ON b.bookID = ba.bookID
+                LEFT JOIN authors a ON ba.authorID = a.authorID
+                WHERE b.categoryID = :categoryID 
+                GROUP BY b.bookID
+                ORDER BY b.book_title ASC 
+                LIMIT 3";
 
         $query = $this->connect()->prepare($sql);
+        $query->bindParam(":categoryID", $categoryID);
 
-        $query->bindParam(":book_title", $this->book_title);
-        $query->bindParam(":author", $this->author);
-        $query->bindParam(":categoryID", $this->categoryID);
-        $query->bindParam(":publication_name", $this->publication_name);
-        $query->bindParam(":publication_year", $this->publication_year);
-        $query->bindParam(":ISBN", $this->ISBN);
-        $query->bindParam(":book_copies", $this->book_copies);
-        $query->bindParam(":book_condition", $this->book_condition);
-        $query->bindParam(":replacement_cost", $this->replacement_cost); // NEW BINDING
-
-        if ($update_image) {
-            $query->bindParam(":book_cover_name", $this->book_cover_name);
-            $query->bindParam(":book_cover_dir", $this->book_cover_dir);
+        if ($query->execute()) {
+            $results = $query->fetchAll();
+             // Format author names for display
+             foreach ($results as &$row) {
+                if (!empty($row['author_names'])) {
+                    $row['author_names'] = $this->formatAuthorString($row['author_names']);
+                }
+            }
+            return $results;
+        } else {
+            return null;
         }
-
-        $query->bindParam(":bookID", $pid);
-
-        return $query->execute();
     }
 
-    //====HELPER FUNCTIONS====
-    public function countTotalDistinctBooks()
-    {
+    // Get raw array for editing
+    public function fetchBookAuthors($bookID) {
+        $sql = "SELECT a.author_name 
+                FROM authors a 
+                JOIN book_authors ba ON a.authorID = ba.authorID 
+                WHERE ba.bookID = :bookID";
+        $query = $this->connect()->prepare($sql);
+        $query->execute([':bookID' => $bookID]);
+        return $query->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    public function getOrCreatePublisher($name) {
+        $name = trim($name);
+        $stmt = $this->connect()->prepare("SELECT publisherID FROM publishers WHERE publisher_name = :name");
+        $stmt->execute([':name' => $name]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row) return $row['publisherID'];
+        $stmt = $this->connect()->prepare("INSERT INTO publishers (publisher_name) VALUES (:name)");
+        $stmt->execute([':name' => $name]);
+        return $this->connect()->lastInsertId();
+    }
+
+    public function getOrCreateAuthor($name) {
+        $name = trim($name);
+        $stmt = $this->connect()->prepare("SELECT authorID FROM authors WHERE author_name = :name");
+        $stmt->execute([':name' => $name]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row) return $row['authorID'];
+        $stmt = $this->connect()->prepare("INSERT INTO authors (author_name) VALUES (:name)");
+        $stmt->execute([':name' => $name]);
+        return $this->connect()->lastInsertId();
+    }
+
+    public function countTotalDistinctBooks() {
         $sql = "SELECT COUNT(book_title) AS total_books FROM books";
         $query = $this->connect()->prepare($sql);
         $query->execute();
@@ -142,140 +278,105 @@ class Book extends Database
         return $result['total_books'] ?? 0;
     }
 
-    public function countTotalBookCopies()
-    {
-        $sql = "SELECT 
-                (SELECT SUM(book_copies) FROM books) AS total_books";
+    public function countTotalBookCopies() {
+        $sql = "SELECT (SELECT SUM(book_copies) FROM books) AS total_books";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         $result = $query->fetch(PDO::FETCH_ASSOC);
         return $result['total_books'] ?? 0;
     }
 
-
-    public function fetchCategory()
-    {
+    public function fetchCategory() {
         $sql = "SELECT * FROM category";
         $query = $this->connect()->prepare($sql);
         if ($query->execute()) {
             return $query->fetchAll();
-        } else
-            return null;
+        } else return null;
     }
 
     public function fetchBook($bookID)
     {
-        $sql = "SELECT books.*, category.category_name FROM books JOIN category ON books.categoryID = category.categoryID WHERE bookID = :bookID";
+        $sql = "SELECT b.*, 
+                       c.category_name,
+                       p.publisher_name as publication_name,
+                       GROUP_CONCAT(a.author_name SEPARATOR ', ') as author_names
+                FROM books b 
+                LEFT JOIN category c ON b.categoryID = c.categoryID
+                LEFT JOIN publishers p ON b.publisherID = p.publisherID
+                LEFT JOIN book_authors ba ON b.bookID = ba.bookID
+                LEFT JOIN authors a ON ba.authorID = a.authorID
+                WHERE b.bookID = :bookID
+                GROUP BY b.bookID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(':bookID', $bookID);
         $query->execute();
-        return $query->fetch();
+        $result = $query->fetch();
+
+        // Apply author formatting to the single result
+        if ($result && !empty($result['author_names'])) {
+            $result['author_names'] = $this->formatAuthorString($result['author_names']);
+        }
+
+        return $result;
     }
 
-    public function fetchBookTitles()
-    {
+    public function fetchBookTitles() {
         $sql = "SELECT bookID, book_title FROM books";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         return $query->fetchAll();
     }
 
-    public function isTitleExist($book_title, $bookID = "")
-    {
+    public function isTitleExist($book_title, $bookID = "") {
         if ($bookID) {
             $sql = "SELECT COUNT(bookID) as total_books FROM books  WHERE book_title = :book_title AND bookID <> :bookID";
         } else {
             $sql = "SELECT COUNT(bookID) as total_books FROM books WHERE book_title = :book_title";
         }
-
         $query = $this->connect()->prepare($sql);
-        $record = NULL;
-
         $query->bindParam(":book_title", $book_title);
-
-        if ($bookID) {
-            $query->bindParam(":bookID", $bookID);
-        }
-
+        if ($bookID) $query->bindParam(":bookID", $bookID);
         if ($query->execute()) {
             $record = $query->fetch();
+            return ($record["total_books"] > 0);
         }
-
-        if ($record["total_books"] > 0) {
-            return true;
-        } else
-            return false;
+        return false;
     }
 
-    public function showThreeBooks($categoryID)
-    {
-        $sql = "SELECT b.*, c.category_name 
-                FROM books b 
-                JOIN category c ON b.categoryID = c.categoryID 
-                WHERE b.categoryID = :categoryID 
-                ORDER BY b.book_title ASC 
-                LIMIT 3";
-
-        $query = $this->connect()->prepare($sql);
-        $query->bindParam(":categoryID", $categoryID);
-
-
-        if ($query->execute()) {
-            return $query->fetchAll();
-        } else {
-            return null;
-        }
-    }
-
-    public function countBooksByCategory($categoryID)
-    {
+    public function countBooksByCategory($categoryID) {
         $sql = "SELECT COUNT(*) AS total FROM books WHERE categoryID = :categoryID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(':categoryID', $categoryID);
-        $result = NULL;
-
         $query->execute();
         $result = $query->fetch();
-
         return $result['total'] ?? 0;
     }
 
-    public function decrementBookCopies($bookID, $quantity)
-    {
+    public function decrementBookCopies($bookID, $quantity) {
         $sql = "UPDATE books SET book_copies = book_copies - :quantity WHERE bookID = :bookID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":quantity", $quantity);
         $query->bindParam(":bookID", $bookID);
-
         return $query->execute();
     }
 
-    public function incrementBookCopies($bookID, $quantity)
-    {
+    public function incrementBookCopies($bookID, $quantity) {
         $sql = "UPDATE books SET book_copies = book_copies + :quantity WHERE bookID = :bookID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":quantity", $quantity);
         $query->bindParam(":bookID", $bookID);
-
         return $query->execute();
     }
 
-
-    public function fetchBookReplacementCost($bookID)
-    {
+    public function fetchBookReplacementCost($bookID) {
         $sql = "SELECT replacement_cost FROM books WHERE bookID = :bookID";
-
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":bookID", $bookID, PDO::PARAM_INT);
         $query->execute();
-
-        $cost = $query->fetchColumn(0);
-
-        return (float) $cost;
+        return (float) $query->fetchColumn(0);
     }
 
-    public function getTopPopularCategories($limit = 5)
-    {
+    public function getTopPopularCategories($limit = 5) {
         $sql = "SELECT c.category_name, COUNT(bd.borrowID) AS borrow_count
                 FROM borrowing_details bd
                 JOIN books b ON bd.bookID = b.bookID
@@ -289,8 +390,7 @@ class Book extends Database
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getTopCategoryName()
-    {
+    public function getTopCategoryName() {
         $sql = "SELECT c.category_name
                 FROM borrowing_details bd
                 JOIN books b ON bd.bookID = b.bookID
@@ -304,3 +404,4 @@ class Book extends Database
         return $result['category_name'] ?? 'N/A';
     }
 }
+?>

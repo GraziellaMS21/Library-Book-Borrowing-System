@@ -319,7 +319,7 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                         </td>
 
                                         <td class="py-4 px-4 hidden sm:table-cell text-gray-700 whitespace-normal">
-                                            <?= htmlspecialchars($book['author']) ?>
+                                            <?= htmlspecialchars($book['author_names'] ?? $book['author'] ?? 'N/A') ?>
                                         </td>
 
                                         <td class="py-4 px-4 text-gray-700">

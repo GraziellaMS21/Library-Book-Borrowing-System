@@ -9,6 +9,9 @@ require_once(__DIR__ . "/../../models/manageUsers.php");
 $userObj = new User();
 $userTypes = $userObj->fetchUserTypes();
 
+// [3NF Update] Fetch departments for the dropdown list
+$departments = $userObj->fetchDepartments(); 
+
 $old = $_SESSION["old"] ?? [];
 $errors = $_SESSION["errors"] ?? [];
 $success_modal = $_GET['success'] ?? false;
@@ -129,13 +132,13 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                                 <th>Email</th>
                                 <th>ID Image</th>
                                 <th>User Type</th>
-                                <th>Date Reg.</th>
+                                <th>Department</th> <th>Date Reg.</th>
                                 <th>Actions</th>
                             </tr>
 
                             <?php
                             $no = 1;
-                            $colspan = 8;
+                            $colspan = 9; // Updated colspan
 
                             if (empty($users)): ?>
                                 <tr>
@@ -161,6 +164,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                                             <?php } ?>
                                         </td>
                                         <td><?= $user["type_name"] ?></td>
+                                        <td><?= htmlspecialchars($user['department_name'] ?? 'N/A') ?></td>
                                         <td><?= $user['date_registered'] ?? 'N/A' ?></td>
                                         <td class="action text-center">
 
@@ -327,8 +331,15 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                 </div>
 
                 <div class="input col-span-2">
-                    <label for="college_department">College/Department : </label>
-                    <input type="text" class="input-field" name="college_department" id="edit_college_department" value="<?= $modal_user["college_department"] ?? '' ?>">
+                    <label for="departmentID">College/Department : </label>
+                    <select name="departmentID" id="edit_departmentID" class="input-field">
+                        <option value="">---Select Department---</option>
+                        <?php foreach ($departments as $dept) {
+                            // Check if this department matches the user's current departmentID
+                            $selected = (($modal_user['departmentID'] ?? '') == $dept['departmentID']) ? 'selected' : '';
+                            echo "<option value='{$dept['departmentID']}' {$selected}>{$dept['department_name']}</option>";
+                        } ?>
+                    </select>
                 </div>
 
                 <div class="input">
@@ -389,7 +400,9 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                 <p><strong>Contact No.:</strong> <?= $modal_user['contact_no'] ?? 'N/A' ?></p>
                 <p><strong>User Type:</strong> <?= $modal_user['type_name'] ?? 'N/A' ?></p>
                 <p><strong>Role:</strong> <?= $modal_user['role'] ?? 'N/A' ?></p>
-                <p><strong>College/Department:</strong> <?= $modal_user['college_department'] ?? 'N/A' ?></p>
+                
+                <p><strong>College/Department:</strong> <?= htmlspecialchars($modal_user['department_name'] ?? 'N/A') ?></p>
+                
                 <p><strong>Account Status:</strong> <span class="font-bold text-red-800"><?= $modal_user['account_status'] ?? 'N/A' ?></span></p>
                 <p><strong>Date Registered:</strong> <?= $modal_user['date_registered'] ?? 'N/A' ?></p>
                 <?php if(!empty($modal_user['status_reason'])): ?>

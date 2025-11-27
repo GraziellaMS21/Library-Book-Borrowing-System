@@ -1,154 +1,121 @@
-<?php
-session_start();
-if (isset($_SESSION["user_id"])) {
-    header("Location: ../app/views/borrower/catalogue.php");
-    exit;
-}
-
-$errors = $_SESSION["errors"] ?? [];
-unset($_SESSION["errors"]);
-
-// Get the status from the URL query
-$status_message = $_GET['status'] ?? '';
-$open_modal = '';
-
-if ($status_message === 'pending') {
-    $open_modal = 'pendingModal';
-}else if ($status_message === 'rejected') {
-    $open_modal = 'rejectedModal';
-}
-// Note: We don't set a modal for 'blocked' since the controller redirects directly to blockedPage.php
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log In</title>
+    <title>WMSU Library - Home</title>
+
     <script src="../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../public/assets/css/login.css">
+    <link rel="stylesheet" href="../../public/assets/css/styles.css">
+
     <link rel="stylesheet" href="../../public/assets/css/header_footer2.css">
-    <style>
-        /* Basic modal styling (copied from register.php) */
-        .modal {
-            display: none;
-            /* Hidden by default */
-            position: fixed;
-            z-index: 100;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.4);
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal.open {
-            display: flex;
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 400px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            position: relative;
-        }
-    </style>
 </head>
 
 <body>
-    <div class="color-layer"></div>
-
-    <?php require_once(__DIR__ . '/shared/header.php'); ?>
-
-    <main class="flex justify-center items-center">
-        <div class="form-container flex justify-center">
-            <div class="info-section w-1/2 flex flex-col justify-center items-center">
-                <div class="image">
-                    <img src="../../public/assets/images/bg.png" alt="Background Image">
-                </div>
+    <!-- includes/header.php -->
+    <header class="m-0">
+        <nav class="navbar flex justify-between items-center bg-white fixed top-0 left-0 w-full z-10">
+            <div class="logo-section flex items-center gap-3">
+                <img src="../../public/assets/images/logo.png" alt="Logo" class="logo">
+                <h2 class="title font-extrabold text-2xl text-red-900">WMSU LIBRARY</h2>
             </div>
 
-            <div class="form-section w-1/2 flex flex-col justify-center items-center">
-                <h1 class="font-extrabold">LOG IN</h1>
-                <form action="../../app/controllers/loginController.php" method="POST">
-                    <p class="errors" name="invalid"><?= $errors["invalid"] ?? "" ?></p>
+            <ul class="nav-links flex gap-8 list-none">
+                <li><a href="index.php">Home</a></li>
+                <li><a href="#">About</a></li>
+                <li><a href="#">Services</a></li>
+                <li><a href="borrower/contact.php">Contact</a></li>
+            </ul>
 
-                    <div class="input">
-                        <label for="email">Email:</label>
-                        <input type="text" class="input-field" name="email">
-                        <p class="errors"><?= $errors["email"] ?? "" ?></p>
-                    </div>
-                    <div class="input">
-                        <label for="password">Password:</label>
-                        <input type="password" class="input-field" name="password">
-                        <p class="errors"><?= $errors["password"] ?? "" ?></p>
-                    </div>
-
-                    <br>
-                    <input type="submit" value="Log In" class="font-bold cursor-pointer mb-8 border-none rounded-lg">
-
-                    <div class="register py-5 text-center flex justify-center font-bold">
-                        <p>Don't Have an Account Yet?
-                            <span><a href="../../../app/views/borrower/register.php">Register Account</a></span>
-                        </p>
-                    </div>
-                </form>
+            <div class="burger flex flex-col justify-between cursor-pointer">
+                <span></span>
+                <span></span>
+                <span></span>
             </div>
-        </div>
-    </main>
+        </nav>
+    </header>
 
-    <!-- NEW PENDING MODAL -->
-    <div id="pendingModal" class="modal <?= $open_modal == 'pendingModal' ? 'open' : '' ?>">
-        <div class="modal-content text-center">
-            <h2 class="text-2xl font-bold mb-4 text-orange-700">Account Pending</h2>
 
-            <p class="mb-6 text-gray-700">
-                Your account is currently <strong class="text-orange-600">Pending Approval</strong>.
-            </p>
-            <p class="mb-6 text-gray-700 font-semibold">
-                Please wait for the administrator to review and confirm your registration.
-            </p>
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title font-extrabold">WMSU Library</h1>
+            <p class="hero-subtitle">Home of a Wealthy Knowledge</p>
 
-            <div class="flex justify-center mt-6">
-                <button id="closePendingModalBtn"
-                    class="bg-red-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
-                    Close
+            <form action="catalogue.php" method="GET" class="search-container">
+                <input type="text" name="q" class="search-input" placeholder="Search for books, authors, or ISBN...">
+                <button type="submit" class="search-btn">
+                    <i class="fa-solid fa-magnifying-glass"></i> Search
                 </button>
+            </form>
+        </div>
+    </section>
+
+    <section class="info-section">
+        <div class="info-card">
+            <div class="icon-wrapper">
+                <i class="fa-solid fa-book-open"></i>
+            </div>
+            <h3 class="card-title">Extensive Catalogue</h3>
+            <p class="card-text">
+                Explore thousands of resources. From academic textbooks to rare historical records, find exactly what
+                you need for your studies.
+            </p>
+        </div>
+
+        <div class="info-card">
+            <div class="icon-wrapper">
+                <i class="fa-solid fa-clock"></i>
+            </div>
+            <h3 class="card-title">Real-time Availability</h3>
+            <p class="card-text">
+                Check book status instantly. Reserve items online and pick them up at the counter to save time.
+            </p>
+        </div>
+
+        <div class="info-card">
+            <div class="icon-wrapper">
+                <i class="fa-solid fa-laptop-file"></i>
+            </div>
+            <h3 class="card-title">Manage Your Loans</h3>
+            <p class="card-text">
+                Track your borrowed items, avoid fines with due date reminders, and view your reading history through
+                your personal dashboard.
+            </p>
+        </div>
+    </section>
+
+    <section class="cta-banner">
+        <h2 style="font-size: 2.5rem; font-weight: bold; margin-bottom: 1rem;">Start Your Learning Journey Today</h2>
+        <p style="font-size: 1.1rem; opacity: 0.9;">Browse our collection or manage your account online.</p>
+
+        <div style="margin-top: 2rem;">
+            <a href="catalogue.php" class="cta-btn">Browse Catalogue</a>
+            <?php if (!isset($_SESSION['user_id'])): ?>
+                <a href="login.php" class="cta-btn"
+                    style="background: transparent; border: 2px solid white; color: white; margin-left: 10px;">Login</a>
+            <?php endif; ?>
+        </div>
+    </section>
+
+    <footer class="footer !m-0 text-white">
+        <div class="footer-container flex flex-col md:flex-row justify-between items-center gap-4 px-8 py-6">
+            <div class="footer-left text-center md:text-left">
+                <h3 class="text-xl font-bold tracking-wide text-white">WMSU Library System</h3>
+                <p class="line opacity-90">Home of a Wealthy Knowledge</p>
+            </div>
+
+            <div class="footer-center flex gap-6 text-sm font-semibold">
+                <a href="#">Home</a>
+                <a href="#">About</a>
+                <a href="contact.php">Contact</a>
+            </div>
+
+            <div class="footer-right text-sm text-center md:text-right opacity-90">
+                <p>©2025 WMSU Library. All Rights Reserved.</p>
             </div>
         </div>
-    </div>
-
-    <div id="rejectedModal" class="modal <?= $open_modal == 'rejectedModal' ? 'open' : '' ?>">
-        <div class="modal-content text-center">
-            <h2 class="text-2xl font-bold mb-4 text-red-700">Account Rejected</h2>
-
-            <p class="mb-6 text-gray-700">
-                Your account is <strong class="text-red-600">REJECTED</strong>.
-            </p>
-            <p class="mb-6 text-gray-700 font-semibold">
-                Please contact for the administrator to review your registration.
-            </p>
-
-            <div class="flex justify-center mt-6">
-                <button id="closeRejectedModalBtn"
-                    class="bg-red-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
-                    Close
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <?php require_once(__DIR__ . 'sha/red/footer.php'); ?>
+    </footer>
 </body>
-<script src="../../public/assets/js/header_footer.js"></script>
+
 </html>

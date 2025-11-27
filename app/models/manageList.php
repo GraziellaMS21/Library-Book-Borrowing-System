@@ -5,15 +5,20 @@ class BorrowLists extends Database
 {
     public $userID = "";
     public $bookID = "";
-    public $no_of_copies = 1; // New property for copies
+    public $no_of_copies = 1; 
     public $date_added = "";
 
     public function fetchAllBorrrowList($userID)
     {
-        $sql = "SELECT bl.*, b.book_title, b.author, b.book_condition, b.book_copies, b.book_cover_dir
+        // Added JOIN to book_authors and authors, and GROUP BY to concatenate names
+        $sql = "SELECT bl.*, b.book_title, b.book_condition, b.book_copies, b.book_cover_dir,
+                       GROUP_CONCAT(a.author_name SEPARATOR ', ') as author_names
                 FROM borrowing_lists bl
                 JOIN books b ON bl.bookID = b.bookID
+                LEFT JOIN book_authors ba ON b.bookID = ba.bookID
+                LEFT JOIN authors a ON ba.authorID = a.authorID
                 WHERE bl.userID = :userID
+                GROUP BY bl.listID
                 ORDER BY bl.date_added DESC";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":userID", $userID);
@@ -37,7 +42,7 @@ class BorrowLists extends Database
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":userID", $this->userID);
         $query->bindParam(":bookID", $this->bookID);
-        $query->bindParam(":no_of_copies", $this->no_of_copies); // New binding
+        $query->bindParam(":no_of_copies", $this->no_of_copies); 
         $query->bindParam(":date_added", $this->date_added);
 
         return $query->execute();
@@ -46,19 +51,15 @@ class BorrowLists extends Database
     public function editBorrrowListCopies($listID)
     {
         $sql = "UPDATE borrowing_lists SET no_of_copies = :no_of_copies WHERE listID = :listID";
-
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":no_of_copies", $this->no_of_copies);
         $query->bindParam(":listID", $listID);
-
         return $query->execute();
     }
 
-    // Corrected the bug in the original file (removed unnecessary bindings)
     public function editBorrrowList($listID)
     {
         $sql = "UPDATE borrowing_lists SET no_of_copies = :no_of_copies WHERE listID = :listID";
-
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":no_of_copies", $this->no_of_copies);
         $query->bindParam(":listID", $listID);
@@ -81,3 +82,4 @@ class BorrowLists extends Database
         return $query->execute();
     }
 }
+?>

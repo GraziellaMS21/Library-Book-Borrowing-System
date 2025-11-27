@@ -13,7 +13,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $register["fName"] = trim(htmlspecialchars($_POST["fName"] ?? ''));
     $register["middleIn"] = trim(htmlspecialchars($_POST["middleIn"] ?? ''));
     $register["id_number"] = trim(htmlspecialchars($_POST["id_number"] ?? ''));
-    $register["college_department"] = trim(htmlspecialchars($_POST["college_department"] ?? ''));
+    $register["departmentID"] = trim(htmlspecialchars($_POST["departmentID"] ?? ''));
     $register["contact_no"] = trim(htmlspecialchars($_POST["contact_no"] ?? ''));
     $register["email"] = trim(htmlspecialchars($_POST["email"] ?? ''));
     $register["password"] = trim(htmlspecialchars($_POST["password"] ?? ''));
@@ -45,8 +45,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $errors["id_number"] = "ID Number Format is Invalid";
         }
 
-        if (empty($register["college_department"])) {
-            $errors["college_department"] = "College/Department is required";
+        if (empty($register["departmentID"])) {
+            $errors["departmentID"] = "College/Department is required";
         }
     }
 
@@ -57,8 +57,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $errors["id_number"] = "ID Number Format is Invalid";
         }
 
-        if (empty($register["college_department"])) {
-            $errors["college_department"] = "College/Department is required";
+        if (empty($register["departmentID"])) {
+            $errors["departmentID"] = "College/Department is required";
         }
     }
 
@@ -106,8 +106,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             $registerObj->middleIn = empty($register["middleIn"]) ? NULL : $register["middleIn"];
             $registerObj->id_number = empty($register["id_number"]) ? NULL : $register["id_number"];
-            $registerObj->college_department = empty($register["college_department"]) ? NULL : $register["college_department"];
-//
+            $registerObj->departmentID = empty($register["departmentID"]) ? NULL : $register["departmentID"];
 
             $registerObj->imageID_name = $register["imageID_name"];
             $registerObj->imageID_dir = "public/uploads/id_images/" . basename($register["imageID_name"]);

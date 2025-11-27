@@ -42,7 +42,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $user["fName"] = trim(htmlspecialchars($_POST["fName"] ?? ''));
         $user["middleIn"] = trim(htmlspecialchars($_POST["middleIn"] ?? ''));
         $user["contact_no"] = trim(htmlspecialchars($_POST["contact_no"] ?? ''));
-        $user["college_department"] = trim(htmlspecialchars($_POST["college_department"] ?? ''));
+        // CHANGED: Accept departmentID instead of string
+        $user["departmentID"] = trim(htmlspecialchars($_POST["departmentID"] ?? ''));
         $user["email"] = trim(htmlspecialchars($_POST["email"] ?? ''));
         $user["userTypeID"] = trim(htmlspecialchars($_POST["userTypeID"] ?? ''));
         $user["role"] = trim(htmlspecialchars($_POST["role"] ?? ''));
@@ -106,7 +107,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $userObj->fName = $user["fName"];
                 $userObj->middleIn = $user["middleIn"];
                 $userObj->contact_no = $user["contact_no"];
-                $userObj->college_department = $user["college_department"];
+                // CHANGED: Set departmentID property
+                $userObj->departmentID = $user["departmentID"];
                 $userObj->email = $user["email"];
                 $userObj->userTypeID = $user["userTypeID"];
                 $userObj->role = $user["role"];

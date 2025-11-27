@@ -49,15 +49,23 @@ if ($open_modal == 'editBookModal' || $open_modal == 'viewDetailsModal' || $open
     if ($open_modal == 'editBookModal' && !empty($old)) {
         // Populate from session data if there were errors
         $modal_book = $old;
-        // If coming from error, fetch original DB ID and cover data
         $db_data = $bookObj->fetchBook(bookID: $book_id);
         $modal_book['bookID'] = $book_id;
-        // Preserve image data from DB if not in old array
         $modal_book['book_cover_name'] = $modal_book['existing_cover_name'] ?? $db_data['book_cover_name'];
         $modal_book['book_cover_dir'] = $modal_book['existing_cover_dir'] ?? $db_data['book_cover_dir'];
 
-    } else { //view
-        $modal_book = $bookObj->fetchBook(bookID: $book_id) ?: [];
+        // If 'authors' array is missing in session data, try to fetch from DB
+        if (!isset($modal_book['authors']) || !is_array($modal_book['authors'])) {
+            $modal_book['authors'] = $bookObj->fetchBookAuthors($book_id);
+        }
+
+    } else { // view or fresh edit
+        $modal_book = $bookObj->fetchBook($book_id) ?: [];
+
+        // Fetch specific authors array for the Edit form inputs
+        if ($open_modal == 'editBookModal') {
+            $modal_book['authors'] = $bookObj->fetchBookAuthors($book_id);
+        }
     }
     if ($open_modal != 'viewDetailsModal') { //delete
         $modal_book['bookID'] = $book_id;
@@ -96,8 +104,7 @@ $books = $bookObj->viewBook($search, $categoryID);
                 <div class="title flex w-full my-8 items-center justify-between">
                     <h1 class="text-red-800 font-bold text-4xl">MANAGE BOOKS</h1>
                     <div class="">
-                        <a href="bookList.php" target="_blank"
-                            class="addBtn">Print
+                        <a href="bookList.php" target="_blank" class="addBtn">Print
                             Book List</a>
                         <a id="openAddBookModalBtn" class="addBtn" href="booksSection.php?modal=add" ?>+ Add Book</a>
                     </div>
@@ -145,7 +152,7 @@ $books = $bookObj->viewBook($search, $categoryID);
                                     <?php } ?>
                                 </td>
                                 <td><?= $book["book_title"] ?></td>
-                                <td><?= $book["author"] ?></td>
+                                <td><?= $book["author_names"] ?></td>
                                 <td><?= $book["category_name"] ?></td>
                                 <td><?= $book["book_copies"] ?></td>
                                 <td><?= $book["book_condition"] ?></td>
@@ -191,9 +198,27 @@ $books = $bookObj->viewBook($search, $categoryID);
             </div>
 
             <div class="input">
-                <label for="author">Author<span>*</span> : </label>
-                <input type="text" class="input-field" name="author" id="author"
-                    value="<?= $modal_book["author"] ?? "" ?>">
+                <label>Author(s)<span>*</span> : </label>
+                <div id="add_author_container">
+                    <?php
+                    $add_authors = $modal_book['authors'] ?? [''];
+                    if (empty($add_authors))
+                        $add_authors = [''];
+
+                    foreach ($add_authors as $index => $authVal) { ?>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" class="input-field" name="authors[]" placeholder="Author Name"
+                                value="<?= htmlspecialchars($authVal) ?>" required>
+                            <?php if ($index == 0) { ?>
+                                <button type="button" class="bg-green-600 text-white px-3 rounded"
+                                    onclick="addAuthorField('add_author_container')">+</button>
+                            <?php } else { ?>
+                                <button type="button" class="bg-red-600 text-white px-3 rounded"
+                                    onclick="this.parentElement.remove()">-</button>
+                            <?php } ?>
+                        </div>
+                    <?php } ?>
+                </div>
                 <p class="errors"><?= $errors["author"] ?? "" ?></p>
             </div>
 
@@ -268,7 +293,6 @@ $books = $bookObj->viewBook($search, $categoryID);
     </div>
 </div>
 
-
 <div id="editBookModal" class="modal <?= $open_modal == 'editBookModal' ? 'open' : '' ?>">
     <div class="modal-content">
         <span class="close close-times" data-modal="editBookModal">&times;</span>
@@ -296,9 +320,27 @@ $books = $bookObj->viewBook($search, $categoryID);
             </div>
 
             <div class="input">
-                <label for="author">Author<span>*</span> : </label>
-                <input type="text" class="input-field" name="author" id="edit_author"
-                    value="<?= $modal_book["author"] ?? "" ?>">
+                <label for="author">Author(s)<span>*</span> : </label>
+                <div id="edit_author_container">
+                    <?php
+                    $edit_authors = $modal_book['authors'] ?? [];
+                    if (empty($edit_authors))
+                        $edit_authors = ['']; // Default to one empty box if none found
+                    
+                    foreach ($edit_authors as $index => $authVal) { ?>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" class="input-field" name="authors[]" placeholder="Author Name"
+                                value="<?= htmlspecialchars($authVal) ?>" required>
+                            <?php if ($index == 0) { ?>
+                                <button type="button" class="bg-green-600 text-white px-3 rounded"
+                                    onclick="addAuthorField('edit_author_container')">+</button>
+                            <?php } else { ?>
+                                <button type="button" class="bg-red-600 text-white px-3 rounded"
+                                    onclick="this.parentElement.remove()">-</button>
+                            <?php } ?>
+                        </div>
+                    <?php } ?>
+                </div>
                 <p class="errors">
                     <?= $errors["author"] ?? "" ?>
                 </p>
@@ -420,7 +462,7 @@ $books = $bookObj->viewBook($search, $categoryID);
             </div>
             <p class="col-span-2"><strong>Title:</strong> <?= $modal_book['book_title'] ?? 'N/A' ?></p>
 
-            <p><strong>Author:</strong> <?= $modal_book['author'] ?? 'N/A' ?></p>
+            <p><strong>Author:</strong> <?= $modal_book['author_names'] ?? 'N/A' ?></p>
             <p><strong>Category:</strong> <?= $modal_book['category_name'] ?? 'N/A' ?></p>
 
             <p><strong>Publication:</strong> <?= $modal_book['publication_name'] ?? 'N/A' ?></p>
@@ -493,7 +535,6 @@ $books = $bookObj->viewBook($search, $categoryID);
         <?php } else { ?>
             <p class="text-gray-500">No Book Cover Uploaded</p>
         <?php } ?>
-        <!-- </div> -->
     </div>
 </div>
 
@@ -507,20 +548,37 @@ $books = $bookObj->viewBook($search, $categoryID);
         const openImage = document.getElementById("openImage");
 
 
-        openImage.addEventListener("click", () => {
-            imageEnlargeModal.style.display = 'flex';
-        })
+        if (openImage) {
+            openImage.addEventListener("click", () => {
+                imageEnlargeModal.style.display = 'flex';
+            })
+        }
 
-        closeImage.addEventListener("click", () => {
-            imageEnlargeModal.style.display = 'none';
-        })
+        if (closeImage) {
+            closeImage.addEventListener("click", () => {
+                imageEnlargeModal.style.display = 'none';
+            })
+        }
 
         window.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.style.display = 'none';
+            if (e.target === imageEnlargeModal) {
+                imageEnlargeModal.style.display = 'none';
             }
         });
     })
+</script>
+
+<script>
+    function addAuthorField(containerId) {
+        const container = document.getElementById(containerId);
+        const div = document.createElement('div');
+        div.className = 'flex gap-2 mb-2';
+        div.innerHTML = `
+            <input type="text" class="input-field" name="authors[]" placeholder="Author Name">
+            <button type="button" class="bg-red-600 text-white px-3 rounded" onclick="this.parentElement.remove()">-</button>
+        `;
+        container.appendChild(div);
+    }
 </script>
 
 </html>

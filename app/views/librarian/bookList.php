@@ -82,7 +82,8 @@ $books = $bookObj->viewBook('', '');
                         <?php } ?>
                     </td>
                     <td><?= $book["book_title"] ?></td>
-                    <td><?= $book["author"] ?></td>
+                    <td><?= htmlspecialchars($book["author_names"] ?? $book["author"] ?? 'N/A') ?></td>
+                    <td><?= $book["category_name"] ?></td>
                     <td><?= $book["category_name"] ?></td>
                     <td><?= $book["publication_name"] ?></td>
                     <td><?= $book["publication_year"] ?></td>

@@ -7,6 +7,7 @@ unset($_SESSION["errors"], $_SESSION["old"]);
 require_once(__DIR__ . "/../../models/userRegister.php");
 $registerObj = new Register();
 $userTypes = $registerObj->fetchUserType();
+$departments = $registerObj->fetchDepartments();
 
 // Check for the success parameter in the URL
 $current_modal = $_GET['modal'] ?? '';
@@ -130,18 +131,28 @@ if ($success_message === 'pending') {
                             value="<?= $register["middleIn"] ?? "" ?>">
                         <p class="errors"><?= $errors["middleIn"] ?? "" ?></p>
                     </div>
-                    <div class="input" id="id_number">
+                    <div class="input" id="id_number_container">
                         <label for="id_number" id="id_numberLabel">ID Number<span>*</span> : </label>
                         <input type="text" class="input-field" name="id_number" placeholder="e.g. 20241234"
                             value="<?= $register["id_number"] ?? "" ?>">
                         <p class="errors"><?= $errors["id_number"] ?? "" ?></p>
                     </div>
-                    <div class="input" id="college_department">
+                    <div class="input" id="departmentID">
                         <label for="college_department" id="collegeLabel">College/Department<span>*</span> : </label>
-                        <input type="text" class="input-field" name="college_department"
-                            placeholder="e.g. College of Computing Studies"
-                            value="<?= $register["college_department"] ?? "" ?>">
-                        <p class="errors"><?= $errors["college_department"] ?? "" ?></p>
+                        <select name="departmentID" class="input-field">
+                            <option value="">--Select Department--</option>
+                            <?php
+                            foreach ($departments as $dept) {
+                                ?>
+                                <option value="<?= $dept["departmentID"] ?>" <?= isset($register["departmentID"]) && $register["departmentID"] == $dept["departmentID"] ? "selected" : "" ?>>
+                                    <?= $dept["department_name"] ?>
+                                </option>
+                                <?php
+                            }
+                            ?>
+                        </select>
+                        
+                        <p class="errors"><?= $errors["departmentID"] ?? "" ?></p>
                     </div>
                     <div class="input" id="imageID">
                         <label for="imageID" id="uploadLabel"></label>
@@ -178,9 +189,8 @@ if ($success_message === 'pending') {
                     </div>
 
                     <div class="agreement pt-5">
-                        <input type="checkbox" name="agreement" id="agreement" value="yes"
-                            <?= isset($register["agreement"]) ? "checked" : "" ?>>
-                        <label for="agreement">I agree to the</label>
+                        <input type="checkbox" name="agreement" id="agreement" value="<?= isset($register["agreement"]) ? "checked" : "" ?>>
+                        <label for="agreement"> I agree to the</label>
                         <button type="button" data-modal-target="termsModal" data-modal-toggle="termsModal"
                             id="openModal" class="terms-and-con text-xs text-blue-600 underline">Terms and
                             Conditions</button>
@@ -299,7 +309,7 @@ if ($success_message === 'pending') {
 <script>
     //email message js
     document.addEventListener('DOMContentLoaded', function () {
-        const id_number = document.getElementById('id_number');
+        const id_number = document.getElementById('id_number_container');
         const select = document.getElementById('borrowerType');
         const college_department_div = document.getElementById('college_department');
         const uploadLabel = document.getElementById('uploadLabel');
