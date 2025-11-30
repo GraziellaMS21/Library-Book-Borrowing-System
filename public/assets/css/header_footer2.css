@@ -24,7 +24,7 @@ header {
 .website-name {
   font-size: 1.3rem;
   font-weight: bold;
-  color: #610101;
+  color: #610101 !important;
   letter-spacing: 1px;
 }
 
@@ -140,36 +140,54 @@ header {
   }
 }
 
+/* ... keep your existing header styles ... */
+
 .footer {
   background: linear-gradient(135deg, #610101, #931c19);
   color: white;
-  padding: 0 6rem;
+  padding: 0 4rem; /* Adjusted padding for better grid spacing */
   margin-top: 3rem;
   box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.footer-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .footer-container a {
   text-decoration: none;
   color: white;
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
+  display: inline-block; /* Allows transform effects */
 }
 
+/* Specific Font for the Tagline */
 .line {
   font-family: "Licorice", Verdana, Geneva, Tahoma, sans-serif;
   letter-spacing: 1px;
   font-size: clamp(2rem, 2vw, 3rem);
-  color: rgba(255, 255, 0, 0.445);
+  color: rgba(255, 255, 0, 0.6); /* Slightly increased opacity for readability */
 }
+
 .footer-container a:hover {
   color: #ffcc70;
+  transform: translateX(5px); /* Subtle slide effect on hover */
 }
-.footer-center:hover {
-  color: yellow;
-  transition: all 0.3s ease;
-}
+
+/* Mobile Responsiveness */
 @media (max-width: 768px) {
+  .footer {
+    padding: 0 2rem;
+  }
+  
   .footer-container {
-    flex-direction: column;
     text-align: center;
+  }
+  
+  .footer-links, .footer-contact {
+    width: 100%;
+    align-items: center; /* Centers items on mobile */
   }
 }

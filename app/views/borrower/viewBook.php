@@ -1,22 +1,24 @@
 <?php
 session_start();
-if (!isset($_SESSION["user_id"])) {
-    header("Location: ../../app/views/borrower/login.php");
-    exit;
-}
-?>
+// Removed mandatory login check to allow guest viewing
 
-<?php
 require_once(__DIR__ . "/../../models/manageBook.php");
 require_once(__DIR__ . "/../../models/manageUsers.php");
 
 $bookObj = new Book();
 $userObj = new User();
 
-//fetch user informatio based on ID
-$userID = $_SESSION["user_id"];
-$user = $userObj->fetchUser($userID);
-$userTypeID = $user["userTypeID"];
+// Fetch user information if logged in
+$userID = $_SESSION["user_id"] ?? null;
+$user = null;
+$userTypeID = 0; // Default to 0 (Guest)
+
+if ($userID) {
+    $user = $userObj->fetchUser($userID);
+    if ($user) {
+        $userTypeID = $user["userTypeID"];
+    }
+}
 
 $bookID = $_GET['bookID'] ?? null;
 $book = null;
@@ -24,6 +26,11 @@ $book = null;
 // --- MODAL/STATUS LOGIC ---
 $list_status = $_GET['status'] ?? null;
 $copies_added = (int) ($_GET['copies'] ?? 0);
+
+// Initialize error variables to avoid undefined warnings if used
+$error_message_code = '';
+$current_borrowed_count = 0;
+$borrow_limit = 0;
 
 // Check for modal open requests (only staff uses these for multi-copy borrowing/listing)
 $current_modal = $_GET['modal'] ?? '';
@@ -53,7 +60,6 @@ if (!$book) {
 
 // Extract essential book details (used for display and passing to JS)
 $book_title = htmlspecialchars($book['book_title']);
-// FIXED: Use 'author_names' which comes from the GROUP_CONCAT in fetchBook
 $author = htmlspecialchars($book['author_names'] ?? 'N/A'); 
 $category_name = htmlspecialchars($book['category_name']);
 $publication_name = htmlspecialchars($book['publication_name']);
@@ -134,8 +140,15 @@ $modal_available_copies = $copies;
 </head>
 
 <body class="bg-gray-50 min-h-screen">
+    <div class="color-layer"></div>
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <?php require_once(__DIR__ . '/../shared/headerBorrower.php'); ?>
+        
+        <?php if(isset($_SESSION["user_id"])) {
+            require_once(__DIR__ . '/../shared/headerBorrower.php');
+        } else {
+            require_once(__DIR__ . '/../shared/header.php');
+        }
+        ?>
 
         <header class="text-center text-white my-10">
             <h1 class="title text-4xl sm:text-5xl font-extrabold text-red-800 tracking-tight">Detail View</h1>
@@ -200,22 +213,27 @@ $modal_available_copies = $copies;
 
                             // --- Borrow Button Logic ---
                             $borrow_action = '';
-                            if ($userTypeID == 2) {
-                                // Staff: use URL parameter to open modal
-                                $borrow_action = "href='catalogue.php?modal=borrow&bookID={$bookID}'";
-                            } elseif (!$borrow_denied) {
-                                // Non-Staff (allowed): direct link to confirmation.php
-                                $borrow_action = "href='confirmation.php?bookID={$book['bookID']}&copies=1'";
+                            if ($userID) {
+                                // Logged In Logic
+                                if ($userTypeID == 2) {
+                                    // Staff: use URL parameter to open modal
+                                    $borrow_action = "href='catalogue.php?modal=borrow&bookID={$bookID}'";
+                                } elseif (!$borrow_denied) {
+                                    // Non-Staff (allowed): direct link to confirmation.php
+                                    $borrow_action = "href='confirmation.php?bookID={$book['bookID']}&copies=1'";
+                                } else {
+                                    // Non-Staff (denied): link to error status page
+                                    $borrow_action = "href='catalogue.php?status=borrow_denied&bookID={$bookID}&error_code={$error_message_code}&count={$current_borrowed_count}&limit={$borrow_limit}'";
+                                }
                             } else {
-                                // Non-Staff (denied): link to error status page
-                                // We must pass the bookID, the status, and the specific error code.
-                                $borrow_action = "href='catalogue.php?status=borrow_denied&bookID={$bookID}&error_code={$error_message_code}&count={$current_borrowed_count}&limit={$borrow_limit}'";
+                                // Guest Logic: Redirect to Login
+                                $borrow_action = "href='login.php'";
                             }
 
 
                             // --- Add to List Button Logic ---
                             $add_to_list_action = '';
-                            if (!$button_disabled) {
+                            if (!$button_disabled && $userID) {
                                 if ($userTypeID == 2) {
                                     $add_to_list_action = "href='catalogue.php?modal=list&bookID={$bookID}'";
                                 } else {
@@ -232,13 +250,15 @@ $modal_available_copies = $copies;
 
                             <a <?= $borrow_action ?>
                                 class="text-sm font-medium cursor-pointer transition duration-300 px-4 py-2 rounded-full <?= $button_disabled ? 'bg-gray-300 text-gray-600 cursor-not-allowed pointer-events-none' : 'bg-red-800 text-white shadow-md hover:bg-red-900' ?>">
-                                <?= $button_disabled ? 'Unavailable' : '+ Borrow Now' ?>
+                                <?= $button_disabled ? 'Unavailable' : ($userID ? '+ Borrow Now' : 'Login to Borrow') ?>
                             </a>
 
+                            <?php if ($userID && !$button_disabled): ?>
                             <a <?= $add_to_list_action ?>
-                                class="text-sm font-medium transition duration-300 px-4 py-2 rounded-full <?= $button_disabled ? 'hidden' : 'bg-red-800 text-white shadow-md hover:bg-red-900' ?>">
+                                class="text-sm font-medium transition duration-300 px-4 py-2 rounded-full bg-red-800 text-white shadow-md hover:bg-red-900">
                                 + Add To List
                             </a>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
