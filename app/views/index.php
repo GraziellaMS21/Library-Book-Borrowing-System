@@ -1,3 +1,4 @@
+<?php session_start(); ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -6,16 +7,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMSU Library - Home</title>
 
-    <script src="../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../public/assets/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    <script src="../../public/assets/js/tailwind.3.4.17.js"></script>
+
+    <link rel="stylesheet" href="../../public/assets/css/styles.css">
     <link rel="stylesheet" href="../../public/assets/css/header_footer2.css">
 </head>
 
 <body>
-    <!-- includes/header.php -->
+    
     <header class="m-0">
-        <nav class="navbar flex justify-between items-center bg-white fixed top-0 left-0 w-full z-10">
+        <nav class="navbar flex justify-between items-center bg-white fixed top-0 left-0 w-full z-[9999]">
             <div class="logo-section flex items-center gap-3">
                 <img src="../../public/assets/images/logo.png" alt="Logo" class="logo">
                 <h2 class="title font-extrabold text-2xl text-red-900">WMSU LIBRARY</h2>
@@ -39,17 +42,19 @@
 
     <section class="hero-section">
         <div class="hero-content">
-            <h1 class="hero-title font-extrabold">WMSU Library</h1>
-            <p class="hero-subtitle">Home of a Wealthy Knowledge</p>
+            <h1 class="hero-title">WMSU Library</h1>
+            <p class="hero-subtitle">Book Borrowing System</p>
 
-            <form action="catalogue.php" method="GET" class="search-container">
-                <input type="text" name="q" class="search-input" placeholder="Search for books, authors, or ISBN...">
+            <form action="borrower/catalogue.php" method="GET" class="search-container">
+                <input type="text" name="search" class="search-input" placeholder="Search for books, authors, or ISBN...">
                 <button type="submit" class="search-btn">
-                    <i class="fa-solid fa-magnifying-glass"></i> Search
+                    <i class="fa-solid fa-magnifying-glass mr-2"></i> Search
                 </button>
             </form>
         </div>
     </section>
+
+    <div class="book-transition"></div>
 
     <section class="info-section">
         <div class="info-card">
@@ -85,16 +90,20 @@
         </div>
     </section>
 
-    <section class="cta-banner">
-        <h2 style="font-size: 2.5rem; font-weight: bold; margin-bottom: 1rem;">Start Your Learning Journey Today</h2>
-        <p style="font-size: 1.1rem; opacity: 0.9;">Browse our collection or manage your account online.</p>
+    <div class="book-transition2"></div>
 
-        <div style="margin-top: 2rem;">
-            <a href="catalogue.php" class="cta-btn">Browse Catalogue</a>
-            <?php if (!isset($_SESSION['user_id'])): ?>
-                <a href="login.php" class="cta-btn"
-                    style="background: transparent; border: 2px solid white; color: white; margin-left: 10px;">Login</a>
-            <?php endif; ?>
+    <section class="cta-banner">
+        <div class="cta-content">
+            <h2 class="font-playfair text-4xl md:text-5xl font-bold mb-4">Start Your Learning Journey Today</h2>
+            <p class="text-lg opacity-90 font-light max-w-2xl mx-auto">Browse our vast collection, manage your account,
+                or visit us in person to access premium resources.</p>
+
+            <div class="mt-8">
+                <a href="borrower/catalogue.php" class="cta-btn">Browse Catalogue</a>
+                <?php if (!isset($_SESSION['user_id'])): ?>
+                    <a href="borrower/login.php" class="cta-btn-outline">Login</a>
+                <?php endif; ?>
+            </div>
         </div>
     </section>
 
@@ -108,7 +117,7 @@
             <div class="footer-center flex gap-6 text-sm font-semibold">
                 <a href="#">Home</a>
                 <a href="#">About</a>
-                <a href="contact.php">Contact</a>
+                <a href="borrower/contact.php">Contact</a>
             </div>
 
             <div class="footer-right text-sm text-center md:text-right opacity-90">

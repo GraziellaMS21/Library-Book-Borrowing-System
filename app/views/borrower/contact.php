@@ -15,17 +15,15 @@ $email = $_SESSION["email"] ?? ''; // Assuming you store email in session
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact Us</title>
-    <!-- Assuming contact.php is in the same directory as login.php (app/views/shared/) -->
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
     <link rel="stylesheet" href="../../../public/assets/css/login.css">
     <link rel="stylesheet" href="../../../public/assets/css/header_footer2.css">
     <style>
-        /* Ensure textarea matches the input field style from login.css */
         .input-field[name="message"] {
-            height: auto; /* Allow height to be set by rows */
+            height: auto; 
             padding-top: 10px;
             padding-bottom: 10px;
-            resize: none; /* Disable resizing */
+            resize: none; 
         }
     </style>
 </head>
@@ -51,11 +49,6 @@ $email = $_SESSION["email"] ?? ''; // Assuming you store email in session
 
             <div class="form-section w-1/2 flex flex-col justify-center items-center">
                 <h1 class="font-extrabold">CONTACT US</h1>
-                <!-- 
-                    Update the action to point to your mail handling script.
-                    This assumes 'mail.php' is in the same directory.
-                    You may need to adjust this path.
-                -->
                 <form action="../../../app/controllers/emailController.php" method="POST">
 
                     <div class="input">
