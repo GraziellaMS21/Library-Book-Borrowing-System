@@ -29,7 +29,7 @@
                     <li><a href="borrower/about.php">About</a></li>
                     <li><a href="borrower/catalogue.php">Catalogue</a></li>
                     <li><a href="borrower/contact.php">Contact</a></li>
-    
+
                 </ul>
                 <div class="flex gap-3 ml-4">
                     <ul class="flex gap-6 list-none items-center">

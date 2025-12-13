@@ -26,7 +26,7 @@ if ($success_message === 'pending') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register Account</title>
-    <link rel="stylesheet" href="../../../public/assets/css/register.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/login&register.css" />
     <link rel="stylesheet" href="../../../public/assets/css/header_footer2.css" />
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
     <style>
@@ -77,7 +77,6 @@ if ($success_message === 'pending') {
 </head>
 
 <body>
-    <div class="color-layer"></div>
 
     <?php require_once(__DIR__ . '/../shared/header.php'); ?>
 
@@ -197,7 +196,7 @@ if ($success_message === 'pending') {
                         <p class="errors"><?= $errors["agreement"] ?? "" ?></p>
                     </div>
 
-                    <div class="login py-5 flex justify-center font-bold">
+                    <div class="login-register py-5 flex justify-center font-bold">
                         <p>Already Have an Account? <span><a href="../../../app/views/borrower/login.php">Log
                                     In</a></span></p>
                     </div>

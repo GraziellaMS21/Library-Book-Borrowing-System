@@ -69,7 +69,7 @@ body {
     background: linear-gradient(135deg, rgba(97, 1, 1, 0.9), rgba(147, 28, 25, 0.75)), 
                 url('../images/1university_library_bg.png');
     background-size: cover;
-    background-position: center;
+    background-position: center top;
     background-attachment: fixed;
     display: flex;
     align-items: center;
@@ -80,23 +80,22 @@ body {
     margin-bottom: 0;
 }
 
-.book-transition, .book-transition2 {
+.book-transition,.book-transition2 {
+    background: linear-gradient(135deg, rgba(237, 211, 143, 0.5), rgba(237, 211, 143, 0.4)), url('../images/page.jpg');
     background-size: cover;
-    background-position: center top;
     background-repeat: repeat;
     height: 35vh;
     width: 100%;
-    position: relative;
     margin-top: -20vh;
     z-index: 10; 
 }
 
-.book-transition {
-    background: linear-gradient(135deg, rgba(237, 211, 143, 0.5), rgba(237, 211, 143, 0.4)), url('../images/page.jpg');
+.book-transition{
+    background-position: center top;
 }
 
-.book-transition2 {
-    background: linear-gradient(135deg, rgba(237, 211, 143, 0.5), rgba(237, 211, 143, 0.4)), url('../images/page2.jpg');
+.book-transition2{
+    background-position: center;
 }
 
 

@@ -1,6 +1,21 @@
+:root {
+  --wmsu-red: #931c19;
+  --wmsu-dark: #610101;
+  --wmsu-gold: #ffcc70;
+  --wmsu-gold-hover: #e6b65f;
+  --text-dark: #1f2937;
+  --text-light: #6b7280;
+  --white: #ffffff;
+}
+
 body {
   font-family: Verdana, Geneva, Tahoma, sans-serif;
-  background-image: url(../images/library.jpg);
+  background: linear-gradient(
+      135deg,
+      rgba(97, 1, 1, 0.9),
+      rgba(147, 28, 25, 0.8)
+    ),
+    url("../images/library.jpg");
   background-repeat: repeat-y;
   background-size: cover;
   background-position: center;
@@ -10,30 +25,24 @@ body {
   transition: background-size 0.5s ease;
 }
 
-.color-layer {
-  background: linear-gradient(rgba(128, 81, 80, 0.4), rgba(51, 22, 22, 0.6));
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  min-height: 100vh;
-  z-index: -1;
+.text-title {
+  color: var(--wmsu-gold) !important;
 }
 
 .form-container {
   width: 70vw;
-  max-height: 69vh;
-  background-color: white;
+  background-color: var(--white);
   border-radius: 1.5rem;
   box-shadow: 10px 10px 5px rgba(0, 0, 0, 0.678);
-  overflow: hidden;
+  border: 1px solid var(--wmsu-gold);
 }
 
 .info-section {
-  background: linear-gradient(#931c19, #610101);
+  background: linear-gradient(var(--wmsu-red), var(--wmsu-dark));
   border-radius: 1.5rem 0 0 1.5rem;
   transition: all 0.4s ease;
   overflow: hidden;
+  border-right: 2px solid var(--wmsu-gold);
 }
 
 .info-section:hover {
@@ -48,6 +57,7 @@ body {
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   position: relative;
+  border: 1px solid var(--wmsu-gold);
 }
 
 .image img {
@@ -71,7 +81,7 @@ body {
 }
 
 .form-section h1 {
-  color: #610101;
+  color: var(--wmsu-dark);
   text-shadow: 1px 1px 2px rgba(97, 1, 1, 0.2);
   padding-top: 1.5rem;
   font-size: clamp(1rem, 2vw, 1.7rem);
@@ -83,12 +93,12 @@ form {
   margin-top: 0.5rem;
   overflow-y: auto;
   scrollbar-width: auto;
-  scrollbar-color: #931c19 #f5f5f5;
+  scrollbar-color: var(--wmsu-red) #f5f5f5;
 }
 
 label {
   font-weight: bold;
-  color: #610101;
+  color: var(--wmsu-dark);
   margin-top: 1.5rem;
 }
 
@@ -110,38 +120,37 @@ span {
 
 .input-field:focus {
   outline: none;
-  border-color: #931c19;
-  box-shadow: 0 0 0 4px rgba(147, 28, 25, 0.2);
-}
-
-.borrowerType {
-  margin: 0.75rem 1.5rem 0.75rem 0.5rem;
+  border-color: var(--wmsu-gold);
+  box-shadow: 0 0 0 4px rgba(255, 204, 112, 0.3);
 }
 
 select {
-  border: 1px solid #931c19;
+  border: 1px solid var(--wmsu-red);
   transition: ease;
 }
 
 select:focus {
   outline: none;
-  border-color: #610101;
-  box-shadow: 0 0 0 4px rgba(97, 1, 1, 0.2);
+  border-color: var(--wmsu-gold);
+  box-shadow: 0 0 0 4px rgba(255, 204, 112, 0.3);
 }
 
 input[type="submit"] {
-  background-color: #610101;
+  background-color: var(--wmsu-dark);
   color: white;
   padding: 0.6rem 1.2rem;
   box-shadow: 0 4px 10px rgba(147, 28, 25, 0.3);
   transition: background 0.5s ease-in-out, transform 0.2s ease-in-out;
+  border: 1px solid transparent;
+  width: 100%;
 }
 
 input[type="submit"]:hover {
   transform: translateY(-2px);
   background-position: right;
-  box-shadow: 0 8px 15px rgba(147, 28, 25, 0.4);
-  background: linear-gradient(#931c19, #610101);
+  box-shadow: 0 8px 15px rgba(255, 204, 112, 0.4);
+  background: linear-gradient(var(--wmsu-red), var(--wmsu-dark));
+  border-color: var(--wmsu-gold);
   transition: background 0.2s ease, transform 0.2s ease-in-out;
 }
 
@@ -154,14 +163,13 @@ input[type="submit"]:hover {
 @media (max-width: 768px) {
   .form-container {
     flex-direction: column;
-    width: 90vw;
-    max-height: none;
-    height: auto;
   }
 
   .info-section {
-    height: 2rem !important;
+    min-height: 3rem !important;
     border-radius: 1.5rem 1.5rem 0 0;
+    border-right: none;
+    border-bottom: 2px solid var(--wmsu-gold);
   }
 
   .form-section {
@@ -184,28 +192,13 @@ input[type="submit"]:hover {
   }
 }
 
-.terms-and-con {
-  border: none;
-  font-family: Verdana, Geneva, Tahoma, sans-serif;
-}
-.login span {
-  color: blue;
-  text-decoration: underline;
-}
-.modal-content h2 {
-  color: #931c19;
+.login-register span {
+  color: var(--wmsu-dark);
+  text-decoration: none;
+  border-bottom: 1px solid var(--wmsu-gold);
+  transition: color 0.3s ease;
 }
 
-.numbered-list > li {
-  font-weight: 800 !important;
-  color: #931c19;
-}
-
-.numbered-list > ul {
-  list-style-type: disc;
-}
-
-.font-bold {
-  list-style: none;
-  color: black;
+.login-register span:hover {
+  color: var(--wmsu-gold-hover);
 }

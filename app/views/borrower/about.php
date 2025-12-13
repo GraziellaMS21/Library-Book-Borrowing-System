@@ -29,7 +29,7 @@ session_start();
     <div class="hero-section">
         <div class="hero-overlay"></div>
         <div class="hero-content relative z-10">
-            <h1 class="hero-title drop-shadow-lg">The System</h1>
+            <h1 class="hero-title drop-shadow-lg">WMSU Book Borrowing System</h1>
             <p class="hero-subtitle">About Us</p>
         </div>
     </div>

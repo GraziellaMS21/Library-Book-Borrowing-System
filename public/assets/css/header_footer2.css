@@ -7,6 +7,43 @@ header {
   margin-bottom: 9rem;
 }
 
+.nav-btn {
+    padding: 10px 25px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.btn-login {
+    color: var(--wmsu-red);
+    border: 2px solid var(--wmsu-red);
+    background: transparent;
+}
+
+.btn-login:hover {
+    background: var(--wmsu-red);
+    color: var(--white);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(147, 28, 25, 0.2);
+}
+
+.btn-register {
+    background: var(--wmsu-gold);
+    color: var(--wmsu-dark);
+    border: 2px solid var(--wmsu-gold);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-register:hover {
+    background: var(--wmsu-gold-hover);
+    border-color: var(--wmsu-gold-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(255, 204, 112, 0.4);
+}
+
 .navbar {
   padding: 1rem 6rem;
   box-shadow: 0 4px 10px rgba(204, 0, 0, 0.4);

@@ -66,7 +66,7 @@ if ($status_message === 'pending') {
         ?>
     </title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/login.css">
+    <link rel="stylesheet" href="../../../public/assets/css/login&register.css">
     <link rel="stylesheet" href="../../../public/assets/css/header_footer2.css">
     <style>
         .modal {
@@ -106,7 +106,6 @@ if ($status_message === 'pending') {
 </head>
 
 <body>
-    <div class="color-layer"></div>
 
     <?php require_once(__DIR__ . '/../shared/header.php'); ?>
 
@@ -145,7 +144,7 @@ if ($status_message === 'pending') {
                     <br>
                     <input type="submit" value="Log In" class="font-bold cursor-pointer mb-8 border-none rounded-lg">
 
-                    <div class="register py-5 text-center flex justify-center font-bold">
+                    <div class="login-register py-5 text-center flex justify-center font-bold">
                         <p>Don't Have an Account Yet?
                             <span><a href="../../../app/views/borrower/register.php">Register Account</a></span>
                         </p>
