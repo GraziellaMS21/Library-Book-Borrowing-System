@@ -399,10 +399,36 @@ EOT;
     }
 }
 
-if ($action === 'delete' && $userID) {
-    $userData = $userObj->fetchUser($userID);
-    $imagePath = $userData['imageID_dir'] ?? null;
+// In app/controllers/userController.php
 
+// DELETE ACTION
+if ($action === 'delete' && $userID) {
+
+    // 1. Get the Current Logged-in User's Role
+    $currentUserRole = $_SESSION['role'] ?? 'Borrower';
+
+    // 2. Get the Target User's Role (The person being deleted)
+    $targetUserData = $userObj->fetchUser($userID);
+    $targetUserRole = $targetUserData['role'];
+    $imagePath = $targetUserData['imageID_dir'] ?? null;
+
+    // 3. PERMISSION CHECK:
+
+    // Rule A: Nobody can delete a Super Admin (not even another Super Admin, to be safe)
+    if ($targetUserRole === 'Super Admin') {
+        $_SESSION["errors"] = ["permission" => "System Error: Cannot delete the Main Super Admin account."];
+        header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}");
+        exit;
+    }
+
+    // Rule B: Standard Admins cannot delete other Admins
+    if ($currentUserRole !== 'Super Admin' && $targetUserRole === 'Admin') {
+        $_SESSION["errors"] = ["permission" => "Permission Denied: Only a Super Admin can delete other Librarians."];
+        header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}");
+        exit;
+    }
+
+    // 4. Proceed to Delete
     if ($userObj->deleteUser($userID)) {
         if ($imagePath && file_exists(__DIR__ . "/../../" . $imagePath)) {
             unlink(__DIR__ . "/../../" . $imagePath);

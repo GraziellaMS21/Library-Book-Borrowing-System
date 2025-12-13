@@ -149,6 +149,28 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                                 foreach ($users as $user) {
                                     $image_url = !empty($user["imageID_dir"]) ? "../../../" . $user["imageID_dir"] : null;
                                     $fullName = htmlspecialchars($user["fName"] . ' ' . $user["lName"]);
+
+                                    // --- 1. IDENTIFY ROLES ---
+                                    $myRole = $_SESSION['role'] ?? 'Borrower';
+                                    $targetRole = $user['role'] ?? 'Borrower';
+                                    
+                                    // --- 2. PERMISSION LOGIC ---
+                                    $canEdit = false;
+                                    $canDelete = false;
+
+                                    if ($myRole === 'Super Admin') {
+                                        // Super Admin can edit/delete ANYONE (including other Super Admins)
+                                        $canEdit = true;
+                                        $canDelete = true;
+                                    } elseif ($myRole === 'Admin') {
+                                        // Standard Admin can ONLY edit/delete Borrowers
+                                        // If target is Admin or Super Admin, these stay false
+                                        if ($targetRole === 'Borrower') {
+                                            $canEdit = true;
+                                            $canDelete = true;
+                                        }
+                                    }
+                                    // -----------------------------
                                     ?>
                                     <tr>
                                         <td><?= $no++ ?></td>
@@ -180,27 +202,45 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                                                 <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">View</a>
 
                                             <?php elseif ($current_tab == 'approved'): ?>
-                                                <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=edit&id=<?= $user['userID'] ?>">Edit</a>
+                                                
+                                                <?php if ($canEdit): ?>
+                                                    <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=edit&id=<?= $user['userID'] ?>">Edit</a>
+                                                <?php endif; ?>
 
-                                                <button class="actionBtn bg-amber-500 hover:bg-amber-600 text-sm inline-block mb-1 cursor-pointer open-modal-btn"
-                                                        data-target="blockUserModal"
-                                                        data-id="<?= $user['userID'] ?>"
-                                                        data-name="<?= $fullName ?>">
-                                                    Block
-                                                </button>
+                                                <?php if ($canEdit): ?>
+                                                    <button class="actionBtn bg-amber-500 hover:bg-amber-600 text-sm inline-block mb-1 cursor-pointer open-modal-btn"
+                                                            data-target="blockUserModal"
+                                                            data-id="<?= $user['userID'] ?>"
+                                                            data-name="<?= $fullName ?>">
+                                                        Block
+                                                    </button>
+                                                <?php endif; ?>
 
                                                 <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">View</a>
-                                                <a class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=delete&id=<?= $user['userID'] ?>">Delete</a>
+                                                
+                                                <?php if ($canDelete): ?>
+                                                    <a class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=delete&id=<?= $user['userID'] ?>">Delete</a>
+                                                <?php endif; ?>
 
                                             <?php elseif ($current_tab == 'blocked'): ?>
-                                                <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1" href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=unblock&id=<?= $user['userID'] ?>">Unblock</a>
+                                                
+                                                <?php if ($canEdit): ?>
+                                                    <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1" href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=unblock&id=<?= $user['userID'] ?>">Unblock</a>
+                                                <?php endif; ?>
+
                                                 <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">View</a>
-                                                <a class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=delete&id=<?= $user['userID'] ?>">Delete</a>
+                                                
+                                                <?php if ($canDelete): ?>
+                                                    <a class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=delete&id=<?= $user['userID'] ?>">Delete</a>
+                                                <?php endif; ?>
 
                                             <?php else: // Rejected/Others ?>
                                                 <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=approve&id=<?= $user['userID'] ?>" class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1">Approve</a>
                                                 <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">View</a>
-                                                <a class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=delete&id=<?= $user['userID'] ?>">Delete</a>
+                                                
+                                                <?php if ($canDelete): ?>
+                                                    <a class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=delete&id=<?= $user['userID'] ?>">Delete</a>
+                                                <?php endif; ?>
                                             <?php endif; ?>
 
                                         </td>
@@ -352,15 +392,20 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                     <p class="errors text-red-500 text-sm"><?= $errors["userTypeID"] ?? "" ?></p>
                 </div>
                 <div class="input">
-                    <label for="role">Role<span>*</span> : </label>
-                    <select name="role" id="edit_role" class="input-field">
-                        <option value="">---Select Role---</option>
-                        <?php foreach (["Borrower", "Admin"] as $role) {
-                            $selected = (($modal_user['role'] ?? '') == $role) ? 'selected' : '';
-                            echo "<option value='{$role}' {$selected}>{$role}</option>";
-                        } ?>
-                    </select>
-                    <p class="errors text-red-500 text-sm"><?= $errors["role"] ?? "" ?></p>
+                    <label>User Role</label>
+                    
+                    <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Super Admin'): ?>
+                        <select name="role" class="input-field">
+                            <option value="Borrower">Borrower</option>
+                            <option value="Admin">Admin (Librarian)</option>
+                        </select>
+                        <small class="text-gray-500">Only Super Admins can change this.</small>
+                    
+                    <?php else: ?>
+                        <input type="text" value="<?= $modal_user['role'] ?? 'Borrower' ?>" class="input-field bg-gray-100" readonly>
+                        <input type="hidden" name="role" value="<?= $modal_user['role'] ?? 'Borrower' ?>">
+                        <small class="text-red-500">You do not have permission to promote users.</small>
+                    <?php endif; ?>
                 </div>
 
                 <p class="errors text-red-500 text-sm col-span-2 mt-2"><?= $errors["db_error"] ?? "" ?></p>

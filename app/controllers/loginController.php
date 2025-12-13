@@ -53,16 +53,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION["lName"] = $result["lName"];
                 $_SESSION["fName"] = $result["fName"];
                 $_SESSION["userTypeID"] = $result["userTypeID"];
+                $_SESSION["role"] = $result["role"];
 
                 if ($result["role"] === "Borrower") {
                     header("Location: ../../app/views/borrower/catalogue.php");
                     exit;
-                } elseif ($result["role"] === "Admin") {
+                } elseif ($result["role"] === "Admin" || $result["role"] === "Super Admin") {
+                    // UPDATED: Allow Super Admin to enter dashboard too
                     header("Location: ../../app/views/librarian/dashboard.php");
                     exit;
                 }
-            } else {
-                $errors["invalid"] = "Invalid User Status. Please contact support.";
             }
 
         } else {
