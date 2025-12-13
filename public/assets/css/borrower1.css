@@ -141,7 +141,6 @@ input[type="checkbox"] :focus {
 }
 
 .title {
-  text-shadow: 4px 4px 4px rgba(31, 31, 31, 0.459);
   color: white !important;
 }
 

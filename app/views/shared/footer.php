@@ -12,9 +12,9 @@
         <div class="footer-links flex flex-col items-center md:items-start">
             <h4 class="text-lg font-semibold mb-4 uppercase tracking-wider border-b-2 border-yellow-400/50 pb-1">Quick Links</h4>
             <div class="flex flex-col gap-3 text-sm font-medium">
-                <a href="#" class="hover:text-yellow-300 transition-colors">Home</a>
-                <a href="#" class="hover:text-yellow-300 transition-colors">About Us</a>
-                <a href="#" class="hover:text-yellow-300 transition-colors">Library Catalog</a>
+                <a href="../index.php" class="hover:text-yellow-300 transition-colors">Home</a>
+                <a href="about.php" class="hover:text-yellow-300 transition-colors">About Us</a>
+                <a href="catalogue.php" class="hover:text-yellow-300 transition-colors">Library Catalog</a>
                 <a href="contact.php" class="hover:text-yellow-300 transition-colors">Contact Support</a>
             </div>
         </div>

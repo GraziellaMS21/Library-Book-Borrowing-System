@@ -1,0 +1,189 @@
+/* about.css */
+@font-face {
+  font-family: "Licorice";
+  src: url("../fonts/Licorice-Regular.ttf") format("truetype");
+}
+
+:root {
+  --wmsu-red: #931c19;
+  --wmsu-dark: #610101;
+  --wmsu-gold: #ffcc70;
+  --wmsu-gold-hover: #e6b65f;
+  --text-dark: #1f2937;
+  --white: #ffffff;
+  --bg-light: #f9fafb;
+}
+
+/* --- HEADER FIX --- */
+header {
+  /* Matches the fix from your contact.css + header_footer2.css */
+  margin-bottom: 5rem !important;
+  margin-top: 0;
+  z-index: 999;
+  position: relative;
+}
+
+/* Base Styles */
+body {
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  /* Added background-attachment: fixed */
+  background: linear-gradient(135deg, rgba(237, 211, 143, 0.5), rgba(237, 211, 143, 0.4)), url('../images/page.jpg');
+  background-attachment: fixed; 
+  background-repeat: no-repeat; /* Changed to no-repeat since it's fixed */
+  background-size: cover;
+  background-position: center;
+  font-size: 0.8rem;
+  position: relative;
+  min-height: 100vh; /* Changed height: 100% to min-height: 100vh for better stability */
+  transition: background-size 0.5s ease;
+}
+
+.font-playfair {
+  font-family: "Playfair Display", serif;
+}
+
+.text-gold {
+  color: var(--wmsu-gold);
+}
+
+.text-wmsu-red {
+  color: var(--wmsu-red);
+}
+
+/* --- Hero Section --- */
+.hero-section {
+  position: relative;
+  height: 50vh;
+  background-image: url("../images/1university_library_bg.png");
+  background-size: cover;
+  background-position: center 30%;
+  background-attachment: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  z-index: 1;
+  clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+}
+
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(97, 1, 1, 0.95),
+    rgba(147, 28, 25, 0.85)
+  );
+  z-index: -1;
+}
+
+.hero-title {
+  font-family: "Playfair Display", serif;
+  font-size: clamp(3rem, 5vw, 5rem);
+  color: var(--white);
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.hero-subtitle {
+    font-size: 1.25rem;
+    margin-bottom: 2.5rem;
+    font-weight: 300;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--wmsu-gold);
+    border-bottom: 2px solid var(--wmsu-gold);
+    display: inline-block;
+    padding-bottom: 5px;
+}
+/* --- Content Sections --- */
+.section-title {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 2rem;
+}
+
+.section-text {
+    background-color: rgba(255, 255, 255, 0.627);
+    padding: 1.5rem 2rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    
+}
+
+.section-title::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -10px;
+  width: 60px;
+  height: 3px;
+  background-color: var(--wmsu-red);
+}
+
+/* --- Cards (Mission/Vision) --- */
+.mv-card {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border-bottom: 4px solid transparent;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.mv-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px -15px rgba(147, 28, 25, 0.2);
+  border-bottom: 4px solid var(--wmsu-red);
+}
+
+.mv-icon {
+  font-size: 2.5rem;
+  color: var(--wmsu-red);
+  margin-bottom: 1.5rem;
+  background: rgba(147, 28, 25, 0.1);
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.mv-card:hover .mv-icon {
+  background: var(--wmsu-red);
+  color: var(--white);
+}
+
+/* --- History Section --- */
+.history-img-container {
+  position: relative;
+}
+
+.history-img-container::before {
+  content: "";
+  position: absolute;
+  top: -15px;
+  left: -15px;
+  width: 100%;
+  height: 100%;
+  border: 3px solid var(--wmsu-gold);
+  border-radius: 1rem;
+  z-index: 0;
+}
+
+.history-img {
+  position: relative;
+  z-index: 1;
+  border-radius: 1rem;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}

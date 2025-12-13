@@ -10,6 +10,10 @@ body {
   transition: background-size 0.5s ease;
 }
 
+.text-title {
+  color: #ffcc70 !important;
+}
+
 .color-layer {
   background: linear-gradient(rgba(128, 81, 80, 0.4), rgba(51, 22, 22, 0.6));
   position: fixed;

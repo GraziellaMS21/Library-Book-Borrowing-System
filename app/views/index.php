@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMSU Library - Home</title>
 
-    <link rel="stylesheet" href="../../../public/assets/fontawesome-free-7.1.0-web/css/all.min.css">
+    <link rel="stylesheet" href="../../public/assets/fontawesome-free-7.1.0-web/css/all.min.css">
     <script src="../../public/assets/js/tailwind.3.4.17.js"></script>
 
     <link rel="stylesheet" href="../../public/assets/css/styles.css">
@@ -23,12 +23,21 @@
                 <h2 class="title font-extrabold text-2xl text-red-900">WMSU LIBRARY</h2>
             </div>
 
-            <ul class="nav-links flex gap-8 list-none">
-                <li><a href="index.php">Home</a></li>
-                <li><a href="#">About</a></li>
-                <li><a href="catalogue.php">Catalogue</a></li>
-                <li><a href="borrower/contact.php">Contact</a></li>
-            </ul>
+            <div class="flex justify-center items-center">
+                <ul class="nav-links flex gap-6 list-none items-center">
+                    <li><a href="index.php">Home</a></li>
+                    <li><a href="borrower/about.php">About</a></li>
+                    <li><a href="borrower/catalogue.php">Catalogue</a></li>
+                    <li><a href="borrower/contact.php">Contact</a></li>
+    
+                </ul>
+                <div class="flex gap-3 ml-4">
+                    <ul class="flex gap-6 list-none items-center">
+                        <li><a href="borrower/login.php" class="nav-btn btn-login">Login</a></li>
+                        <li><a href="borrower/register.php" class="nav-btn btn-register">Register</a></li>
+                    </ul>
+                </div>
+            </div>
 
             <div class="burger flex flex-col justify-between cursor-pointer">
                 <span></span>
@@ -61,10 +70,10 @@
             <div class="icon-wrapper">
                 <i class="fa-solid fa-book-open"></i>
             </div>
-            <h3 class="card-title">Extensive Catalogue</h3>
+            <h3 class="card-title">Browse & Search Books</h3>
             <p class="card-text">
-                Explore thousands of resources. From academic textbooks to rare historical records, find exactly what
-                you need for your studies.
+                Easily browse the library collection or use the search and filter tools to quickly find books by title,
+                author, category, or availability.
             </p>
         </div>
 
@@ -72,9 +81,11 @@
             <div class="icon-wrapper">
                 <i class="fa-solid fa-clock"></i>
             </div>
-            <h3 class="card-title">Real-time Availability</h3>
+            <h3 class="card-title">Real-time Book Availability</h3>
             <p class="card-text">
-                Check book status instantly. Reserve items online and pick them up at the counter to save time.
+                Instantly view whether a book is available or currently borrowed. Borrow books directly through the
+                system
+                without waiting in line.
             </p>
         </div>
 
@@ -82,13 +93,14 @@
             <div class="icon-wrapper">
                 <i class="fa-solid fa-laptop-file"></i>
             </div>
-            <h3 class="card-title">Manage Your Loans</h3>
+            <h3 class="card-title">Loan Tracking Dashboard</h3>
             <p class="card-text">
-                Track your borrowed items, avoid fines with due date reminders, and view your reading history through
-                your personal dashboard.
+                Monitor the number of books you have borrowed and see how many days are left before each item must be
+                returned.
             </p>
         </div>
     </section>
+
 
     <div class="book-transition2"></div>
 
@@ -96,7 +108,7 @@
         <div class="cta-content">
             <h2 class="font-playfair text-4xl md:text-5xl font-bold mb-4">Start Your Learning Journey Today</h2>
             <p class="text-lg opacity-90 font-light max-w-2xl mx-auto">Browse our vast collection, manage your account,
-                or visit us in person to access premium resources.</p>
+                or visit us in person to access other resources.</p>
 
             <div class="mt-8">
                 <a href="borrower/catalogue.php" class="cta-btn">Browse Catalogue</a>
@@ -122,10 +134,10 @@
                 <h4 class="text-lg font-semibold mb-4 uppercase tracking-wider border-b-2 border-yellow-400/50 pb-1">
                     Quick Links</h4>
                 <div class="flex flex-col gap-3 text-sm font-medium">
-                    <a href="#" class="hover:text-yellow-300 transition-colors">Home</a>
-                    <a href="#" class="hover:text-yellow-300 transition-colors">About Us</a>
-                    <a href="#" class="hover:text-yellow-300 transition-colors">Library Catalog</a>
-                    <a href="contact.php" class="hover:text-yellow-300 transition-colors">Contact Support</a>
+                    <a href="index.php" class="hover:text-yellow-300 transition-colors">Home</a>
+                    <a href="borrower/about.php" class="hover:text-yellow-300 transition-colors">About Us</a>
+                    <a href="borrower/catalogue.php" class="hover:text-yellow-300 transition-colors">Library Catalog</a>
+                    <a href="borrower/contact.php" class="hover:text-yellow-300 transition-colors">Contact Support</a>
                 </div>
             </div>
 
