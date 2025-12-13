@@ -35,9 +35,9 @@ $top_5_books = $borrowObj->getTopBorrowedBooks(5);
 $top_5_categories = $bookObj->getTopPopularCategories(5);
 $top_5_borrowers = $borrowObj->getTopActiveBorrowers(5);
 // --- 3. DATA FOR NEW CHARTS ---
-$daily_activity_data = $borrowObj->getDailyBorrowingActivity(); 
-$borrow_return_data = $borrowObj->getMonthlyBorrowReturnStats(); 
-$user_reg_trend_data = $userObj->getUserRegistrationTrend(); 
+$daily_activity_data = $borrowObj->getDailyBorrowingActivity();
+$borrow_return_data = $borrowObj->getMonthlyBorrowReturnStats();
+$user_reg_trend_data = $userObj->getUserRegistrationTrend();
 $month = date('F');
 // --- 4. DATA FOR ACTIVITY TABLES ---
 $pending_users = $userObj->viewUser("", "", "pending");
@@ -65,195 +65,192 @@ $borrow_details = $borrowObj->viewBorrowDetails('', 'pending');
     <div class="w-full h-screen flex flex-col">
         <?php require_once(__DIR__ . '/../shared/dashboardHeader.php'); ?>
         <main class="overflow-y-auto">
-            <div class="container">
-
-                <section id="dashboardSection" class="section dashboardSection grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="info p-4 flex items-start rounded-2xl shadow-md">
-                        <div class="text-5xl text-white mr-4">
-                            <i class="fas fa-book-open"></i>
-                        </div>
-                        <div class="flex w-full flex-col items-end text-white">
-                            <span class="text-2xl font-semibold"><?= htmlspecialchars($total_book_copies) ?></span>
-                            <h2 class="title text-sm text-gray-300">Total Available Book Copies</h2>
-                        </div>
+            <section id="dashboardSection" class="section dashboardSection grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="info p-4 flex items-start rounded-2xl shadow-md">
+                    <div class="text-5xl text-white mr-4">
+                        <i class="fas fa-book-open"></i>
                     </div>
-
-                    <div class="info p-4 flex items-start rounded-2xl shadow-md">
-                        <div class="text-5xl text-white mr-4">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="w-full flex flex-col items-end text-white">
-                            <span class="text-2xl font-semibold"><?= htmlspecialchars($total_borrowers) ?></span>
-                            <h2 class="title text-sm text-gray-300">Total Active Borrowers</h2>
-                        </div>
+                    <div class="flex w-full flex-col items-end text-white">
+                        <span class="text-2xl font-semibold"><?= htmlspecialchars($total_book_copies) ?></span>
+                        <h2 class="title text-sm text-gray-300">Total Available Book Copies</h2>
                     </div>
+                </div>
 
-                    <div class="info p-4 flex items-start rounded-2xl shadow-md">
-                        <div class="text-5xl text-white mr-4">
-                            <i class="fas fa-user-plus"></i>
-                        </div>
-                        <div class="w-full flex flex-col items-end text-white">
-                            <span class="text-2xl font-semibold"><?= htmlspecialchars($pending_users_count) ?></span>
-                            <h2 class="title text-sm text-gray-300">Pending User Requests</h2>
-                        </div>
+                <div class="info p-4 flex items-start rounded-2xl shadow-md">
+                    <div class="text-5xl text-white mr-4">
+                        <i class="fas fa-users"></i>
                     </div>
-
-                    <div class="info p-4 flex items-start rounded-2xl shadow-md">
-                        <div class="text-5xl text-white mr-4">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="w-full flex flex-col items-end text-white">
-                            <span
-                                class="text-2xl font-semibold"><?= htmlspecialchars($pending_borrow_requests_count) ?></span>
-                            <h2 class="title text-sm text-gray-300">Pending Borrow Requests</h2>
-                        </div>
+                    <div class="w-full flex flex-col items-end text-white">
+                        <span class="text-2xl font-semibold"><?= htmlspecialchars($total_borrowers) ?></span>
+                        <h2 class="title text-sm text-gray-300">Total Active Borrowers</h2>
                     </div>
+                </div>
 
-                    <div class="info p-4 flex items-start rounded-2xl shadow-md">
-                        <div class="text-5xl text-white mr-4">
-                            <i class="fas fa-box-open"></i>
-                        </div>
-                        <div class="w-full flex flex-col items-end text-white">
-                            <span class="text-2xl font-semibold"><?= htmlspecialchars($total_pick_up) ?></span>
-                            <h2 class="title text-sm text-gray-300">Total Books For Pickup</h2>
-                        </div>
+                <div class="info p-4 flex items-start rounded-2xl shadow-md">
+                    <div class="text-5xl text-white mr-4">
+                        <i class="fas fa-user-plus"></i>
                     </div>
-
-                    <div class="info p-4 flex items-start rounded-2xl shadow-md">
-                        <div class="text-5xl text-white mr-4">
-                            <i class="fas fa-book-reader"></i>
-                        </div>
-                        <div class="w-full flex flex-col items-end text-white">
-                            <span class="text-2xl font-semibold"><?= htmlspecialchars($total_borrowed_books) ?></span>
-                            <h2 class="title text-sm text-gray-300">Total Borrowed Books</h2>
-                        </div>
+                    <div class="w-full flex flex-col items-end text-white">
+                        <span class="text-2xl font-semibold"><?= htmlspecialchars($pending_users_count) ?></span>
+                        <h2 class="title text-sm text-gray-300">Pending User Requests</h2>
                     </div>
+                </div>
 
-                    <div class="info p-4 flex items-start rounded-2xl shadow-md">
-                        <div class="text-5xl text-white mr-4">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <div class="w-full flex flex-col items-end text-white">
-                            <span class="text-2xl font-semibold"><?= htmlspecialchars($overdue_book_count) ?></span>
-                            <h2 class="title text-sm text-gray-300">Overdue Books</h2>
-                        </div>
+                <div class="info p-4 flex items-start rounded-2xl shadow-md">
+                    <div class="text-5xl text-white mr-4">
+                        <i class="fas fa-clock"></i>
                     </div>
-
-                    <div class="info p-4 flex items-start rounded-2xl shadow-md">
-                        <div class="text-5xl text-white mr-4">
-                            <i class="fas fa-money-bill-wave"></i>
-                        </div>
-                        <div class="w-full flex flex-col items-end text-white">
-                            <span
-                                class="text-2xl font-semibold">₱<?= number_format($monthly_collected_fines, 2) ?></span>
-                            <h2 class="title text-sm text-gray-300">Monthly Collected Fines</h2>
-                        </div>
+                    <div class="w-full flex flex-col items-end text-white">
+                        <span
+                            class="text-2xl font-semibold"><?= htmlspecialchars($pending_borrow_requests_count) ?></span>
+                        <h2 class="title text-sm text-gray-300">Pending Borrow Requests</h2>
                     </div>
-                </section>
+                </div>
 
-
-                <h2 class="font-extrabold text-3xl pl-8 pt-4 text-red-900">POPULAR LIBRARY INSIGHTS</h2>
-                <section class="grid grid-cols-1 p-8 lg:grid-cols-3 gap-6">
-                    <div class="info-section min-h-[250px]">
-                        <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">Top 5 Most Active Borrowers
-                        </h2>
-                        <div class="flex justify-center items-center">
-                            <?php if (empty($top_5_borrowers)): ?>
-                                <p class="text-gray-500">No borrower data available.</p>
-                            <?php else: ?>
-                                <canvas id="topBorrowersChart"></canvas>
-                            <?php endif; ?>
-                        </div>
+                <div class="info p-4 flex items-start rounded-2xl shadow-md">
+                    <div class="text-5xl text-white mr-4">
+                        <i class="fas fa-box-open"></i>
                     </div>
-
-                    <div class="info-section min-h-[250px]">
-                        <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">Top 5 Most Borrowed Books
-                        </h2>
-                        <div class="flex justify-center items-center">
-                            <?php if (empty($top_5_books)): ?>
-                                <p class="text-gray-500">No borrowing data available.</p>
-                            <?php else: ?>
-                                <canvas id="topBooksChart"></canvas>
-                            <?php endif; ?>
-                        </div>
+                    <div class="w-full flex flex-col items-end text-white">
+                        <span class="text-2xl font-semibold"><?= htmlspecialchars($total_pick_up) ?></span>
+                        <h2 class="title text-sm text-gray-300">Total Books For Pickup</h2>
                     </div>
+                </div>
 
-                    <div class="info-section min-h-[250px]">
-                        <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">Top 5 Most Popular Categories
-                        </h2>
-                        <div class="flex justify-center items-center">
-                            <?php if (empty($top_5_categories)): ?>
-                                <p class="text-gray-500">No category data available.</p>
-                            <?php else: ?>
-                                <canvas id="topCategoriesChart"></canvas>
-                            <?php endif; ?>
-                        </div>
+                <div class="info p-4 flex items-start rounded-2xl shadow-md">
+                    <div class="text-5xl text-white mr-4">
+                        <i class="fas fa-book-reader"></i>
                     </div>
-
-                </section>
-
-
-                <h2 class="font-extrabold text-3xl pl-8 pt-4 text-red-900">LIBRARY ACTIVITY OVERVIEW</h2>
-                <section class="grid grid-cols-1 p-8 lg:grid-cols-2 gap-6">
-                    <div class="info-section min-h-[250px]">
-                        <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">Daily Borrowing Activity
-                            (Last 7 Days)
-                        </h2>
-                        <div class="flex justify-center items-center">
-                            <?php if (empty($daily_activity_data)): ?>
-                                <p class="text-gray-500">No activity in the last 7 days.</p>
-                            <?php else: ?>
-                                <canvas id="dailyActivityChart"></canvas>
-                            <?php endif; ?>
-                        </div>
+                    <div class="w-full flex flex-col items-end text-white">
+                        <span class="text-2xl font-semibold"><?= htmlspecialchars($total_borrowed_books) ?></span>
+                        <h2 class="title text-sm text-gray-300">Total Borrowed Books</h2>
                     </div>
+                </div>
 
-                    <div class="info-section min-h-[250px]">
-                        <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">Borrowed and Returned Books
-                            (<?= $month ?>)
-                        </h2>
-                        <div class="flex justify-center items-center">
-                            <?php if (empty($borrow_return_data) || ($borrow_return_data[0]['count'] == 0 && $borrow_return_data[1]['count'] == 0)): ?>
-                                <p class="text-gray-500">No borrow/return data this month.</p>
-                            <?php else: ?>
-                                <div class="max-w-xs mx-auto w-full">
-                                    <canvas id="borrowReturnChart"></canvas>
-                                </div>
-                            <?php endif; ?>
-                        </div>
+                <div class="info p-4 flex items-start rounded-2xl shadow-md">
+                    <div class="text-5xl text-white mr-4">
+                        <i class="fas fa-exclamation-triangle"></i>
                     </div>
-
-
-                    <div class="info-section min-h-[250px]">
-                        <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">New User Registration (Last
-                            30 Days)
-                        </h2>
-                        <div class="flex justify-center items-center">
-                            <?php if (empty($user_reg_trend_data)): ?>
-                                <p class="text-gray-500">No new users in the last 30 days.</p>
-                            <?php else: ?>
-                                <canvas id="userRegTrendChart"></canvas>
-                            <?php endif; ?>
-                        </div>
+                    <div class="w-full flex flex-col items-end text-white">
+                        <span class="text-2xl font-semibold"><?= htmlspecialchars($overdue_book_count) ?></span>
+                        <h2 class="title text-sm text-gray-300">Overdue Books</h2>
                     </div>
+                </div>
 
-                    <div class="info-section min-h-[250px]">
-                        <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">Collected Fines (Last 7
-                            Days)
-                        </h2>
-                        <div class="flex justify-center items-center">
-                            <?php if (empty($collected_fines_7_days)): ?>
-                                <p class="text-gray-500">No fines collected in the last 7 days.</p>
-                            <?php else: ?>
-                                <canvas id="collectedFineChart"></canvas>
-                            <?php endif; ?>
-                        </div>
+                <div class="info p-4 flex items-start rounded-2xl shadow-md">
+                    <div class="text-5xl text-white mr-4">
+                        <i class="fas fa-money-bill-wave"></i>
                     </div>
-                </section>
+                    <div class="w-full flex flex-col items-end text-white">
+                        <span class="text-2xl font-semibold">₱<?= number_format($monthly_collected_fines, 2) ?></span>
+                        <h2 class="title text-sm text-gray-300">Monthly Collected Fines</h2>
+                    </div>
+                </div>
+            </section>
 
 
-                <h2 class="font-extrabold text-3xl pl-8 pt-4 text-red-900">ACTIVITY FEED</h2>
-                <!-- <section class="section mt-8">
+            <h2 class="font-extrabold text-3xl pl-8 pt-4 text-red-900">POPULAR LIBRARY INSIGHTS</h2>
+            <section class="grid grid-cols-1 p-8 lg:grid-cols-3 gap-6">
+                <div class="info-section min-h-[250px]">
+                    <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">Top 5 Most Active Borrowers
+                    </h2>
+                    <div class="flex justify-center items-center">
+                        <?php if (empty($top_5_borrowers)): ?>
+                            <p class="text-gray-500">No borrower data available.</p>
+                        <?php else: ?>
+                            <canvas id="topBorrowersChart"></canvas>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="info-section min-h-[250px]">
+                    <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">Top 5 Most Borrowed Books
+                    </h2>
+                    <div class="flex justify-center items-center">
+                        <?php if (empty($top_5_books)): ?>
+                            <p class="text-gray-500">No borrowing data available.</p>
+                        <?php else: ?>
+                            <canvas id="topBooksChart"></canvas>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="info-section min-h-[250px]">
+                    <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">Top 5 Most Popular Categories
+                    </h2>
+                    <div class="flex justify-center items-center">
+                        <?php if (empty($top_5_categories)): ?>
+                            <p class="text-gray-500">No category data available.</p>
+                        <?php else: ?>
+                            <canvas id="topCategoriesChart"></canvas>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+            </section>
+
+
+            <h2 class="font-extrabold text-3xl pl-8 pt-4 text-red-900">LIBRARY ACTIVITY OVERVIEW</h2>
+            <section class="grid grid-cols-1 p-8 lg:grid-cols-2 gap-6">
+                <div class="info-section min-h-[250px]">
+                    <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">Daily Borrowing Activity
+                        (Last 7 Days)
+                    </h2>
+                    <div class="flex justify-center items-center">
+                        <?php if (empty($daily_activity_data)): ?>
+                            <p class="text-gray-500">No activity in the last 7 days.</p>
+                        <?php else: ?>
+                            <canvas id="dailyActivityChart"></canvas>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="info-section min-h-[250px]">
+                    <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">Borrowed and Returned Books
+                        (<?= $month ?>)
+                    </h2>
+                    <div class="flex justify-center items-center">
+                        <?php if (empty($borrow_return_data) || ($borrow_return_data[0]['count'] == 0 && $borrow_return_data[1]['count'] == 0)): ?>
+                            <p class="text-gray-500">No borrow/return data this month.</p>
+                        <?php else: ?>
+                            <div class="max-w-xs mx-auto w-full">
+                                <canvas id="borrowReturnChart"></canvas>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+
+                <div class="info-section min-h-[250px]">
+                    <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">New User Registration (Last
+                        30 Days)
+                    </h2>
+                    <div class="flex justify-center items-center">
+                        <?php if (empty($user_reg_trend_data)): ?>
+                            <p class="text-gray-500">No new users in the last 30 days.</p>
+                        <?php else: ?>
+                            <canvas id="userRegTrendChart"></canvas>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="info-section min-h-[250px]">
+                    <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">Collected Fines (Last 7
+                        Days)
+                    </h2>
+                    <div class="flex justify-center items-center">
+                        <?php if (empty($collected_fines_7_days)): ?>
+                            <p class="text-gray-500">No fines collected in the last 7 days.</p>
+                        <?php else: ?>
+                            <canvas id="collectedFineChart"></canvas>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </section>
+
+
+            <h2 class="font-extrabold text-3xl pl-8 pt-4 text-red-900">ACTIVITY FEED</h2>
+            <!-- <section class="section mt-8">
                     <h2 class="text-2xl font-bold mb-4">Books Due Today
                         (<?= htmlspecialchars($books_due_today_count) ?>)</h2>
                     <div class="view bg-white p-4 rounded-lg shadow-md">
@@ -302,114 +299,113 @@ $borrow_details = $borrowObj->viewBorrowDetails('', 'pending');
                                 ?>
                             </tbody>
                         </table> -->
-                    <!-- </div>
+            <!-- </div>
                 </section> -->
-                <section class="section mt-8">
-                    <h2 class="text-2xl font-bold mb-4">Pending Borrow Requests
-                        (<?= htmlspecialchars($pending_borrow_requests_count) ?>)</h2>
-                    <div class="view bg-white p-4 rounded-lg shadow-md">
-                        <table>
-                            <thead>
+            <section class="section mt-8">
+                <h2 class="text-2xl font-bold mb-4">Pending Borrow Requests
+                    (<?= htmlspecialchars($pending_borrow_requests_count) ?>)</h2>
+                <div class="view bg-white p-4 rounded-lg shadow-md">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>User Name</th>
+                                <th>Book Title</th>
+                                <th>Copies</th>
+                                <th>Request Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($borrow_details)): ?>
                                 <tr>
-                                    <th>No</th>
-                                    <th>User Name</th>
-                                    <th>Book Title</th>
-                                    <th>Copies</th>
-                                    <th>Request Date</th>
-                                    <th>Actions</th>
+                                    <td colspan="6" class="text-center py-4 text-gray-500">
+                                        No pending borrow requests found.
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (empty($borrow_details)): ?>
+                            <?php else:
+                                $no = 1;
+                                foreach ($borrow_details as $detail) {
+                                    $fullName = htmlspecialchars($detail["lName"] . ', ' . $detail["fName"]);
+                                    $bookTitle = htmlspecialchars($detail["book_title"]);
+                                    $borrowID = $detail["borrowID"];
+                                    $request_date = $detail["request_date"];
+                                    ?>
                                     <tr>
-                                        <td colspan="6" class="text-center py-4 text-gray-500">
-                                            No pending borrow requests found.
+                                        <td><?= $no++; ?></td>
+                                        <td><?= $fullName ?></td>
+                                        <td><?= $bookTitle ?></td>
+                                        <td><?= $detail["no_of_copies"] ?></td>
+                                        <td><?= $request_date ?></td>
+                                        <td class="action text-center">
+                                            <a class="actionBtn bg-green-500 hover:bg-green-600 text-white inline-block mb-1"
+                                                href="../../../app/controllers/dashboardController.php?action=accept&id=<?= $borrowID ?>">Accept</a>
+                                            <a class="actionBtn bg-red-500 hover:bg-red-600 text-white inline-block mb-1"
+                                                href="../../../app/controllers/dashboardController.php?action=reject&id=<?= $borrowID ?>">Reject</a>
+                                            <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-white inline-block mb-1"
+                                                href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>">View</a>
                                         </td>
                                     </tr>
-                                <?php else:
-                                    $no = 1;
-                                    foreach ($borrow_details as $detail) {
-                                        $fullName = htmlspecialchars($detail["lName"] . ', ' . $detail["fName"]);
-                                        $bookTitle = htmlspecialchars($detail["book_title"]);
-                                        $borrowID = $detail["borrowID"];
-                                        $request_date = $detail["request_date"];
-                                        ?>
-                                        <tr>
-                                            <td><?= $no++; ?></td>
-                                            <td><?= $fullName ?></td>
-                                            <td><?= $bookTitle ?></td>
-                                            <td><?= $detail["no_of_copies"] ?></td>
-                                            <td><?= $request_date ?></td>
-                                            <td class="action text-center">
-                                                <a class="actionBtn bg-green-500 hover:bg-green-600 text-white inline-block mb-1"
-                                                    href="../../../app/controllers/dashboardController.php?action=accept&id=<?= $borrowID ?>">Accept</a>
-                                                <a class="actionBtn bg-red-500 hover:bg-red-600 text-white inline-block mb-1"
-                                                    href="../../../app/controllers/dashboardController.php?action=reject&id=<?= $borrowID ?>">Reject</a>
-                                                <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-white inline-block mb-1"
-                                                    href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>">View</a>
-                                            </td>
-                                        </tr>
-                                    <?php }
-                                endif;
-                                ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
+                                <?php }
+                            endif;
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
 
 
-                <section class="section mt-8">
-                    <h2 class="text-2xl font-bold mb-4">Pending User Approvals
-                        (<?= htmlspecialchars($pending_users_count) ?>)</h2>
-                    <div class="view bg-white p-4 rounded-lg shadow-md">
-                        <table>
-                            <thead>
+            <section class="section mt-8">
+                <h2 class="text-2xl font-bold mb-4">Pending User Approvals
+                    (<?= htmlspecialchars($pending_users_count) ?>)</h2>
+                <div class="view bg-white p-4 rounded-lg shadow-md">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Full Name</th>
+                                <th>Email</th>
+                                <th>User Type</th>
+                                <th>Date Reg.</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($pending_users)): ?>
                                 <tr>
-                                    <th>No</th>
-                                    <th>Full Name</th>
-                                    <th>Email</th>
-                                    <th>User Type</th>
-                                    <th>Date Reg.</th>
-                                    <th>Actions</th>
+                                    <td colspan="6" class="text-center py-4 text-gray-500">
+                                        No pending user registrations found.
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (empty($pending_users)): ?>
+                            <?php else:
+                                $no = 1;
+                                foreach ($pending_users as $user) {
+                                    $fullName = htmlspecialchars($user["fName"] . " " . $user["lName"]);
+                                    $userID = $user["userID"];
+                                    ?>
                                     <tr>
-                                        <td colspan="6" class="text-center py-4 text-gray-500">
-                                            No pending user registrations found.
+                                        <td><?= $no++; ?></td>
+                                        <td><?= $fullName ?></td>
+                                        <td><?= htmlspecialchars($user["email"]) ?></td>
+                                        <td><?= htmlspecialchars($user["type_name"]) ?></td>
+                                        <td><?= $user["date_registered"] ?></td>
+                                        <td class="action text-center">
+                                            <a class="actionBtn bg-green-500 hover:bg-green-600 text-white inline-block mb-1"
+                                                href="../../../app/controllers/userController.php?action=approveReject&id=<?= $userID ?>&status=Approved">Approve</a>
+                                            <a class="actionBtn bg-red-500 hover:bg-red-600 text-white inline-block mb-1"
+                                                href="../../../app/controllers/userController.php?action=approveReject&id=<?= $userID ?>&status=Rejected">Reject</a>
+                                            <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-white inline-block mb-1"
+                                                href="usersSection.php?modal=view&id=<?= $userID ?>">View</a>
                                         </td>
                                     </tr>
-                                <?php else:
-                                    $no = 1;
-                                    foreach ($pending_users as $user) {
-                                        $fullName = htmlspecialchars($user["fName"] . " " . $user["lName"]);
-                                        $userID = $user["userID"];
-                                        ?>
-                                        <tr>
-                                            <td><?= $no++; ?></td>
-                                            <td><?= $fullName ?></td>
-                                            <td><?= htmlspecialchars($user["email"]) ?></td>
-                                            <td><?= htmlspecialchars($user["type_name"]) ?></td>
-                                            <td><?= $user["date_registered"] ?></td>
-                                            <td class="action text-center">
-                                                <a class="actionBtn bg-green-500 hover:bg-green-600 text-white inline-block mb-1"
-                                                    href="../../../app/controllers/userController.php?action=approveReject&id=<?= $userID ?>&status=Approved">Approve</a>
-                                                <a class="actionBtn bg-red-500 hover:bg-red-600 text-white inline-block mb-1"
-                                                    href="../../../app/controllers/userController.php?action=approveReject&id=<?= $userID ?>&status=Rejected">Reject</a>
-                                                <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-white inline-block mb-1"
-                                                    href="usersSection.php?modal=view&id=<?= $userID ?>">View</a>
-                                            </td>
-                                        </tr>
-                                    <?php }
-                                endif;
-                                ?>
-                            </tbody>
-                        </table>
+                                <?php }
+                            endif;
+                            ?>
+                        </tbody>
+                    </table>
 
-                    </div>
-                </section>
-            </div>
+                </div>
+            </section>
         </main>
     </div>
 

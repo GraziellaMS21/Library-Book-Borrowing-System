@@ -99,80 +99,79 @@ $books = $bookObj->viewBook($search, $categoryID);
     <?php require_once(__DIR__ . '/../shared/dashboardHeader.php'); ?>
 
     <main class="overflow-y-auto">
-        <div class="container">
-            <div class="section h-full">
-                <div class="title flex w-full my-8 items-center justify-between">
-                    <h1 class="text-red-800 font-bold text-4xl">MANAGE BOOKS</h1>
-                    <div class="">
-                        <a href="bookList.php" target="_blank" class="addBtn">Print
-                            Book List</a>
-                        <a id="openAddBookModalBtn" class="addBtn" href="booksSection.php?modal=add" ?>+ Add Book</a>
-                    </div>
+        <div class="section">
+            <div class="title flex w-full my-8 items-center justify-between">
+                <h1 class="text-red-800 font-bold text-4xl">MANAGE BOOKS</h1>
+                <div class="">
+                    <a href="bookList.php" target="_blank" class="addBtn">Print
+                        Book List</a>
+                    <a id="openAddBookModalBtn" class="addBtn" href="booksSection.php?modal=add" ?>+ Add Book</a>
                 </div>
+            </div>
 
-                <form method="GET" class="search">
-                    <input type="text" name="search" placeholder="Search book title..." value="<?= $search ?>">
-                    <select name="category" id="category">
-                        <option value="">All Categories</option>
-                        <?php foreach ($category as $cat): ?>
-                            <option value="<?= $cat["categoryID"] ?>" <?= $categoryID == $cat["categoryID"] ? 'selected' : '' ?>> <?= $cat["category_name"] ?> </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <button type="submit" class="bg-red-800 text-white rounded-lg px-4 py-2">Search</button>
-                </form>
+            <form method="GET" class="search">
+                <input type="text" name="search" placeholder="Search book title..." value="<?= $search ?>">
+                <select name="category" id="category">
+                    <option value="">All Categories</option>
+                    <?php foreach ($category as $cat): ?>
+                        <option value="<?= $cat["categoryID"] ?>" <?= $categoryID == $cat["categoryID"] ? 'selected' : '' ?>>
+                            <?= $cat["category_name"] ?> </option>
+                    <?php endforeach; ?>
+                </select>
+                <button type="submit" class="bg-red-800 text-white rounded-lg px-4 py-2">Search</button>
+            </form>
 
 
-                <div class="view">
-                    <table>
-                        <tr>
-                            <th>No</th>
-                            <th>Book Cover</th>
-                            <th>Book Title</th>
-                            <th>Author</th>
-                            <th>Category</th>
-                            <th>No. of Copies</th>
-                            <th>Condition</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
+            <div class="view">
+                <table>
+                    <tr>
+                        <th>No</th>
+                        <th>Book Cover</th>
+                        <th>Book Title</th>
+                        <th>Author</th>
+                        <th>Category</th>
+                        <th>No. of Copies</th>
+                        <th>Condition</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
 
-                        <?php
-                        $no = 1;
-                        foreach ($books as $book) {
-                            $book_cover_url = !empty($book["book_cover_dir"]) ? "../../../" . $book["book_cover_dir"] : null;
-                            ?>
-                            <tr>
-                                <td><?= $no++ ?></td>
-                                <td class="text-center"> <?php if ($book_cover_url) { ?>
-                                        <img src="<?= $book_cover_url ?>" alt="Cover"
-                                            class="w-16 h-16 object-cover rounded mx-auto border border-gray-300"
-                                            title="<?= $book["book_cover_name"] ?? 'Book Cover' ?>">
-                                    <?php } else { ?>
-                                        <span class="text-gray-500 text-xs">N/A</span>
-                                    <?php } ?>
-                                </td>
-                                <td><?= $book["book_title"] ?></td>
-                                <td><?= $book["author_names"] ?></td>
-                                <td><?= $book["category_name"] ?></td>
-                                <td><?= $book["book_copies"] ?></td>
-                                <td><?= $book["book_condition"] ?></td>
-                                <td><?= $book["status"] ?></td>
-                                <td class="action text-center">
-                                    <a class="actionBtn bg-blue-500 hover:bg-blue-600"
-                                        href="booksSection.php?modal=edit&id=<?= $book['bookID'] ?>">Edit</a>
-                                    <a class="actionBtn bg-red-500 hover:bg-red-600"
-                                        href="booksSection.php?modal=delete&id=<?= $book['bookID'] ?>">
-                                        Delete
-                                    </a>
-                                    <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-white "
-                                        href="booksSection.php?modal=view&id=<?= $book['bookID'] ?>">View</a>
-                                </td>
-                            </tr>
-                            <?php
-                        }
+                    <?php
+                    $no = 1;
+                    foreach ($books as $book) {
+                        $book_cover_url = !empty($book["book_cover_dir"]) ? "../../../" . $book["book_cover_dir"] : null;
                         ?>
-                    </table>
-                </div>
+                        <tr>
+                            <td><?= $no++ ?></td>
+                            <td class="text-center"> <?php if ($book_cover_url) { ?>
+                                    <img src="<?= $book_cover_url ?>" alt="Cover"
+                                        class="w-16 h-16 object-cover rounded mx-auto border border-gray-300"
+                                        title="<?= $book["book_cover_name"] ?? 'Book Cover' ?>">
+                                <?php } else { ?>
+                                    <span class="text-gray-500 text-xs">N/A</span>
+                                <?php } ?>
+                            </td>
+                            <td><?= $book["book_title"] ?></td>
+                            <td><?= $book["author_names"] ?></td>
+                            <td><?= $book["category_name"] ?></td>
+                            <td><?= $book["book_copies"] ?></td>
+                            <td><?= $book["book_condition"] ?></td>
+                            <td><?= $book["status"] ?></td>
+                            <td class="action text-center">
+                                <a class="actionBtn bg-blue-500 hover:bg-blue-600"
+                                    href="booksSection.php?modal=edit&id=<?= $book['bookID'] ?>">Edit</a>
+                                <a class="actionBtn bg-red-500 hover:bg-red-600"
+                                    href="booksSection.php?modal=delete&id=<?= $book['bookID'] ?>">
+                                    Delete
+                                </a>
+                                <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-white "
+                                    href="booksSection.php?modal=view&id=<?= $book['bookID'] ?>">View</a>
+                            </td>
+                        </tr>
+                        <?php
+                    }
+                    ?>
+                </table>
             </div>
         </div>
     </main>

@@ -83,8 +83,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
         <?php require_once(__DIR__ . '/../shared/dashboardHeader.php'); ?>
 
         <main class="overflow-y-auto">
-            <div class="container">
-                <div class="section manage_users h-full">
+                <div class="section manage_users">
                     <div class="title flex w-full items-center justify-between mb-4">
                         <h1 class="text-red-800 font-bold text-4xl">MANAGE USERS</h1>
 
@@ -213,7 +212,6 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                         </table>
                     </div>
                 </div>
-            </div>
         </main>
     </div>
 

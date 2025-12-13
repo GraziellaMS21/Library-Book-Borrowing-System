@@ -15,7 +15,7 @@
 /* --- FIX START --- */
 header {
   /* Increased margin to clear the fixed navbar height */
-  margin-bottom: 5rem !important; 
+  margin-bottom: 5rem !important;
   /* margin-top and margin-left/right can be 0 or auto */
   margin-top: 0;
   z-index: 999;
@@ -27,8 +27,13 @@ header {
 body {
   font-family: Verdana, Geneva, Tahoma, sans-serif;
   /* Added background-attachment: fixed */
-  background: linear-gradient(135deg, rgba(237, 211, 143, 0.5), rgba(237, 211, 143, 0.4)), url('../images/page.jpg');
-  background-attachment: fixed; 
+  background: linear-gradient(
+      135deg,
+      rgba(237, 211, 143, 0.5),
+      rgba(237, 211, 143, 0.4)
+    ),
+    url("../images/page.jpg");
+  background-attachment: fixed;
   background-repeat: no-repeat; /* Changed to no-repeat since it's fixed */
   background-size: cover;
   font-size: 0.8rem;
@@ -36,7 +41,6 @@ body {
   min-height: 100vh; /* Changed height: 100% to min-height: 100vh for better stability */
   transition: background-size 0.5s ease;
 }
-
 
 .font-playfair {
   font-family: "Playfair Display", serif;
@@ -50,7 +54,7 @@ body {
 .hero-section {
   position: relative;
   height: 50vh;
-  background-image: url("../images/1university_library_bg.png");
+  background-image: url("../images/university_library_bg.png");
   background-size: cover;
   background-position: center 30%;
   background-attachment: fixed;
@@ -83,15 +87,15 @@ body {
 }
 
 .hero-subtitle {
-    font-size: 1.25rem;
-    margin-bottom: 2.5rem;
-    font-weight: 300;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--wmsu-gold);
-    border-bottom: 2px solid var(--wmsu-gold);
-    display: inline-block;
-    padding-bottom: 5px;
+  font-size: 1.25rem;
+  margin-bottom: 2.5rem;
+  font-weight: 300;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--wmsu-gold);
+  border-bottom: 2px solid var(--wmsu-gold);
+  display: inline-block;
+  padding-bottom: 5px;
 }
 /* --- Contact Card Container --- */
 .contact-card {
@@ -102,7 +106,7 @@ body {
 .info-section {
   background: linear-gradient(to bottom right, #931c19, #610101);
   position: relative;
-  border-right: 4px solid var(--wmsu-gold); 
+  border-right: 4px solid var(--wmsu-gold);
 }
 
 .pattern-overlay {

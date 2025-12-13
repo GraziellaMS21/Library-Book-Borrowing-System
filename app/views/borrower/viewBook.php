@@ -60,7 +60,7 @@ if (!$book) {
 
 // Extract essential book details (used for display and passing to JS)
 $book_title = htmlspecialchars($book['book_title']);
-$author = htmlspecialchars($book['author_names'] ?? 'N/A'); 
+$author = htmlspecialchars($book['author_names'] ?? 'N/A');
 $category_name = htmlspecialchars($book['category_name']);
 $publication_name = htmlspecialchars($book['publication_name']);
 $publication_year = htmlspecialchars($book['publication_year']);
@@ -88,8 +88,8 @@ $modal_available_copies = $copies;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>View Book: <?= $book_title ?></title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/borrower1.css" />
-    <link rel="stylesheet" href="../../../public/assets/css/header_footer2.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/borrower.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/header_footer.css" />
     <style>
         /* Admin modal style fix for borrower page */
         .modal {
@@ -142,8 +142,8 @@ $modal_available_copies = $copies;
 <body class="bg-gray-50 min-h-screen">
     <div class="color-layer"></div>
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <?php if(isset($_SESSION["user_id"])) {
+
+        <?php if (isset($_SESSION["user_id"])) {
             require_once(__DIR__ . '/../shared/headerBorrower.php');
         } else {
             require_once(__DIR__ . '/../shared/header.php');
@@ -168,13 +168,13 @@ $modal_available_copies = $copies;
                     <div class="w-full h-96 shadow-2xl rounded-lg overflow-hidden bg-gray-200 border-4 border-gray-100">
                         <?php
                         if ($book_cover_dir) { ?>
-                            <img src="<?= "../../../" . $book_cover_dir ?>" alt="<?= $book_title ?> Cover"
-                                class="w-full h-full object-cover">
+                                <img src="<?= "../../../" . $book_cover_dir ?>" alt="<?= $book_title ?> Cover"
+                                    class="w-full h-full object-cover">
                         <?php } else { ?>
-                            <div
-                                class="flex items-center justify-center w-full h-full text-lg text-gray-500 text-center p-4">
-                                No Cover Available
-                            </div>
+                                <div
+                                    class="flex items-center justify-center w-full h-full text-lg text-gray-500 text-center p-4">
+                                    No Cover Available
+                                </div>
                         <?php } ?>
                     </div>
                 </div>
@@ -189,7 +189,9 @@ $modal_available_copies = $copies;
                         <p class="text-gray-700"><strong>Publication Year:</strong> <?= $publication_year ?></p>
                         <p class="text-gray-700"><strong>ISBN:</strong> <?= $ISBN ?></p>
                         <p class="text-gray-700"><strong>Book Condition:</strong> <?= $book_condition ?></p>
-                        <p class="text-gray-700"><strong>Replacement Cost:</strong> <?= htmlspecialchars($book['replacement_cost']) ?></p></p>
+                        <p class="text-gray-700"><strong>Replacement Cost:</strong>
+                            <?= htmlspecialchars($book['replacement_cost']) ?></p>
+                        </p>
                         <p class="text-gray-700">
                             <strong>Copies Available:</strong>
                             <span
@@ -254,10 +256,10 @@ $modal_available_copies = $copies;
                             </a>
 
                             <?php if ($userID && !$button_disabled): ?>
-                            <a <?= $add_to_list_action ?>
-                                class="text-sm font-medium transition duration-300 px-4 py-2 rounded-full bg-red-800 text-white shadow-md hover:bg-red-900">
-                                + Add To List
-                            </a>
+                                    <a <?= $add_to_list_action ?>
+                                        class="text-sm font-medium transition duration-300 px-4 py-2 rounded-full bg-red-800 text-white shadow-md hover:bg-red-900">
+                                        + Add To List
+                                    </a>
                             <?php endif; ?>
                         </div>
                     </div>

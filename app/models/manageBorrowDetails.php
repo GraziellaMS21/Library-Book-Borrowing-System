@@ -46,6 +46,48 @@ class BorrowDetails extends Database
         return $query->execute();
     }
 
+    public function editBorrowDetail($borrowID)
+{
+    $sql = "UPDATE borrowing_details 
+            SET 
+                userID = :userID,
+                bookID = :bookID,
+                no_of_copies = :no_of_copies,
+                request_date = :request_date,
+                pickup_date = :pickup_date,
+                return_date = :return_date,
+                expected_return_date = :expected_return_date,
+                returned_condition = :returned_condition,
+                borrow_request_status = :borrow_request_status,
+                borrow_status = :borrow_status,
+                fine_amount = :fine_amount,
+                fine_reason = :fine_reason,
+                fine_status = :fine_status,
+                status_reason = :status_reason
+            WHERE borrowID = :borrowID";
+
+    $query = $this->connect()->prepare($sql);
+
+    $query->bindParam(":borrowID", $borrowID);
+    $query->bindParam(":userID", $this->userID);
+    $query->bindParam(":bookID", $this->bookID);
+    $query->bindParam(":no_of_copies", $this->no_of_copies);
+    $query->bindParam(":request_date", $this->request_date);
+    $query->bindParam(":pickup_date", $this->pickup_date);
+    $query->bindParam(":return_date", $this->return_date);
+    $query->bindParam(":expected_return_date", $this->expected_return_date);
+    $query->bindParam(":returned_condition", $this->returned_condition);
+    $query->bindParam(":borrow_request_status", $this->borrow_request_status);
+    $query->bindParam(":borrow_status", $this->borrow_status);
+    $query->bindParam(":fine_amount", $this->fine_amount);
+    $query->bindParam(":fine_reason", $this->fine_reason);
+    $query->bindParam(":fine_status", $this->fine_status);
+    $query->bindParam(":status_reason", $this->status_reason);
+
+    return $query->execute();
+}
+
+
     public function fetchUserBorrowDetails($userID, $status_filter)
     {
         // Added JOINs and GROUP BY to get author names

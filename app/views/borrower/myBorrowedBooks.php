@@ -145,8 +145,8 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Loans - <?= getTabTitle($active_tab) ?></title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/borrower1.css" />
-    <link rel="stylesheet" href="../../../public/assets/css/header_footer2.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/borrower.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/header_footer.css" />
 </head>
 
 <body class="min-h-screen bg-gray-50">
@@ -161,10 +161,10 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
         <div class="bg-white p-6 rounded-xl shadow-lg">
 
             <?php if (!empty($success_message)): ?>
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4"
-                    role="alert">
-                    <span class="block sm:inline"><?= htmlspecialchars($success_message) ?></span>
-                </div>
+                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4"
+                        role="alert">
+                        <span class="block sm:inline"><?= htmlspecialchars($success_message) ?></span>
+                    </div>
             <?php endif; ?>
 
             <div class="tabs border-b border-gray-200 mb-6">
@@ -192,260 +192,260 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
             $is_other_tab_empty = $active_tab !== 'returned' && empty($borrowed_books);
 
             if ($is_returned_empty || $is_other_tab_empty): ?>
-                <div class="py-10 text-center bg-gray-100 rounded-lg">
-                    <p class="text-lg text-gray-500">No books found in this section.</p>
-                </div>
+                    <div class="py-10 text-center bg-gray-100 rounded-lg">
+                        <p class="text-lg text-gray-500">No books found in this section.</p>
+                    </div>
             <?php else: ?>
-                <div class="overflow-x-auto list-container">
+                    <div class="overflow-x-auto list-container">
 
-                    <?php
-                    // New logic for sub-tabs within 'returned'
-                    $active_sub_tab = $_GET['subtab'] ?? 'Returned'; // Default to 'Returned'
-                    $history_sections = ['Returned', 'Rejected', 'Cancelled'];
+                        <?php
+                        // New logic for sub-tabs within 'returned'
+                        $active_sub_tab = $_GET['subtab'] ?? 'Returned'; // Default to 'Returned'
+                        $history_sections = ['Returned', 'Rejected', 'Cancelled'];
 
-                    if ($active_tab === 'returned') {
-                        // Ensure a valid sub-tab is selected
-                        if (!in_array($active_sub_tab, $history_sections)) {
-                            $active_sub_tab = 'Returned'; // Fallback
+                        if ($active_tab === 'returned') {
+                            // Ensure a valid sub-tab is selected
+                            if (!in_array($active_sub_tab, $history_sections)) {
+                                $active_sub_tab = 'Returned'; // Fallback
+                            }
+                            // For the returned tab, we only loop through the active sub-tab
+                            $sections_to_display = [$active_sub_tab];
+                            $loop_data = $borrowed_books; // History data is already grouped
+                        } else {
+                            // Original logic for non-history tabs
+                            $sections_to_display = ['_single_'];
+                            // For non-history tabs, wrap the single list in a structure that the loop below can use
+                            $loop_data = ['_single_' => $borrowed_books];
                         }
-                        // For the returned tab, we only loop through the active sub-tab
-                        $sections_to_display = [$active_sub_tab];
-                        $loop_data = $borrowed_books; // History data is already grouped
-                    } else {
-                        // Original logic for non-history tabs
-                        $sections_to_display = ['_single_'];
-                        // For non-history tabs, wrap the single list in a structure that the loop below can use
-                        $loop_data = ['_single_' => $borrowed_books];
-                    }
-                    ?>
+                        ?>
 
-                    <?php if ($active_tab === 'returned'): // New Sub-Tab Navigation Bar ?>
-                        <div class="sub-tabs border-b border-gray-200 mb-6 -mt-2">
-                            <nav class="mb-px flex space-x-6 font-semibold text-gray-600" aria-label="Sub-Tabs">
-                                <?php foreach ($history_sections as $sub_tab): ?>
-                                    <a href="?tab=returned&subtab=<?= urlencode($sub_tab) ?>" class="py-2 px-1 border-b-2 font-bold transition duration-150 ease-in-out
+                        <?php if ($active_tab === 'returned'): // New Sub-Tab Navigation Bar ?>
+                                <div class="sub-tabs border-b border-gray-200 mb-6 -mt-2">
+                                    <nav class="mb-px flex space-x-6 font-semibold text-gray-600" aria-label="Sub-Tabs">
+                                        <?php foreach ($history_sections as $sub_tab): ?>
+                                                <a href="?tab=returned&subtab=<?= urlencode($sub_tab) ?>" class="py-2 px-1 border-b-2 font-bold transition duration-150 ease-in-out
                                         <?= $active_sub_tab == $sub_tab
                                             ? 'border-red-700 text-red-800'
                                             : 'border-transparent hover:border-gray-300 hover:text-gray-800' ?>">
-                                        <?= htmlspecialchars($sub_tab) ?>
-                                        <span
-                                            class="text-sm ml-1 text-gray-400 font-normal">(<?= count($borrowed_books[$sub_tab] ?? []) ?>)</span>
-                                    </a>
-                                <?php endforeach; ?>
-                            </nav>
-                        </div>
-                    <?php endif; ?>
+                                                    <?= htmlspecialchars($sub_tab) ?>
+                                                    <span
+                                                        class="text-sm ml-1 text-gray-400 font-normal">(<?= count($borrowed_books[$sub_tab] ?? []) ?>)</span>
+                                                </a>
+                                        <?php endforeach; ?>
+                                    </nav>
+                                </div>
+                        <?php endif; ?>
 
-                    <?php foreach ($sections_to_display as $section_name):
-                        $section_books = $loop_data[$section_name];
-                        $is_history_section = $active_tab === 'returned';
-                        ?>
+                        <?php foreach ($sections_to_display as $section_name):
+                            $section_books = $loop_data[$section_name];
+                            $is_history_section = $active_tab === 'returned';
+                            ?>
 
-                        <?php
-                        // Check if the currently active sub-tab has no data
-                        if ($is_history_section && empty($section_books)): ?>
-                            <div class="py-10 text-center bg-gray-100 rounded-lg">
-                                <p class="text-lg text-gray-500">No <?= htmlspecialchars(strtolower($section_name)) ?> items found
-                                    in your history.</p>
-                            </div>
-                            <?php continue; endif; ?>
-
-
-                        <table class="table-auto-layout text-left whitespace-nowrap w-full">
-                            <thead>
-                                <tr class="text-gray-600 border-b-2 border-red-700">
-                                    <th class="py-3 px-4">Book Title</th>
-                                    <th class="py-3 px-4 hidden sm:table-cell">Author</th>
-                                    <th class="py-3 px-4">Copies</th>
-
-                                    <?php if ($active_tab == 'pending'): ?>
-                                        <th class="py-3 px-4 hidden md:table-cell">Request Date</th>
-                                        <th class="py-3 px-4 hidden md:table-cell">PickUp Date</th>
-                                        <th class="py-3 px-4 hidden lg:table-cell">Exp. Return Date</th>
-                                        <th class="py-3 px-4">Status</th>
-                                        <th class="py-3 px-4 w-20">Actions</th>
-
-                                    <?php elseif ($active_tab == 'borrowed'): ?>
-                                        <th class="py-3 px-4 hidden md:table-cell">Exp. Return Date</th>
-                                        <th class="py-3 px-4">Fine Amount</th>
-                                        <th class="py-3 px-4 hidden lg:table-cell">Fine Reason</th>
-
-                                    <?php elseif ($active_tab == 'unpaid'): ?>
-                                        <th class="py-3 px-4 hidden md:table-cell">Request Date</th>
-                                        <th class="py-3 px-4">Fine Reason</th>
-                                        <th class="py-3 px-4">Fine Amount</th>
-                                        <th class="py-3 px-4">Fine Status</th>
+                                <?php
+                                // Check if the currently active sub-tab has no data
+                                if ($is_history_section && empty($section_books)): ?>
+                                        <div class="py-10 text-center bg-gray-100 rounded-lg">
+                                            <p class="text-lg text-gray-500">No <?= htmlspecialchars(strtolower($section_name)) ?> items found
+                                                in your history.</p>
+                                        </div>
+                                        <?php continue; endif; ?>
 
 
-                                    <?php elseif ($active_tab == 'returned'): ?>
-                                        <?php if ($section_name === 'Returned'): ?>
-                                            <th class="py-3 px-4 hidden md:table-cell">Return Date</th>
-                                            <th class="py-3 px-4 hidden lg:table-cell">Returned Condition</th>
-                                            <th class="py-3 px-4">Fine Reason</th>
-                                            <th class="py-3 px-4">Fine Amount</th>
-                                            <th class="py-3 px-4">Fine Status</th>
-                                        <?php else: ?>
-                                            <th class="py-3 px-4 hidden md:table-cell">Request Date</th>
-                                            <th class="py-3 px-4">Status</th>
-                                        <?php endif; ?>
+                                <table class="table-auto-layout text-left whitespace-nowrap w-full">
+                                    <thead>
+                                        <tr class="text-gray-600 border-b-2 border-red-700">
+                                            <th class="py-3 px-4">Book Title</th>
+                                            <th class="py-3 px-4 hidden sm:table-cell">Author</th>
+                                            <th class="py-3 px-4">Copies</th>
 
-                                        <th class="py-3 px-4 w-20">Details</th>
-                                    <?php endif; ?>
+                                            <?php if ($active_tab == 'pending'): ?>
+                                                    <th class="py-3 px-4 hidden md:table-cell">Request Date</th>
+                                                    <th class="py-3 px-4 hidden md:table-cell">PickUp Date</th>
+                                                    <th class="py-3 px-4 hidden lg:table-cell">Exp. Return Date</th>
+                                                    <th class="py-3 px-4">Status</th>
+                                                    <th class="py-3 px-4 w-20">Actions</th>
 
-                                </tr>
-                            </thead>
-                            <tbody id="list-body">
-                                <?php foreach ($section_books as $book): ?>
-                                    <tr class="border-b hover:bg-gray-50" data-borrow-id="<?= $book['borrowID'] ?>">
+                                            <?php elseif ($active_tab == 'borrowed'): ?>
+                                                    <th class="py-3 px-4 hidden md:table-cell">Exp. Return Date</th>
+                                                    <th class="py-3 px-4">Fine Amount</th>
+                                                    <th class="py-3 px-4 hidden lg:table-cell">Fine Reason</th>
 
-                                        <td class="py-4 px-4 text-red-800 font-bold max-w-xs">
-                                            <div class="flex items-center space-x-2 min-w-0">
-                                                <div
-                                                    class="w-12 h-16 shadow-md rounded-sm overflow-hidden bg-gray-200 border flex-shrink-0 hidden sm:block">
-                                                    <?php if ($book['book_cover_dir']): ?>
-                                                        <img src="<?= "../../../" . htmlspecialchars($book['book_cover_dir']) ?>"
-                                                            alt="Cover" class="w-full h-full object-cover">
+                                            <?php elseif ($active_tab == 'unpaid'): ?>
+                                                    <th class="py-3 px-4 hidden md:table-cell">Request Date</th>
+                                                    <th class="py-3 px-4">Fine Reason</th>
+                                                    <th class="py-3 px-4">Fine Amount</th>
+                                                    <th class="py-3 px-4">Fine Status</th>
+
+
+                                            <?php elseif ($active_tab == 'returned'): ?>
+                                                    <?php if ($section_name === 'Returned'): ?>
+                                                            <th class="py-3 px-4 hidden md:table-cell">Return Date</th>
+                                                            <th class="py-3 px-4 hidden lg:table-cell">Returned Condition</th>
+                                                            <th class="py-3 px-4">Fine Reason</th>
+                                                            <th class="py-3 px-4">Fine Amount</th>
+                                                            <th class="py-3 px-4">Fine Status</th>
                                                     <?php else: ?>
-                                                        <div
-                                                            class="flex items-center justify-center w-full h-full text-xs text-gray-500 text-center p-1">
-                                                            N/A
-                                                        </div>
+                                                            <th class="py-3 px-4 hidden md:table-cell">Request Date</th>
+                                                            <th class="py-3 px-4">Status</th>
                                                     <?php endif; ?>
-                                                </div>
-                                                <span class="break-words whitespace-normal overflow-hidden">
-                                                    <?= htmlspecialchars($book['book_title']) ?>
-                                                </span>
-                                            </div>
-                                        </td>
 
-                                        <td class="py-4 px-4 hidden sm:table-cell text-gray-700 whitespace-normal">
-                                            <?= htmlspecialchars($book['author_names'] ?? $book['author'] ?? 'N/A') ?>
-                                        </td>
-
-                                        <td class="py-4 px-4 text-gray-700">
-                                            <?= htmlspecialchars($book['no_of_copies']) ?>
-                                        </td>
-
-                                        <?php if ($active_tab == 'pending'): ?>
-                                            <td class="py-4 px-4 hidden md:table-cell text-sm">
-                                                <?= date('M d, Y', strtotime($book['request_date'])) ?>
-                                                <br>
-                                            </td>
-                                            <td class="py-4 px-4 hidden md:table-cell text-sm">
-                                                <?= date('M d, Y', strtotime($book['pickup_date'])) ?>
-                                                <br>
-                                            </td>
-                                            <td class="py-4 px-4 hidden lg:table-cell text-sm">
-                                                <?= date('M d, Y', strtotime($book['expected_return_date'])) ?>
-                                                <br>
-                                            </td>
-                                            <td class="py-4 px-4">
-                                                <span
-                                                    class="px-3 py-1 text-xs font-semibold rounded-full <?= getStatusClass($book['borrow_request_status']) ?>">
-                                                    <?= htmlspecialchars($book['borrow_request_status']) ?>
-                                                </span>
-                                                <span class="text-gray-500"><?php if ($book['borrow_request_status'] === "Approved") {
-                                                    echo "<br>(Ready for Pick-Up)";
-                                                }
-                                                ?>
-                                                </span>
-                                            </td>
-
-                                            <td class="py-4 px-4">
-                                                <?php if ($book['borrow_request_status'] == 'Pending' || $book['borrow_request_status'] == 'Approved'): ?>
-                                                    <a class="px-2 py-1 rounded text-white bg-red-800 hover:bg-red-900 text-sm font-medium"
-                                                        href="../../../app/controllers/borrowBookController.php?action=cancel&id=<?= $book['borrowID'] ?>">
-                                                        Cancel
-                                                    </a>
-                                                <?php else: ?>
-                                                    <span class="text-gray-400 text-sm">N/A</span>
-                                                <?php endif; ?>
-                                            </td>
-                                        <?php elseif ($active_tab == 'borrowed'): ?>
-                                            <td class="py-4 px-4 hidden md:table-cell text-sm">
-                                                <span
-                                                    class="font-semibold <?= (new DateTime(date('Y-m-d')) > new DateTime($book['expected_return_date'])) ? 'text-red-600' : 'text-green-600' ?>">
-                                                    <?= date('M d, Y', strtotime($book['expected_return_date'])) ?>
-                                                </span>
-                                                <?php if (new DateTime(date('Y-m-d')) > new DateTime($book['expected_return_date'])): ?>
-                                                    <p class="text-xs font-bold text-red-700 mt-1">OVERDUE!</p>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="py-4 px-4 text-sm font-bold">
-                                                <?php if ($book['fine_amount'] > 0): ?>
-                                                    <span class="text-red-800">₱<?= number_format($book['fine_amount'], 2) ?></span>
-                                                <?php else: ?>
-                                                    <span class="text-gray-500">N/A</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="py-4 px-4 hidden lg:table-cell text-xs">
-                                                <?= htmlspecialchars($book['fine_reason'] ?? 'N/A') ?>
-                                            </td>
-
-                                        <?php elseif ($active_tab == 'unpaid'): ?>
-                                            <td class="py-4 px-4 hidden md:table-cell text-sm">
-                                                <?= date('M d, Y', strtotime($book['request_date'])) ?>
-                                            </td>
-                                            <td class="py-4 px-4 text-sm font-bold">
-                                                <span class="text-red-800">₱<?= number_format($book['fine_amount'], 2) ?></span>
-                                            </td>
-                                            <td class="py-4 px-4 text-sm">
-                                                <span
-                                                    class="px-3 py-1 text-xs font-semibold rounded-full <?= getStatusClass($book['fine_status']) ?>">
-                                                    <?= htmlspecialchars($book['fine_status'] ?? 'N/A') ?>
-                                                </span>
-                                            </td>
-                                            <td class="py-4 px-4 text-xs">
-                                                <?= htmlspecialchars($book['fine_reason'] ?? 'N/A') ?>
-                                            </td>
-
-                                        <?php elseif ($active_tab == 'returned'): ?>
-                                            <?php if ($section_name === 'Returned'): ?>
-                                                <td class="py-4 px-4 hidden md:table-cell text-sm">
-                                                    <?= $book['return_date'] ? date('M d, Y', strtotime($book['return_date'])) : 'N/A' ?>
-                                                </td>
-                                                <td class="py-4 px-4 hidden lg:table-cell text-sm">
-                                                    <?= htmlspecialchars($book['returned_condition'] ?? 'N/A') ?>
-                                                </td>
-
-                                                <td class="py-4 px-4 hidden lg:table-cell text-xs">
-                                                    <?= htmlspecialchars($book['fine_reason'] ?? 'N/A') ?>
-                                                </td>
-                                                <td class="py-4 px-4 text-sm">
-                                                    <span
-                                                        class="font-bold <?= ($book['fine_amount'] > 0) ? 'text-red-700' : 'text-gray-500' ?>">
-                                                        ₱<?= number_format($book['fine_amount'], 2) ?>
-                                                    </span>
-                                                </td>
-                                                <td class="py-4 px-4 text-sm">
-                                                    <span class="font-semibold <?= getStatusClass($book['fine_status']) ?>">
-                                                        <?= htmlspecialchars($book['fine_status'] ?? 'N/A') ?>
-                                                    </span>
-                                                </td>
-                                            <?php else: // Rejected or Cancelled ?>
-                                                <td class="py-4 px-4 hidden md:table-cell text-sm">
-                                                    <?= date('M d, Y', strtotime($book['request_date'])) ?>
-                                                </td>
-                                                <td class="py-4 px-4">
-                                                    <span
-                                                        class="px-3 py-1 text-xs font-semibold rounded-full <?= getStatusClass($book['borrow_request_status']) ?>">
-                                                        <?= htmlspecialchars($book['borrow_request_status']) ?>
-                                                    </span>
-                                                </td>
+                                                    <th class="py-3 px-4 w-20">Details</th>
                                             <?php endif; ?>
-                                            <td class="py-4 px-4">
-                                                <button
-                                                    class="px-2 py-1 rounded text-white bg-gray-600 hover:bg-gray-700 text-sm font-medium">
-                                                    View
-                                                </button>
-                                            </td>
-                                        <?php endif; ?>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php endforeach; ?>
-                </div>
+
+                                        </tr>
+                                    </thead>
+                                    <tbody id="list-body">
+                                        <?php foreach ($section_books as $book): ?>
+                                                <tr class="border-b hover:bg-gray-50" data-borrow-id="<?= $book['borrowID'] ?>">
+
+                                                    <td class="py-4 px-4 text-red-800 font-bold max-w-xs">
+                                                        <div class="flex items-center space-x-2 min-w-0">
+                                                            <div
+                                                                class="w-12 h-16 shadow-md rounded-sm overflow-hidden bg-gray-200 border flex-shrink-0 hidden sm:block">
+                                                                <?php if ($book['book_cover_dir']): ?>
+                                                                        <img src="<?= "../../../" . htmlspecialchars($book['book_cover_dir']) ?>"
+                                                                            alt="Cover" class="w-full h-full object-cover">
+                                                                <?php else: ?>
+                                                                        <div
+                                                                            class="flex items-center justify-center w-full h-full text-xs text-gray-500 text-center p-1">
+                                                                            N/A
+                                                                        </div>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                            <span class="break-words whitespace-normal overflow-hidden">
+                                                                <?= htmlspecialchars($book['book_title']) ?>
+                                                            </span>
+                                                        </div>
+                                                    </td>
+
+                                                    <td class="py-4 px-4 hidden sm:table-cell text-gray-700 whitespace-normal">
+                                                        <?= htmlspecialchars($book['author_names'] ?? $book['author'] ?? 'N/A') ?>
+                                                    </td>
+
+                                                    <td class="py-4 px-4 text-gray-700">
+                                                        <?= htmlspecialchars($book['no_of_copies']) ?>
+                                                    </td>
+
+                                                    <?php if ($active_tab == 'pending'): ?>
+                                                            <td class="py-4 px-4 hidden md:table-cell text-sm">
+                                                                <?= date('M d, Y', strtotime($book['request_date'])) ?>
+                                                                <br>
+                                                            </td>
+                                                            <td class="py-4 px-4 hidden md:table-cell text-sm">
+                                                                <?= date('M d, Y', strtotime($book['pickup_date'])) ?>
+                                                                <br>
+                                                            </td>
+                                                            <td class="py-4 px-4 hidden lg:table-cell text-sm">
+                                                                <?= date('M d, Y', strtotime($book['expected_return_date'])) ?>
+                                                                <br>
+                                                            </td>
+                                                            <td class="py-4 px-4">
+                                                                <span
+                                                                    class="px-3 py-1 text-xs font-semibold rounded-full <?= getStatusClass($book['borrow_request_status']) ?>">
+                                                                    <?= htmlspecialchars($book['borrow_request_status']) ?>
+                                                                </span>
+                                                                <span class="text-gray-500"><?php if ($book['borrow_request_status'] === "Approved") {
+                                                                    echo "<br>(Ready for Pick-Up)";
+                                                                }
+                                                                ?>
+                                                                </span>
+                                                            </td>
+
+                                                            <td class="py-4 px-4">
+                                                                <?php if ($book['borrow_request_status'] == 'Pending' || $book['borrow_request_status'] == 'Approved'): ?>
+                                                                        <a class="px-2 py-1 rounded text-white bg-red-800 hover:bg-red-900 text-sm font-medium"
+                                                                            href="../../../app/controllers/borrowBookController.php?action=cancel&id=<?= $book['borrowID'] ?>">
+                                                                            Cancel
+                                                                        </a>
+                                                                <?php else: ?>
+                                                                        <span class="text-gray-400 text-sm">N/A</span>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                    <?php elseif ($active_tab == 'borrowed'): ?>
+                                                            <td class="py-4 px-4 hidden md:table-cell text-sm">
+                                                                <span
+                                                                    class="font-semibold <?= (new DateTime(date('Y-m-d')) > new DateTime($book['expected_return_date'])) ? 'text-red-600' : 'text-green-600' ?>">
+                                                                    <?= date('M d, Y', strtotime($book['expected_return_date'])) ?>
+                                                                </span>
+                                                                <?php if (new DateTime(date('Y-m-d')) > new DateTime($book['expected_return_date'])): ?>
+                                                                        <p class="text-xs font-bold text-red-700 mt-1">OVERDUE!</p>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                            <td class="py-4 px-4 text-sm font-bold">
+                                                                <?php if ($book['fine_amount'] > 0): ?>
+                                                                        <span class="text-red-800">₱<?= number_format($book['fine_amount'], 2) ?></span>
+                                                                <?php else: ?>
+                                                                        <span class="text-gray-500">N/A</span>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                            <td class="py-4 px-4 hidden lg:table-cell text-xs">
+                                                                <?= htmlspecialchars($book['fine_reason'] ?? 'N/A') ?>
+                                                            </td>
+
+                                                    <?php elseif ($active_tab == 'unpaid'): ?>
+                                                            <td class="py-4 px-4 hidden md:table-cell text-sm">
+                                                                <?= date('M d, Y', strtotime($book['request_date'])) ?>
+                                                            </td>
+                                                            <td class="py-4 px-4 text-sm font-bold">
+                                                                <span class="text-red-800">₱<?= number_format($book['fine_amount'], 2) ?></span>
+                                                            </td>
+                                                            <td class="py-4 px-4 text-sm">
+                                                                <span
+                                                                    class="px-3 py-1 text-xs font-semibold rounded-full <?= getStatusClass($book['fine_status']) ?>">
+                                                                    <?= htmlspecialchars($book['fine_status'] ?? 'N/A') ?>
+                                                                </span>
+                                                            </td>
+                                                            <td class="py-4 px-4 text-xs">
+                                                                <?= htmlspecialchars($book['fine_reason'] ?? 'N/A') ?>
+                                                            </td>
+
+                                                    <?php elseif ($active_tab == 'returned'): ?>
+                                                            <?php if ($section_name === 'Returned'): ?>
+                                                                    <td class="py-4 px-4 hidden md:table-cell text-sm">
+                                                                        <?= $book['return_date'] ? date('M d, Y', strtotime($book['return_date'])) : 'N/A' ?>
+                                                                    </td>
+                                                                    <td class="py-4 px-4 hidden lg:table-cell text-sm">
+                                                                        <?= htmlspecialchars($book['returned_condition'] ?? 'N/A') ?>
+                                                                    </td>
+
+                                                                    <td class="py-4 px-4 hidden lg:table-cell text-xs">
+                                                                        <?= htmlspecialchars($book['fine_reason'] ?? 'N/A') ?>
+                                                                    </td>
+                                                                    <td class="py-4 px-4 text-sm">
+                                                                        <span
+                                                                            class="font-bold <?= ($book['fine_amount'] > 0) ? 'text-red-700' : 'text-gray-500' ?>">
+                                                                            ₱<?= number_format($book['fine_amount'], 2) ?>
+                                                                        </span>
+                                                                    </td>
+                                                                    <td class="py-4 px-4 text-sm">
+                                                                        <span class="font-semibold <?= getStatusClass($book['fine_status']) ?>">
+                                                                            <?= htmlspecialchars($book['fine_status'] ?? 'N/A') ?>
+                                                                        </span>
+                                                                    </td>
+                                                            <?php else: // Rejected or Cancelled ?>
+                                                                    <td class="py-4 px-4 hidden md:table-cell text-sm">
+                                                                        <?= date('M d, Y', strtotime($book['request_date'])) ?>
+                                                                    </td>
+                                                                    <td class="py-4 px-4">
+                                                                        <span
+                                                                            class="px-3 py-1 text-xs font-semibold rounded-full <?= getStatusClass($book['borrow_request_status']) ?>">
+                                                                            <?= htmlspecialchars($book['borrow_request_status']) ?>
+                                                                        </span>
+                                                                    </td>
+                                                            <?php endif; ?>
+                                                            <td class="py-4 px-4">
+                                                                <button
+                                                                    class="px-2 py-1 rounded text-white bg-gray-600 hover:bg-gray-700 text-sm font-medium">
+                                                                    View
+                                                                </button>
+                                                            </td>
+                                                    <?php endif; ?>
+                                                </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                        <?php endforeach; ?>
+                    </div>
             <?php endif; ?>
         </div>
     </div>

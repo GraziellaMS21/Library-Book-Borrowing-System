@@ -107,286 +107,325 @@ unset($detail);
     <link rel="stylesheet" href="../../../public/assets/css/admin.css" />
     <style>
         /* Simple CSS to ensure modals hidden by default unless .open class or display block */
-        .modal { display: none; position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-        .modal.open { display: block; }
-        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; border-radius: 8px; }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal.open {
+            display: block;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            border-radius: 8px;
+        }
     </style>
 </head>
 
 <div class="w-full h-screen flex flex-col">
     <?php require_once(__DIR__ . '/../shared/dashboardHeader.php'); ?>
 
-    <main class="overflow-y-auto">
-        <div class="container">
-            <div class="section manage_users h-full">
-                <div class="title flex w-full items-center justify-between mb-4">
-                    <h1 class="text-red-800 font-bold text-4xl">MANAGE BORROW DETAILS</h1>
-                </div>
+    <div class="w-full h-screen flex flex-col">
+        <div class="section manage_users ">
+            <div class="title flex w-full items-center justify-between mb-4">
+                <h1 class="text-red-800 font-bold text-4xl">MANAGE BORROW DETAILS</h1>
+            </div>
 
-                <div class="tabs flex border-b border-gray-200 mb-6">
-                    <a href="?tab=pending" class="tab-btn <?= $current_tab == 'pending' ? 'active' : '' ?>">Pending Request</a>
-                    <a href="?tab=approved" class="tab-btn <?= $current_tab == 'approved' ? 'active' : '' ?>">Approved Request</a>
-                    <a href="?tab=borrowed" class="tab-btn <?= $current_tab == 'borrowed' ? 'active' : '' ?>">Currently Borrowed</a>
-                    <a href="?tab=unpaid" class="tab-btn <?= $current_tab == 'unpaid' ? 'active' : '' ?>">Fined</a>
-                    <a href="?tab=returned" class="tab-btn <?= $current_tab == 'returned' ? 'active' : '' ?>">Returned</a>
-                    <a href="?tab=cancelled" class="tab-btn <?= $current_tab == 'cancelled' ? 'active' : '' ?>">Cancelled</a>
-                    <a href="?tab=rejected" class="tab-btn <?= $current_tab == 'rejected' ? 'active' : '' ?>">Rejected</a>
-                </div>
+            <div class="tabs flex border-b border-gray-200 mb-6">
+                <a href="?tab=pending" class="tab-btn <?= $current_tab == 'pending' ? 'active' : '' ?>">Pending
+                    Request</a>
+                <a href="?tab=approved" class="tab-btn <?= $current_tab == 'approved' ? 'active' : '' ?>">Approved
+                    Request</a>
+                <a href="?tab=borrowed" class="tab-btn <?= $current_tab == 'borrowed' ? 'active' : '' ?>">Currently
+                    Borrowed</a>
+                <a href="?tab=unpaid" class="tab-btn <?= $current_tab == 'unpaid' ? 'active' : '' ?>">Fined</a>
+                <a href="?tab=returned" class="tab-btn <?= $current_tab == 'returned' ? 'active' : '' ?>">Returned</a>
+                <a href="?tab=cancelled"
+                    class="tab-btn <?= $current_tab == 'cancelled' ? 'active' : '' ?>">Cancelled</a>
+                <a href="?tab=rejected" class="tab-btn <?= $current_tab == 'rejected' ? 'active' : '' ?>">Rejected</a>
+            </div>
 
-                <h2 class="text-2xl font-semibold mb-4 text-gray-700">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-700">
+                <?php
+                switch ($current_tab) {
+                    case 'pending':
+                        echo 'Pending Request';
+                        break;
+                    case 'approved':
+                        echo 'Approved Request';
+                        break;
+                    case 'borrowed':
+                        echo 'Currently Borrowed';
+                        break;
+                    case 'unpaid':
+                        echo 'Fined';
+                        break;
+                    case 'returned':
+                        echo 'Returned';
+                        break;
+                    case 'cancelled':
+                        echo 'Cancelled';
+                        break;
+                    case 'rejected':
+                        echo 'Rejected';
+                        break;
+                }
+                ?>
+            </h2>
+
+            <div class="view">
+                <table>
+                    <?php if ($current_tab == 'pending' || $current_tab == 'approved'): ?>
+                        <tr>
+                            <th>No</th>
+                            <th>User Name</th>
+                            <th>Book Title</th>
+                            <th>Copies</th>
+                            <th>Current Condition</th>
+                            <th>Request Date</th>
+                            <th>Pickup Date</th>
+                            <th>Exp. Return Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    <?php elseif ($current_tab == 'borrowed'): ?>
+                        <tr>
+                            <th>No</th>
+                            <th>User Name</th>
+                            <th>Book Title</th>
+                            <th>Copies</th>
+                            <th>Exp. Return Date</th>
+                            <th>Fine Amount</th>
+                            <th>Fine Reason</th>
+                            <th>Fine Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    <?php elseif ($current_tab == 'unpaid'): ?>
+                        <tr>
+                            <th>No</th>
+                            <th>User Name</th>
+                            <th>Book Title</th>
+                            <th>Copies</th>
+                            <th>Exp. Return Date</th>
+                            <th>Fine Amount</th>
+                            <th>Fine Reason</th>
+                            <th>Fine Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    <?php elseif ($current_tab == 'returned'): ?>
+                        <tr>
+                            <th>No</th>
+                            <th>User Name</th>
+                            <th>Book Title</th>
+                            <th>Copies</th>
+                            <th>Return Date</th>
+                            <th>Returned Condition</th>
+                            <th>Fine Reason</th>
+                            <th>Fine Amount</th>
+                            <th>Fine Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    <?php elseif ($current_tab == 'cancelled' || $current_tab == 'rejected'): ?>
+                        <tr>
+                            <th>No</th>
+                            <th>User Name</th>
+                            <th>Book Title</th>
+                            <th>Copies</th>
+                            <th>Current Condition</th>
+                            <th>Request Date</th>
+                            <th>Exp. Return Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    <?php endif; ?>
+
                     <?php
-                    switch ($current_tab) {
-                        case 'pending': echo 'Pending Request'; break;
-                        case 'approved': echo 'Approved Request'; break;
-                        case 'borrowed': echo 'Currently Borrowed'; break;
-                        case 'unpaid': echo 'Fined'; break;
-                        case 'returned': echo 'Returned'; break;
-                        case 'cancelled': echo 'Cancelled'; break;
-                        case 'rejected': echo 'Rejected'; break;
-                    }
+                    $no = 1;
+                    if (empty($borrow_details)): ?>
+                        <tr>
+                            <td colspan="9" class="text-center py-4 text-gray-500">
+                                No <?= strtolower(str_replace('d', 'd ', $current_tab)) ?> records found.
+                            </td>
+                        </tr>
+                    <?php else:
+                        foreach ($borrow_details as $detail) {
+                            $fullName = htmlspecialchars($detail["lName"] . ", " . $detail["fName"]);
+                            $bookTitle = htmlspecialchars($detail["book_title"]);
+                            $borrowID = $detail["borrowID"];
+                            $userID = $detail['userID'];
+                            ?>
+                            <tr>
+                                <td><?= $no++; ?></td>
+                                <td><?= $fullName ?></td>
+                                <td><?= $bookTitle ?></td>
+
+                                <?php if ($current_tab == 'pending'): ?>
+                                    <td><?= $detail["no_of_copies"] ?></td>
+                                    <td><?= $detail["book_condition"] ?></td>
+                                    <td><?= $detail["request_date"] ?></td>
+                                    <td><?= $detail["pickup_date"] ?></td>
+                                    <td><?= $detail["expected_return_date"] ?></td>
+                                    <td class="action text-center">
+                                        <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1"
+                                            href="../../../app/controllers/borrowDetailsController.php?tab=<?= $current_tab ?>&action=accept&id=<?= $borrowID ?>">Accept</a>
+
+                                        <button
+                                            class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1 cursor-pointer open-modal-btn"
+                                            data-target="rejectRequestModal" data-id="<?= $borrowID ?>"
+                                            data-title="<?= $bookTitle ?>">
+                                            Reject
+                                        </button>
+
+                                        <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
+                                            href="borrowDetailsSection.php?modal=edit&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Edit</a>
+                                        <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
+                                            href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">View</a>
+                                    </td>
+
+                                <?php elseif ($current_tab == 'approved'): ?>
+                                    <td><?= $detail["no_of_copies"] ?></td>
+                                    <td><?= $detail["book_condition"] ?></td>
+                                    <td><?= $detail["request_date"] ?></td>
+                                    <td><?= $detail["pickup_date"] ?></td>
+                                    <td><?= $detail["expected_return_date"] ?></td>
+                                    <td class="action text-center">
+                                        <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1"
+                                            href="../../../app/controllers/borrowDetailsController.php?tab=<?= $current_tab ?>&action=pickup&id=<?= $borrowID ?>">Claimed</a>
+
+                                        <button
+                                            class="actionBtn bg-amber-500 hover:bg-amber-600 text-sm inline-block mb-1 cursor-pointer open-modal-btn"
+                                            data-target="cancelRequestModal" data-id="<?= $borrowID ?>"
+                                            data-title="<?= $bookTitle ?>">
+                                            Cancel
+                                        </button>
+
+                                        <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
+                                            href="borrowDetailsSection.php?modal=edit&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Edit</a>
+                                        <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
+                                            href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">View</a>
+                                    </td>
+
+                                <?php elseif ($current_tab == 'borrowed'): ?>
+                                    <td><?= $detail["no_of_copies"] ?></td>
+                                    <td><?= $detail["expected_return_date"] ?></td>
+                                    <td
+                                        class="font-semibold <?= ($detail["calculated_fine"] > 0) ? 'text-red-700' : 'text-gray-700' ?>">
+                                        ₱<?= number_format($detail["calculated_fine"] ?? 0, 2) ?>
+                                    </td>
+                                    <td><?= $detail["fine_reason"] ?? 'N/A' ?></td>
+                                    <td
+                                        class="<?= ($detail["calculated_fine"] > 0 && $detail["fine_status"] === 'Unpaid') ? 'text-red-700' : 'text-gray-700' ?>">
+                                        <?= ($detail["calculated_fine"] > 0 && $detail["fine_status"] === 'Unpaid') ? "Unpaid" : "N/A" ?>
+                                    </td>
+                                    <td class="action text-center">
+                                        <?php if ($detail["calculated_fine"] > 0) { ?>
+                                            <a class="actionBtn bg-green-600 hover:bg-green-700 text-sm inline-block mb-1"
+                                                href="borrowDetailsSection.php?modal=paid&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Paid</a>
+
+                                            <button
+                                                class="actionBtn bg-yellow-600 hover:bg-yellow-700 text-sm inline-block mb-1 cursor-pointer open-modal-btn"
+                                                data-target="blockUserModal" data-id="<?= $borrowID ?>" data-user="<?= $fullName ?>">
+                                                Block User
+                                            </button>
+
+                                        <?php } else { ?>
+                                            <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1"
+                                                href="borrowDetailsSection.php?modal=return&id=<?= $borrowID ?>&tab=<?= $current_tab ?>"
+                                                data-borrow-id="<?= $borrowID ?>"
+                                                data-original-condition="<?= htmlspecialchars($detail["book_condition"] ?? $detail["book_condition"]) ?>">
+                                                Returned
+                                            </a>
+                                        <?php } ?>
+                                        <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
+                                            href="borrowDetailsSection.php?modal=edit&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Edit</a>
+                                        <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
+                                            href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">View</a>
+                                    </td>
+
+                                <?php elseif ($current_tab == 'unpaid'): ?>
+                                    <td><?= $detail["no_of_copies"] ?></td>
+                                    <td><?= $detail["expected_return_date"] ?></td>
+                                    <td
+                                        class="font-semibold <?= ($detail["calculated_fine"] > 0) ? 'text-red-700' : 'text-gray-700' ?>">
+                                        ₱<?= number_format($detail["calculated_fine"] ?? 0, 2) ?>
+                                    </td>
+                                    <td><?= $detail["fine_reason"] ?? 'N/A' ?></td>
+                                    <td
+                                        class="<?= ($detail["calculated_fine"] > 0 && $detail["fine_status"] === 'Unpaid') ? 'text-red-700' : 'text-gray-700' ?>">
+                                        <?= ($detail["calculated_fine"] > 0 && $detail["fine_status"] === 'Unpaid') ? "Unpaid" : "N/A" ?>
+                                    </td>
+                                    <td class="action text-center">
+                                        <?php if ($detail["calculated_fine"] > 0) { ?>
+                                            <a class="actionBtn bg-green-600 hover:bg-green-700 text-sm inline-block mb-1"
+                                                href="borrowDetailsSection.php?modal=paid&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Paid</a>
+
+                                            <button
+                                                class="actionBtn bg-yellow-600 hover:bg-yellow-700 text-sm inline-block mb-1 cursor-pointer open-modal-btn"
+                                                data-target="blockUserModal" data-id="<?= $borrowID ?>" data-user="<?= $fullName ?>">
+                                                Block User
+                                            </button>
+
+                                        <?php } else { ?>
+                                            <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1"
+                                                href="borrowDetailsSection.php?modal=return&id=<?= $borrowID ?>&tab=<?= $current_tab ?>"
+                                                data-borrow-id="<?= $borrowID ?>"
+                                                data-original-condition="<?= htmlspecialchars($detail["book_condition"] ?? $detail["book_condition"]) ?>">
+                                                Returned
+                                            </a>
+                                        <?php } ?>
+                                        <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
+                                            href="borrowDetailsSection.php?modal=edit&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Edit</a>
+                                        <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
+                                            href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">View</a>
+                                    </td>
+
+                                <?php elseif ($current_tab == 'returned'): ?>
+                                    <td><?= $detail["no_of_copies"] ?></td>
+                                    <td><?= $detail["return_date"] ?? 'N/A' ?></td>
+                                    <td><?= $detail["returned_condition"] ?? 'N/A' ?></td>
+                                    <td><?= $detail["fine_reason"] ?? 'N/A' ?></td>
+                                    <td class="font-semibold text-red-700">
+                                        ₱<?= number_format($detail["calculated_fine"] ?? 0, 2) ?></td>
+                                    <td><?= $detail["fine_status"] ?? 'N/A' ?></td>
+                                    <td class="action text-center">
+                                        <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
+                                            href="borrowDetailsSection.php?modal=edit&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Edit</a>
+                                        <a class="actionBtn bg-red-600 hover:bg-red-700 text-sm inline-block mb-1"
+                                            href="borrowDetailsSection.php?modal=delete&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Delete</a>
+                                        <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
+                                            href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">View</a>
+                                    </td>
+
+                                <?php elseif ($current_tab == 'cancelled' || $current_tab == 'rejected'): ?>
+                                    <td><?= $detail["no_of_copies"] ?></td>
+                                    <td><?= $detail["book_condition"] ?></td>
+                                    <td><?= $detail["request_date"] ?></td>
+                                    <td><?= $detail["expected_return_date"] ?></td>
+                                    <td class="action text-center">
+                                        <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
+                                            href="borrowDetailsSection.php?modal=edit&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Edit</a>
+                                        <a class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1"
+                                            href="borrowDetailsSection.php?modal=delete&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Delete</a>
+                                        <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
+                                            href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">View</a>
+                                    </td>
+                                <?php endif; ?>
+                            </tr>
+                            <?php
+                        }
+                    endif;
                     ?>
-                </h2>
-
-                <div class="view">
-                    <table>
-                        <?php if ($current_tab == 'pending' || $current_tab == 'approved'): ?>
-                            <tr>
-                                <th>No</th>
-                                <th>User Name</th>
-                                <th>Book Title</th>
-                                <th>Copies</th>
-                                <th>Current Condition</th>
-                                <th>Request Date</th>
-                                <th>Pickup Date</th>
-                                <th>Exp. Return Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        <?php elseif ($current_tab == 'borrowed'): ?>
-                            <tr>
-                                <th>No</th>
-                                <th>User Name</th>
-                                <th>Book Title</th>
-                                <th>Copies</th>
-                                <th>Exp. Return Date</th>
-                                <th>Fine Amount</th>
-                                <th>Fine Reason</th>
-                                <th>Fine Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        <?php elseif ($current_tab == 'unpaid'): ?>
-                            <tr>
-                                <th>No</th>
-                                <th>User Name</th>
-                                <th>Book Title</th>
-                                <th>Copies</th>
-                                <th>Exp. Return Date</th>
-                                <th>Fine Amount</th>
-                                <th>Fine Reason</th>
-                                <th>Fine Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        <?php elseif ($current_tab == 'returned'): ?>
-                            <tr>
-                                <th>No</th>
-                                <th>User Name</th>
-                                <th>Book Title</th>
-                                <th>Copies</th>
-                                <th>Return Date</th>
-                                <th>Returned Condition</th>
-                                <th>Fine Reason</th>
-                                <th>Fine Amount</th>
-                                <th>Fine Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        <?php elseif ($current_tab == 'cancelled' || $current_tab == 'rejected'): ?>
-                            <tr>
-                                <th>No</th>
-                                <th>User Name</th>
-                                <th>Book Title</th>
-                                <th>Copies</th>
-                                <th>Current Condition</th>
-                                <th>Request Date</th>
-                                <th>Exp. Return Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        <?php endif; ?>
-
-                        <?php
-                        $no = 1;
-                        if (empty($borrow_details)): ?>
-                            <tr>
-                                <td colspan="9" class="text-center py-4 text-gray-500">
-                                    No <?= strtolower(str_replace('d', 'd ', $current_tab)) ?> records found.
-                                </td>
-                            </tr>
-                        <?php else:
-                            foreach ($borrow_details as $detail) {
-                                $fullName = htmlspecialchars($detail["lName"] . ", " . $detail["fName"]);
-                                $bookTitle = htmlspecialchars($detail["book_title"]);
-                                $borrowID = $detail["borrowID"];
-                                $userID = $detail['userID'];
-                                ?>
-                                <tr>
-                                    <td><?= $no++; ?></td>
-                                    <td><?= $fullName ?></td>
-                                    <td><?= $bookTitle ?></td>
-
-                                    <?php if ($current_tab == 'pending'): ?>
-                                        <td><?= $detail["no_of_copies"] ?></td>
-                                        <td><?= $detail["book_condition"] ?></td>
-                                        <td><?= $detail["request_date"] ?></td>
-                                        <td><?= $detail["pickup_date"] ?></td>
-                                        <td><?= $detail["expected_return_date"] ?></td>
-                                        <td class="action text-center">
-                                            <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1"
-                                               href="../../../app/controllers/borrowDetailsController.php?tab=<?= $current_tab ?>&action=accept&id=<?= $borrowID ?>">Accept</a>
-                                            
-                                            <button class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1 cursor-pointer open-modal-btn"
-                                                    data-target="rejectRequestModal"
-                                                    data-id="<?= $borrowID ?>"
-                                                    data-title="<?= $bookTitle ?>">
-                                                Reject
-                                            </button>
-
-                                            <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
-                                               href="borrowDetailsSection.php?modal=edit&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Edit</a>
-                                            <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
-                                               href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">View</a>
-                                        </td>
-
-                                    <?php elseif ($current_tab == 'approved'): ?>
-                                        <td><?= $detail["no_of_copies"] ?></td>
-                                        <td><?= $detail["book_condition"] ?></td>
-                                        <td><?= $detail["request_date"] ?></td>
-                                        <td><?= $detail["pickup_date"] ?></td>
-                                        <td><?= $detail["expected_return_date"] ?></td>
-                                        <td class="action text-center">
-                                            <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1"
-                                               href="../../../app/controllers/borrowDetailsController.php?tab=<?= $current_tab ?>&action=pickup&id=<?= $borrowID ?>">Claimed</a>
-                                            
-                                            <button class="actionBtn bg-amber-500 hover:bg-amber-600 text-sm inline-block mb-1 cursor-pointer open-modal-btn"
-                                                    data-target="cancelRequestModal"
-                                                    data-id="<?= $borrowID ?>"
-                                                    data-title="<?= $bookTitle ?>">
-                                                Cancel
-                                            </button>
-
-                                            <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
-                                               href="borrowDetailsSection.php?modal=edit&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Edit</a>
-                                            <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
-                                               href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">View</a>
-                                        </td>
-
-                                    <?php elseif ($current_tab == 'borrowed'): ?>
-                                        <td><?= $detail["no_of_copies"] ?></td>
-                                        <td><?= $detail["expected_return_date"] ?></td>
-                                        <td class="font-semibold <?= ($detail["calculated_fine"] > 0) ? 'text-red-700' : 'text-gray-700' ?>">
-                                            ₱<?= number_format($detail["calculated_fine"] ?? 0, 2) ?>
-                                        </td>
-                                        <td><?= $detail["fine_reason"] ?? 'N/A' ?></td>
-                                        <td class="<?= ($detail["calculated_fine"] > 0 && $detail["fine_status"] === 'Unpaid') ? 'text-red-700' : 'text-gray-700' ?>">
-                                            <?= ($detail["calculated_fine"] > 0 && $detail["fine_status"] === 'Unpaid') ? "Unpaid" : "N/A" ?>
-                                        </td>
-                                        <td class="action text-center">
-                                            <?php if ($detail["calculated_fine"] > 0) { ?>
-                                                <a class="actionBtn bg-green-600 hover:bg-green-700 text-sm inline-block mb-1"
-                                                   href="borrowDetailsSection.php?modal=paid&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Paid</a>
-                                                
-                                                <button class="actionBtn bg-yellow-600 hover:bg-yellow-700 text-sm inline-block mb-1 cursor-pointer open-modal-btn"
-                                                        data-target="blockUserModal"
-                                                        data-id="<?= $borrowID ?>"
-                                                        data-user="<?= $fullName ?>">
-                                                    Block User
-                                                </button>
-
-                                            <?php } else { ?>
-                                                <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1"
-                                                   href="borrowDetailsSection.php?modal=return&id=<?= $borrowID ?>&tab=<?= $current_tab ?>"
-                                                   data-borrow-id="<?= $borrowID ?>"
-                                                   data-original-condition="<?= htmlspecialchars($detail["book_condition"] ?? $detail["book_condition"]) ?>">
-                                                    Returned
-                                                </a>
-                                            <?php } ?>
-                                            <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
-                                               href="borrowDetailsSection.php?modal=edit&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Edit</a>
-                                            <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
-                                               href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">View</a>
-                                        </td>
-
-                                    <?php elseif ($current_tab == 'unpaid'): ?>
-                                        <td><?= $detail["no_of_copies"] ?></td>
-                                        <td><?= $detail["expected_return_date"] ?></td>
-                                        <td class="font-semibold <?= ($detail["calculated_fine"] > 0) ? 'text-red-700' : 'text-gray-700' ?>">
-                                            ₱<?= number_format($detail["calculated_fine"] ?? 0, 2) ?>
-                                        </td>
-                                        <td><?= $detail["fine_reason"] ?? 'N/A' ?></td>
-                                        <td class="<?= ($detail["calculated_fine"] > 0 && $detail["fine_status"] === 'Unpaid') ? 'text-red-700' : 'text-gray-700' ?>">
-                                            <?= ($detail["calculated_fine"] > 0 && $detail["fine_status"] === 'Unpaid') ? "Unpaid" : "N/A" ?>
-                                        </td>
-                                        <td class="action text-center">
-                                            <?php if ($detail["calculated_fine"] > 0) { ?>
-                                                <a class="actionBtn bg-green-600 hover:bg-green-700 text-sm inline-block mb-1"
-                                                   href="borrowDetailsSection.php?modal=paid&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Paid</a>
-                                                
-                                                <button class="actionBtn bg-yellow-600 hover:bg-yellow-700 text-sm inline-block mb-1 cursor-pointer open-modal-btn"
-                                                        data-target="blockUserModal"
-                                                        data-id="<?= $borrowID ?>"
-                                                        data-user="<?= $fullName ?>">
-                                                    Block User
-                                                </button>
-
-                                            <?php } else { ?>
-                                                <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1"
-                                                   href="borrowDetailsSection.php?modal=return&id=<?= $borrowID ?>&tab=<?= $current_tab ?>"
-                                                   data-borrow-id="<?= $borrowID ?>"
-                                                   data-original-condition="<?= htmlspecialchars($detail["book_condition"] ?? $detail["book_condition"]) ?>">
-                                                    Returned
-                                                </a>
-                                            <?php } ?>
-                                            <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
-                                               href="borrowDetailsSection.php?modal=edit&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Edit</a>
-                                            <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
-                                               href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">View</a>
-                                        </td>
-
-                                    <?php elseif ($current_tab == 'returned'): ?>
-                                        <td><?= $detail["no_of_copies"] ?></td>
-                                        <td><?= $detail["return_date"] ?? 'N/A' ?></td>
-                                        <td><?= $detail["returned_condition"] ?? 'N/A' ?></td>
-                                        <td><?= $detail["fine_reason"] ?? 'N/A' ?></td>
-                                        <td class="font-semibold text-red-700">
-                                            ₱<?= number_format($detail["calculated_fine"] ?? 0, 2) ?></td>
-                                        <td><?= $detail["fine_status"] ?? 'N/A' ?></td>
-                                        <td class="action text-center">
-                                            <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
-                                               href="borrowDetailsSection.php?modal=edit&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Edit</a>
-                                            <a class="actionBtn bg-red-600 hover:bg-red-700 text-sm inline-block mb-1"
-                                               href="borrowDetailsSection.php?modal=delete&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Delete</a>
-                                            <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
-                                               href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">View</a>
-                                        </td>
-
-                                    <?php elseif ($current_tab == 'cancelled' || $current_tab == 'rejected'): ?>
-                                        <td><?= $detail["no_of_copies"] ?></td>
-                                        <td><?= $detail["book_condition"] ?></td>
-                                        <td><?= $detail["request_date"] ?></td>
-                                        <td><?= $detail["expected_return_date"] ?></td>
-                                        <td class="action text-center">
-                                            <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
-                                               href="borrowDetailsSection.php?modal=edit&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Edit</a>
-                                            <a class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1"
-                                               href="borrowDetailsSection.php?modal=delete&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Delete</a>
-                                            <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
-                                               href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">View</a>
-                                        </td>
-                                    <?php endif; ?>
-                                </tr>
-                                <?php
-                            }
-                        endif;
-                        ?>
-                    </table>
-                </div>
+                </table>
             </div>
         </div>
     </main>
@@ -407,26 +446,33 @@ unset($detail);
 
             <div class="bg-gray-100 p-4 rounded mb-4 text-sm">
                 <label class="flex items-center mb-2 cursor-pointer">
-                    <input type="checkbox" name="reason_presets[]" value="Book damaged/unavailable" class="mr-2"> Book unavailable / Damaged
+                    <input type="checkbox" name="reason_presets[]" value="Book damaged/unavailable" class="mr-2"> Book
+                    unavailable / Damaged
                 </label>
                 <label class="flex items-center mb-2 cursor-pointer">
-                    <input type="checkbox" name="reason_presets[]" value="User has overdue books" class="mr-2"> User has overdue books
+                    <input type="checkbox" name="reason_presets[]" value="User has overdue books" class="mr-2"> User has
+                    overdue books
                 </label>
                 <label class="flex items-center mb-2 cursor-pointer">
-                    <input type="checkbox" name="reason_presets[]" value="User exceeded borrow limit" class="mr-2"> Exceeded borrow limit
+                    <input type="checkbox" name="reason_presets[]" value="User exceeded borrow limit" class="mr-2">
+                    Exceeded borrow limit
                 </label>
                 <label class="flex items-center mb-2 cursor-pointer">
-                    <input type="checkbox" name="reason_presets[]" value="Policy Violation" class="mr-2"> Policy Violation
+                    <input type="checkbox" name="reason_presets[]" value="Policy Violation" class="mr-2"> Policy
+                    Violation
                 </label>
                 <label class="flex items-center mb-2 cursor-pointer">
-                    <input type="checkbox" name="reason_presets[]" value="Reserved for maintenance" class="mr-2"> Reserved for maintenance
+                    <input type="checkbox" name="reason_presets[]" value="Reserved for maintenance" class="mr-2">
+                    Reserved for maintenance
                 </label>
             </div>
 
             <label class="font-semibold block mb-1">Other Reason:</label>
-            <textarea name="reason_custom" rows="3" class="w-full border rounded p-2" placeholder="Type specific reason here..."></textarea>
+            <textarea name="reason_custom" rows="3" class="w-full border rounded p-2"
+                placeholder="Type specific reason here..."></textarea>
 
-            <input type="submit" value="Confirm Reject" class="mt-4 bg-red-700 text-white font-bold py-2 px-4 rounded w-full cursor-pointer hover:bg-red-800">
+            <input type="submit" value="Confirm Reject"
+                class="mt-4 bg-red-700 text-white font-bold py-2 px-4 rounded w-full cursor-pointer hover:bg-red-800">
         </form>
     </div>
 </div>
@@ -446,26 +492,33 @@ unset($detail);
 
             <div class="bg-gray-100 p-4 rounded mb-4 text-sm">
                 <label class="flex items-center mb-2 cursor-pointer">
-                    <input type="checkbox" name="reason_presets[]" value="User requested cancellation" class="mr-2"> User requested cancellation
+                    <input type="checkbox" name="reason_presets[]" value="User requested cancellation" class="mr-2">
+                    User requested cancellation
                 </label>
                 <label class="flex items-center mb-2 cursor-pointer">
-                    <input type="checkbox" name="reason_presets[]" value="Book not found on shelf" class="mr-2"> Book not found on shelf
+                    <input type="checkbox" name="reason_presets[]" value="Book not found on shelf" class="mr-2"> Book
+                    not found on shelf
                 </label>
                 <label class="flex items-center mb-2 cursor-pointer">
-                    <input type="checkbox" name="reason_presets[]" value="System Error" class="mr-2"> System Error / Duplication
+                    <input type="checkbox" name="reason_presets[]" value="System Error" class="mr-2"> System Error /
+                    Duplication
                 </label>
                 <label class="flex items-center mb-2 cursor-pointer">
-                    <input type="checkbox" name="reason_presets[]" value="Administrative Decision" class="mr-2"> Administrative Decision
+                    <input type="checkbox" name="reason_presets[]" value="Administrative Decision" class="mr-2">
+                    Administrative Decision
                 </label>
                 <label class="flex items-center mb-2 cursor-pointer">
-                    <input type="checkbox" name="reason_presets[]" value="Unclaimed by deadline" class="mr-2"> Unclaimed by deadline
+                    <input type="checkbox" name="reason_presets[]" value="Unclaimed by deadline" class="mr-2"> Unclaimed
+                    by deadline
                 </label>
             </div>
 
             <label class="font-semibold block mb-1">Other Reason:</label>
-            <textarea name="reason_custom" rows="3" class="w-full border rounded p-2" placeholder="Type specific reason here..."></textarea>
+            <textarea name="reason_custom" rows="3" class="w-full border rounded p-2"
+                placeholder="Type specific reason here..."></textarea>
 
-            <input type="submit" value="Confirm Cancel" class="mt-4 bg-amber-600 text-white font-bold py-2 px-4 rounded w-full cursor-pointer hover:bg-amber-700">
+            <input type="submit" value="Confirm Cancel"
+                class="mt-4 bg-amber-600 text-white font-bold py-2 px-4 rounded w-full cursor-pointer hover:bg-amber-700">
         </form>
     </div>
 </div>
@@ -480,7 +533,8 @@ unset($detail);
             <input type="hidden" name="borrowID" id="block_borrowID" value="<?= $borrow_id ?? '' ?>">
 
             <p class="mb-4 text-gray-700">
-                Select reason for blocking <span class="font-bold user-name-span"><?= $modal_borrow_details['fName'] ?? '' ?></span>:
+                Select reason for blocking <span
+                    class="font-bold user-name-span"><?= $modal_borrow_details['fName'] ?? '' ?></span>:
             </p>
 
             <div class="bg-gray-100 p-4 rounded mb-4 text-sm">
@@ -488,23 +542,29 @@ unset($detail);
                     <input type="checkbox" name="reason_presets[]" value="Unpaid Fines" class="mr-2"> Unpaid Fines
                 </label>
                 <label class="flex items-center mb-2 cursor-pointer">
-                    <input type="checkbox" name="reason_presets[]" value="Repeated Overdue Returns" class="mr-2"> Repeated Overdue Returns
+                    <input type="checkbox" name="reason_presets[]" value="Repeated Overdue Returns" class="mr-2">
+                    Repeated Overdue Returns
                 </label>
                 <label class="flex items-center mb-2 cursor-pointer">
-                    <input type="checkbox" name="reason_presets[]" value="Lost/Damaged Books" class="mr-2"> Lost/Damaged Books
+                    <input type="checkbox" name="reason_presets[]" value="Lost/Damaged Books" class="mr-2"> Lost/Damaged
+                    Books
                 </label>
                 <label class="flex items-center mb-2 cursor-pointer">
-                    <input type="checkbox" name="reason_presets[]" value="Violation of Code of Conduct" class="mr-2"> Violation of Code of Conduct
+                    <input type="checkbox" name="reason_presets[]" value="Violation of Code of Conduct" class="mr-2">
+                    Violation of Code of Conduct
                 </label>
                 <label class="flex items-center mb-2 cursor-pointer">
-                    <input type="checkbox" name="reason_presets[]" value="Identity Theft / Fraud" class="mr-2"> Identity Theft / Fraud
+                    <input type="checkbox" name="reason_presets[]" value="Identity Theft / Fraud" class="mr-2"> Identity
+                    Theft / Fraud
                 </label>
             </div>
 
             <label class="font-semibold block mb-1">Additional Details:</label>
-            <textarea name="reason_custom" rows="3" class="w-full border rounded p-2" placeholder="Type specific details here..."></textarea>
+            <textarea name="reason_custom" rows="3" class="w-full border rounded p-2"
+                placeholder="Type specific details here..."></textarea>
 
-            <input type="submit" value="Confirm Block User" class="mt-4 bg-yellow-700 text-white font-bold py-2 px-4 rounded w-full cursor-pointer hover:bg-yellow-800">
+            <input type="submit" value="Confirm Block User"
+                class="mt-4 bg-yellow-700 text-white font-bold py-2 px-4 rounded w-full cursor-pointer hover:bg-yellow-800">
         </form>
     </div>
 </div>
@@ -513,7 +573,9 @@ unset($detail);
     <div class="modal-content max-w-md">
         <span class="close close-times" data-modal="returnBookModal" data-tab="<?= $current_tab ?>">&times;</span>
         <h2 class="text-2xl font-bold mb-4 text-green-700">Confirm Book Return</h2>
-        <form id="returnBookForm" action="../../../app/controllers/borrowDetailsController.php?action=return&id=<?= $borrow_id ?? '' ?>" method="POST">
+        <form id="returnBookForm"
+            action="../../../app/controllers/borrowDetailsController.php?action=return&id=<?= $borrow_id ?? '' ?>"
+            method="POST">
             <input type="hidden" name="borrowID" value="<?= $borrow_id ?? '' ?>">
             <input type="hidden" name="current_tab" value="<?= $current_tab ?>">
 
@@ -522,15 +584,18 @@ unset($detail);
                 <span class="font-semibold text-red-800"><?= $modal_borrow_details['book_title'] ?? 'N/A' ?></span>.
             </p>
             <div class="input mb-4 p-3 bg-gray-100 rounded-lg">
-                <label class="block font-semibold mb-1" for="original_condition_display">Original Condition (upon loan):</label>
+                <label class="block font-semibold mb-1" for="original_condition_display">Original Condition (upon
+                    loan):</label>
                 <p id="original_condition_display" class="font-bold text-lg text-blue-600">
                     <?= htmlspecialchars($original_book_condition ?? 'N/A') ?>
                 </p>
             </div>
 
             <div class="input">
-                <label class="block font-semibold mb-1" for="returned_condition">Returned Condition<span>*</span> :</label>
-                <select name="returned_condition" id="returned_condition" class="input-field w-full p-2 border rounded-lg focus:ring-red-800 focus:border-red-800">
+                <label class="block font-semibold mb-1" for="returned_condition">Returned Condition<span>*</span>
+                    :</label>
+                <select name="returned_condition" id="returned_condition"
+                    class="input-field w-full p-2 border rounded-lg focus:ring-red-800 focus:border-red-800">
                     <?php
                     $failed_condition = $modal_borrow_details['returned_condition'] ?? '';
                     ?>
@@ -546,7 +611,8 @@ unset($detail);
                 <p class="errors text-red-500 text-sm mt-2"><?= $errors["returned_condition"] ?? "" ?></p>
             </div>
 
-            <input type="submit" value="Confirm Return" class="font-bold cursor-pointer mt-6 border-none rounded-lg bg-green-700 text-white p-3 w-full hover:bg-green-800">
+            <input type="submit" value="Confirm Return"
+                class="font-bold cursor-pointer mt-6 border-none rounded-lg bg-green-700 text-white p-3 w-full hover:bg-green-800">
         </form>
     </div>
 </div>
@@ -555,42 +621,52 @@ unset($detail);
     <div class="modal-content">
         <span class="close close-times" data-modal="editBorrowDetailModal" data-tab="<?= $current_tab ?>">&times;</span>
         <h2 class="text-2xl font-bold mb-4">Edit Borrow Detail</h2>
-        <form id="editBorrowDetailForm" action="../../../app/controllers/borrowDetailsController.php?action=edit&id=<?= $borrow_id ?>" method="POST">
+        <form id="editBorrowDetailForm"
+            action="../../../app/controllers/borrowDetailsController.php?action=edit&id=<?= $borrow_id ?>"
+            method="POST">
             <input type="hidden" name="borrowID" value="<?= $borrow_id ?>">
             <input type="hidden" name="current_tab" value="<?= $current_tab ?>">
             <input type="hidden" name="userID" value="<?= $modal_borrow_details['userID'] ?? '' ?>">
             <input type="hidden" name="bookID" value="<?= $modal_borrow_details['bookID'] ?? '' ?>">
-            
+
             <div>
                 <p class="font-semibold">Borrower Name:</p>
-                <p class="text-lg"><?= htmlspecialchars($modal_borrow_details['fName'] ?? 'N/A') . ' ' . htmlspecialchars($modal_borrow_details['lName'] ?? '') ?></p>
+                <p class="text-lg">
+                    <?= htmlspecialchars($modal_borrow_details['fName'] ?? 'N/A') . ' ' . htmlspecialchars($modal_borrow_details['lName'] ?? '') ?>
+                </p>
             </div>
             <div>
                 <p class="font-semibold">Book Title:</p>
                 <p class="text-lg"><?= htmlspecialchars($modal_borrow_details['book_title'] ?? 'N/A') ?></p>
             </div>
-            
+
             <div class="grid grid-cols-2 gap-4">
                 <div class="input">
                     <label for="no_of_copies">No. of Copies<span>*</span> : </label>
-                    <input type="number" class="input-field !w-5/6" name="no_of_copies" value="<?= $modal_borrow_details["no_of_copies"] ?? "1" ?>">
+                    <input type="number" class="input-field !w-5/6" name="no_of_copies"
+                        value="<?= $modal_borrow_details["no_of_copies"] ?? "1" ?>">
                 </div>
                 <div class="input">
                     <label for="request_date">Borrow/Request Date<span>*</span> : </label>
-                    <input type="date" class="input-field !w-5/6" name="request_date" value="<?= $modal_borrow_details["request_date"] ?? "" ?>">
+                    <input type="date" class="input-field !w-5/6" name="request_date"
+                        value="<?= $modal_borrow_details["request_date"] ?? "" ?>">
                 </div>
                 <div class="input">
                     <label for="pickup_date">Pickup Date: </label>
-                    <input type="date" class="input-field !w-5/6" name="pickup_date" value="<?= $modal_borrow_details["pickup_date"] ?? "" ?>">
+                    <input type="date" class="input-field !w-5/6" name="pickup_date"
+                        value="<?= $modal_borrow_details["pickup_date"] ?? "" ?>">
                 </div>
                 <div class="input">
                     <label for="expected_return_date">Exp. Return Date<span>*</span> : </label>
-                    <input type="date" class="input-field !w-5/6" name="expected_return_date" value="<?= $modal_borrow_details["expected_return_date"] ?? "" ?>">
-                    <p class="text-sm text-gray-500 italic">Fine recalculation is automatic when fine is set to 0.00. <button id="fineReset" type="button" class="font-bold underline">Reset Fine</button></p>
+                    <input type="date" class="input-field !w-5/6" name="expected_return_date"
+                        value="<?= $modal_borrow_details["expected_return_date"] ?? "" ?>">
+                    <p class="text-sm text-gray-500 italic">Fine recalculation is automatic when fine is set to 0.00.
+                        <button id="fineReset" type="button" class="font-bold underline">Reset Fine</button></p>
                 </div>
                 <div class="input">
                     <label for="return_date">Actual Return Date: </label>
-                    <input type="date" class="input-field !w-5/6" name="return_date" value="<?= $modal_borrow_details["return_date"] ?? "" ?>">
+                    <input type="date" class="input-field !w-5/6" name="return_date"
+                        value="<?= $modal_borrow_details["return_date"] ?? "" ?>">
                 </div>
                 <div class="input">
                     <label for="borrow_request_status">Request Status<span>*</span> : </label>
@@ -624,7 +700,8 @@ unset($detail);
                 </div>
                 <div class="input">
                     <label for="fine_amount">Fine Amount: </label>
-                    <input type="number" step="0.01" class="input-field !w-5/6" name="fine_amount" id="edit_fine_amount" value="<?= $modal_borrow_details["fine_amount"] ?? "0.00" ?>">
+                    <input type="number" step="0.01" class="input-field !w-5/6" name="fine_amount" id="edit_fine_amount"
+                        value="<?= $modal_borrow_details["fine_amount"] ?? "0.00" ?>">
                 </div>
                 <div class="input">
                     <label for="fine_reason">Fine Reason : </label>
@@ -649,8 +726,10 @@ unset($detail);
             </div>
             <br>
             <div class="cancelConfirmBtns">
-                <button type="button" data-modal="editBorrowDetailModal" data-tab="<?= $current_tab ?>" class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 cursor-pointer">Cancel</button>
-                <input type="submit" value="Save Changes" class="font-bold cursor-pointer mt-4 border-none rounded-lg bg-red-800 text-white p-2 w-full hover:bg-red-700">
+                <button type="button" data-modal="editBorrowDetailModal" data-tab="<?= $current_tab ?>"
+                    class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 cursor-pointer">Cancel</button>
+                <input type="submit" value="Save Changes"
+                    class="font-bold cursor-pointer mt-4 border-none rounded-lg bg-red-800 text-white p-2 w-full hover:bg-red-700">
                 <p class="errors text-red-500 text-sm mt-2"><?= $errors["general"] ?? "" ?></p>
             </div>
         </form>
@@ -663,13 +742,17 @@ unset($detail);
         <h2 class="text-xl font-bold mb-4 text-red-700">Confirm Deletion</h2>
         <p class="mb-6 text-gray-700">
             Are you sure you want to delete the borrow detail for:
-            <span class="font-semibold italic"><?= $modal_borrow_details['fName'] ?? 'N/A' . ' ' . $modal_borrow_details['lName'] ?? '' ?></span>
+            <span
+                class="font-semibold italic"><?= $modal_borrow_details['fName'] ?? 'N/A' . ' ' . $modal_borrow_details['lName'] ?? '' ?></span>
             (Borrow ID: <span class="font-semibold"><?= $modal_borrow_details['borrowID'] ?? $borrow_id ?></span>)?
             This action cannot be undone.
         </p>
         <div class="cancelConfirmBtns">
-            <button type="button" data-modal="deleteConfirmModal" class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">Cancel</button>
-            <a href="../../../app/controllers/borrowDetailsController.php?action=delete&id=<?= $modal_borrow_details['borrowID'] ?? $borrow_id ?>" class="text-white px-4 py-2 rounded-lg font-semibold cursor-pointer bg-red-600 hover:bg-red-700">Confirm Delete</a>
+            <button type="button" data-modal="deleteConfirmModal"
+                class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">Cancel</button>
+            <a href="../../../app/controllers/borrowDetailsController.php?action=delete&id=<?= $modal_borrow_details['borrowID'] ?? $borrow_id ?>"
+                class="text-white px-4 py-2 rounded-lg font-semibold cursor-pointer bg-red-600 hover:bg-red-700">Confirm
+                Delete</a>
         </div>
     </div>
 </div>
@@ -678,25 +761,29 @@ unset($detail);
     <div class="modal-content max-w-lg">
         <span class="close close-times" data-modal="paidConfirmModal" data-tab="<?= $current_tab ?>">&times;</span>
         <h2 class="text-xl font-bold mb-4 text-green-700">Confirm Fine Payment & Return</h2>
-        <form action="../../../app/controllers/borrowDetailsController.php?action=paid&id=<?= $borrow_id ?? '' ?>" method="POST">
+        <form action="../../../app/controllers/borrowDetailsController.php?action=paid&id=<?= $borrow_id ?? '' ?>"
+            method="POST">
             <input type="hidden" name="borrowID" value="<?= $borrow_id ?? '' ?>">
             <input type="hidden" name="current_tab" value="<?= $current_tab ?>">
-            
-            <p class="mb-4 text-gray-700">Mark fine as <strong>Paid</strong> and book as <strong>Returned</strong> for: <span class="font-semibold text-red-800"><?= $modal_borrow_details['book_title'] ?? 'N/A' ?></span>.</p>
-            
+
+            <p class="mb-4 text-gray-700">Mark fine as <strong>Paid</strong> and book as <strong>Returned</strong> for:
+                <span class="font-semibold text-red-800"><?= $modal_borrow_details['book_title'] ?? 'N/A' ?></span>.</p>
+
             <label class="block font-semibold mb-1" for="returned_condition">Returned Condition<span>*</span> :</label>
-            <select name="returned_condition" class="input-field w-full p-2 border rounded-lg focus:ring-red-800 focus:border-red-800">
+            <select name="returned_condition"
+                class="input-field w-full p-2 border rounded-lg focus:ring-red-800 focus:border-red-800">
                 <option value="">---Select Condition---</option>
                 <?php foreach ($condition_options as $option) {
-                     $selected = (($modal_borrow_details['returned_condition'] ?? '') == $option) ? 'selected' : '';
-                     echo "<option value='{$option}' {$selected}>{$option}</option>";
+                    $selected = (($modal_borrow_details['returned_condition'] ?? '') == $option) ? 'selected' : '';
+                    echo "<option value='{$option}' {$selected}>{$option}</option>";
                 } ?>
             </select>
 
             <div class="w-full grid grid-cols-[auto,1fr] gap-y-2 my-4 p-3 bg-gray-100 rounded-lg">
                 <p class="font-semibold col-span-2 text-md text-blue-800 border-b pb-1">Loan and Fine Details</p>
                 <p class="font-semibold">Fine Amount:</p>
-                <p class="font-bold text-red-700">₱<?= number_format($modal_borrow_details['fine_amount'] ?? 0, 2) ?></p>
+                <p class="font-bold text-red-700">₱<?= number_format($modal_borrow_details['fine_amount'] ?? 0, 2) ?>
+                </p>
                 <p class="font-semibold">Fine Reason:</p>
                 <p><?= $modal_borrow_details['fine_reason'] ?? 'N/A' ?></p>
                 <p class="font-semibold">Fine Status:</p>
@@ -704,8 +791,11 @@ unset($detail);
             </div>
 
             <div class="cancelConfirmBtns">
-                <button type="button" class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400" data-modal="paidConfirmModal" data-tab="<?= $current_tab ?>">Cancel</button>
-                <input type="submit" value="Confirm Paid" class="font-bold cursor-pointer mt-6 border-none rounded-lg bg-green-600 text-white p-3 w-full hover:bg-green-800">
+                <button type="button"
+                    class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400"
+                    data-modal="paidConfirmModal" data-tab="<?= $current_tab ?>">Cancel</button>
+                <input type="submit" value="Confirm Paid"
+                    class="font-bold cursor-pointer mt-6 border-none rounded-lg bg-green-600 text-white p-3 w-full hover:bg-green-800">
             </div>
         </form>
     </div>
@@ -716,27 +806,78 @@ unset($detail);
         <span class="close close-times" data-modal="viewFullDetailsModal" data-tab="<?= $current_tab ?>">&times;</span>
         <h2 class="text-2xl font-bold mb-4 text-red-800">Borrow Detail</h2>
         <div class="grid grid-cols-2 gap-4 text-gray-700">
-            <div class="col-span-2 border-b pb-2 mb-2"><h3 class="font-semibold text-lg text-red-700">Book & Borrower Information</h3></div>
-            <div><p class="font-semibold">Borrower Name:</p><p><?= htmlspecialchars($modal_borrow_details['fName'] ?? 'N/A') . ' ' . htmlspecialchars($modal_borrow_details['lName'] ?? '') ?></p></div>
-            <div><p class="font-semibold">Book Title:</p><p><?= htmlspecialchars($modal_borrow_details['book_title'] ?? 'N/A') ?></p></div>
-            <div><p class="font-semibold">Book Condition:</p><p><?= htmlspecialchars($modal_borrow_details['book_condition'] ?? 'N/A') ?></p></div>
-            <div><p class="font-semibold">Copies Requested:</p><p><?= $modal_borrow_details['no_of_copies'] ?? 'N/A' ?></p></div>
+            <div class="col-span-2 border-b pb-2 mb-2">
+                <h3 class="font-semibold text-lg text-red-700">Book & Borrower Information</h3>
+            </div>
+            <div>
+                <p class="font-semibold">Borrower Name:</p>
+                <p><?= htmlspecialchars($modal_borrow_details['fName'] ?? 'N/A') . ' ' . htmlspecialchars($modal_borrow_details['lName'] ?? '') ?>
+                </p>
+            </div>
+            <div>
+                <p class="font-semibold">Book Title:</p>
+                <p><?= htmlspecialchars($modal_borrow_details['book_title'] ?? 'N/A') ?></p>
+            </div>
+            <div>
+                <p class="font-semibold">Book Condition:</p>
+                <p><?= htmlspecialchars($modal_borrow_details['book_condition'] ?? 'N/A') ?></p>
+            </div>
+            <div>
+                <p class="font-semibold">Copies Requested:</p>
+                <p><?= $modal_borrow_details['no_of_copies'] ?? 'N/A' ?></p>
+            </div>
 
-            <div class="col-span-2 border-b pt-4 pb-2 mb-2"><h3 class="font-semibold text-lg text-red-700">Timeline & Status</h3></div>
-            <div><p class="font-semibold">Request Date:</p><p><?= $modal_borrow_details['request_date'] ?? 'N/A' ?></p></div>
-            <div><p class="font-semibold">Pickup Date:</p><p><?= $modal_borrow_details['pickup_date'] ?? 'N/A' ?></p></div>
-            <div><p class="font-semibold">Expected Return Date:</p><p><?= $modal_borrow_details['expected_return_date'] ?? 'N/A' ?></p></div>
-            <div><p class="font-semibold">Actual Return Date:</p><p><?= $modal_borrow_details['return_date'] ?? 'N/A' ?></p></div>
-            <div><p class="font-semibold">Request Status:</p><p class="font-bold text-blue-600"><?= $modal_borrow_details['borrow_request_status'] ?? 'N/A' ?></p></div>
-            <div><p class="font-semibold">Borrow Status:</p><p class="font-bold text-blue-600"><?= $modal_borrow_details['borrow_status'] ?? 'N/A' ?></p></div>
+            <div class="col-span-2 border-b pt-4 pb-2 mb-2">
+                <h3 class="font-semibold text-lg text-red-700">Timeline & Status</h3>
+            </div>
+            <div>
+                <p class="font-semibold">Request Date:</p>
+                <p><?= $modal_borrow_details['request_date'] ?? 'N/A' ?></p>
+            </div>
+            <div>
+                <p class="font-semibold">Pickup Date:</p>
+                <p><?= $modal_borrow_details['pickup_date'] ?? 'N/A' ?></p>
+            </div>
+            <div>
+                <p class="font-semibold">Expected Return Date:</p>
+                <p><?= $modal_borrow_details['expected_return_date'] ?? 'N/A' ?></p>
+            </div>
+            <div>
+                <p class="font-semibold">Actual Return Date:</p>
+                <p><?= $modal_borrow_details['return_date'] ?? 'N/A' ?></p>
+            </div>
+            <div>
+                <p class="font-semibold">Request Status:</p>
+                <p class="font-bold text-blue-600"><?= $modal_borrow_details['borrow_request_status'] ?? 'N/A' ?></p>
+            </div>
+            <div>
+                <p class="font-semibold">Borrow Status:</p>
+                <p class="font-bold text-blue-600"><?= $modal_borrow_details['borrow_status'] ?? 'N/A' ?></p>
+            </div>
 
-            <div class="col-span-2 border-b pt-4 pb-2 mb-2"><h3 class="font-semibold text-lg text-red-700">Fine Details</h3></div>
-            <div><p class="font-semibold">Fine Amount:</p><p class="font-bold text-red-600">₱<?= number_format($modal_borrow_details['fine_amount'] ?? 0, 2) ?></p></div>
-            <div><p class="font-semibold">Fine Status:</p><p class="font-bold <?= ($modal_borrow_details['fine_status'] === 'Unpaid') ? 'text-red-600' : 'text-green-600' ?>"><?= $modal_borrow_details['fine_status'] ?? 'N/A' ?></p></div>
-            <div class="col-span-2"><p class="font-semibold">Fine Reason:</p><p><?= $modal_borrow_details['fine_reason'] ?? 'N/A' ?></p></div>
+            <div class="col-span-2 border-b pt-4 pb-2 mb-2">
+                <h3 class="font-semibold text-lg text-red-700">Fine Details</h3>
+            </div>
+            <div>
+                <p class="font-semibold">Fine Amount:</p>
+                <p class="font-bold text-red-600">₱<?= number_format($modal_borrow_details['fine_amount'] ?? 0, 2) ?>
+                </p>
+            </div>
+            <div>
+                <p class="font-semibold">Fine Status:</p>
+                <p
+                    class="font-bold <?= ($modal_borrow_details['fine_status'] === 'Unpaid') ? 'text-red-600' : 'text-green-600' ?>">
+                    <?= $modal_borrow_details['fine_status'] ?? 'N/A' ?></p>
+            </div>
+            <div class="col-span-2">
+                <p class="font-semibold">Fine Reason:</p>
+                <p><?= $modal_borrow_details['fine_reason'] ?? 'N/A' ?></p>
+            </div>
         </div>
         <div class="flex justify-end mt-6">
-            <button type="button" class="close viewBtn bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400" data-modal="viewFullDetailsModal" data-tab="<?= $current_tab ?>">Close</button>
+            <button type="button"
+                class="close viewBtn bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400"
+                data-modal="viewFullDetailsModal" data-tab="<?= $current_tab ?>">Close</button>
         </div>
     </div>
 </div>
@@ -745,11 +886,11 @@ unset($detail);
 <script>
     // --- Logic to Open New Modals (Reject, Cancel, Block) ---
     document.querySelectorAll('.open-modal-btn').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const targetId = this.getAttribute('data-target');
             const borrowId = this.getAttribute('data-id');
             const modal = document.getElementById(targetId);
-            
+
             if (modal) {
                 modal.style.display = 'block';
                 modal.classList.add('open');
@@ -762,7 +903,7 @@ unset($detail);
                 // Pass Dynamic Text (Book Title / User Name)
                 const title = this.getAttribute('data-title');
                 const user = this.getAttribute('data-user');
-                
+
                 if (title) {
                     const titleSpan = modal.querySelector('.book-title-span');
                     if (titleSpan) titleSpan.textContent = title;
@@ -777,9 +918,9 @@ unset($detail);
 
     // --- Logic to Close New Modals ---
     document.querySelectorAll('.close-modal').forEach(span => {
-        span.addEventListener('click', function() {
+        span.addEventListener('click', function () {
             const modal = this.closest('.modal');
-            if(modal) {
+            if (modal) {
                 modal.style.display = 'none';
                 modal.classList.remove('open');
             }
@@ -788,7 +929,7 @@ unset($detail);
 
     // --- Existing Logic for Fine Reset in Edit Modal ---
     const fineResetBtn = document.getElementById("fineReset");
-    if(fineResetBtn){
+    if (fineResetBtn) {
         fineResetBtn.addEventListener("click", () => {
             document.getElementById("edit_fine_amount").value = 0;
         });
@@ -796,4 +937,5 @@ unset($detail);
 </script>
 
 </body>
+
 </html>

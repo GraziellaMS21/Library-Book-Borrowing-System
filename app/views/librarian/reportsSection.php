@@ -128,241 +128,239 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                 <a href="#collection-inventory">Collection & Inventory</a>
                 <a href="#fines-compliance">Fines & Compliance</a>
             </div>
-            <div class="container">
-                <div class="px-8 manage_users h-full">
 
-                    <div class="title flex w-full items-center justify-between mb-4">
-                        <h1 class="text-red-800 font-bold text-4xl">LIBRARY REPORTS</h1>
-                        <a href="print.php" target="_blank"
-                            class="inline-block rounded-xl text-white bg-red-900 p-4 font-bold transition-transform duration-100 transform hover:scale-105">Print
-                            Library Report</a>
-                    </div>
+            <div class="px-8 manage_users h-full">
+
+                <div class="title flex w-full items-center justify-between mb-4">
+                    <h1 class="text-red-800 font-bold text-4xl">LIBRARY REPORTS</h1>
+                    <a href="print.php" target="_blank"
+                        class="inline-block rounded-xl text-white bg-red-900 p-4 font-bold transition-transform duration-100 transform hover:scale-105">Print
+                        Library Report</a>
+                </div>
 
 
-                    <div id="overview">
-                        <div class="report-chart-container mt-4">
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div id="overview">
+                    <div class="report-chart-container mt-4">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
 
-                                <div class="info p-6 rounded-lg shadow flex items-start">
-                                    <div class="text-5xl text-white mr-4">
-                                        <i class="fas fa-book"></i>
-                                    </div>
-                                    <div class="flex flex-col items-end text-white w-full">
-                                        <span class="text-2xl font-semibold"><?= htmlspecialchars($total_book) ?></span>
-                                        <h2 class="title text-sm text-gray-300">Total Distinct Books</h2>
-                                    </div>
+                            <div class="info p-6 rounded-lg shadow flex items-start">
+                                <div class="text-5xl text-white mr-4">
+                                    <i class="fas fa-book"></i>
                                 </div>
-
-                                <div class="info p-6 rounded-lg shadow flex items-start">
-                                    <div class="text-5xl text-white mr-4">
-                                        <i class="fas fa-book-open"></i>
-                                    </div>
-                                    <div class="flex flex-col items-end text-white w-full">
-                                        <span
-                                            class="text-2xl font-semibold"><?= htmlspecialchars($total_book_copies) ?></span>
-                                        <h2 class="title text-sm text-gray-300">Total Available Book Copies</h2>
-                                    </div>
-                                </div>
-
-                                <div class="info p-6 rounded-lg shadow flex items-start">
-                                    <div class="text-5xl text-white mr-4">
-                                        <i class="fas fa-book-reader"></i>
-                                    </div>
-                                    <div class="flex flex-col items-end text-white w-full">
-                                        <span class="text-4xl font-bold text-red-900">
-                                            <?= htmlspecialchars($total_borrowed_books ?? 0) ?>
-                                        </span>
-                                        <h2 class="title text-sm text-gray-300 font-semibold">Total Borrowed Books</h2>
-                                    </div>
-                                </div>
-
-                                <div class="info p-6 rounded-lg shadow flex items-start">
-                                    <div class="text-5xl text-white mr-4">
-                                        <i class="fas fa-users"></i>
-                                    </div>
-                                    <div class="flex flex-col items-end text-white w-full">
-                                        <span class="text-4xl font-bold text-red-900">
-                                            <?= htmlspecialchars($total_borrowers ?? 0) ?>
-                                        </span>
-                                        <h2 class="title text-sm text-gray-300 font-semibold">Total Borrowers</h2>
-                                    </div>
-                                </div>
-
-                                <div class="info p-6 rounded-lg shadow flex items-start">
-                                    <div class="text-5xl text-white mr-4">
-                                        <i class="fas fa-exchange-alt"></i>
-                                    </div>
-                                    <div class="flex flex-col items-end text-white w-full">
-                                        <span class="text-4xl font-bold text-red-900">
-                                            <?= number_format($avg_borrowing_per_user, 1) ?>
-                                        </span>
-                                        <h2 class="title text-sm text-gray-300 font-semibold">Average Borrowing per User
-                                        </h2>
-                                    </div>
-                                </div>
-
-                                <div class="info p-6 rounded-lg shadow flex items-start">
-                                    <div class="text-5xl text-white mr-4">
-                                        <i class="fas fa-bookmark"></i>
-                                    </div>
-                                    <div class="flex flex-col items-end text-white w-full">
-                                        <span class="text-4xl font-bold text-red-900">
-                                            <?= htmlspecialchars($summary_total_categories['total_categories'] ?? 0) ?>
-                                        </span>
-                                        <h2 class="title text-sm text-gray-300 font-semibold">Total Categories</h2>
-                                    </div>
-                                </div>
-
-                                <div class="info p-6 rounded-lg shadow flex items-start">
-                                    <div class="text-5xl text-white mr-4">
-                                        <i class="fas fa-calendar-check"></i>
-                                    </div>
-                                    <div class="flex flex-col items-end text-white w-full">
-                                        <span class="text-4xl font-bold text-red-900">
-                                            <?= number_format($summary_on_time_rate['rate'] ?? 0, 1) ?>%
-                                        </span>
-                                        <h2 class="title text-sm text-gray-300 font-semibold">On-Time Return Rate
-                                        </h2>
-                                    </div>
-                                </div>
-
-                                <div class="info p-6 rounded-lg shadow flex items-start">
-                                    <div class="text-5xl text-white mr-4">
-                                        <i class="fas fa-money-bill-wave"></i>
-                                    </div>
-                                    <div class="flex flex-col items-end text-white w-full">
-                                        <span class="text-4xl font-bold text-red-900">
-                                            ₱<?= number_format($fine_collection_summary['total_collected'] ?? 0, 2) ?>
-                                        </span>
-                                        <h2 class="title text-sm text-gray-300 font-semibold">Total Fines Collected
-                                        </h2>
-                                    </div>
+                                <div class="flex flex-col items-end text-white w-full">
+                                    <span class="text-2xl font-semibold"><?= htmlspecialchars($total_book) ?></span>
+                                    <h2 class="title text-sm text-gray-300">Total Distinct Books</h2>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <div id="user-activity">
-                        <h2 class="font-extrabold text-3xl pl-8 pt-4 text-red-900">USER & BORROWING ACTIVITY</h2>
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
-                            <div class="report-chart-container">
-                                <h2 class="text-xl font-bold text-red-800 mb-4">1. Monthly Borrowing Trend (Last
-                                    12 Mo.)</h2>
-                                <canvas id="monthlyBorrowReturnChart"></canvas>
+                            <div class="info p-6 rounded-lg shadow flex items-start">
+                                <div class="text-5xl text-white mr-4">
+                                    <i class="fas fa-book-open"></i>
+                                </div>
+                                <div class="flex flex-col items-end text-white w-full">
+                                    <span
+                                        class="text-2xl font-semibold"><?= htmlspecialchars($total_book_copies) ?></span>
+                                    <h2 class="title text-sm text-gray-300">Total Available Book Copies</h2>
+                                </div>
                             </div>
-                            <div class="report-chart-container">
-                                <h2 class="text-xl font-bold text-red-800 mb-4">2. User Registration Trend (Last
-                                    12 Mo.)</h2>
-                                <canvas id="userRegTrendChart"></canvas>
-                            </div>
-                            <div class="report-chart-container">
-                                <h2 class="text-xl font-bold text-red-800 mb-4">3. Top 5 Most Active Borrowers
-                                </h2>
-                                <canvas id="topBorrowersChart"></canvas>
-                            </div>
-                            <div class="report-chart-container">
-                                <h2 class="text-xl font-bold text-red-800 mb-4">4. Borrowing Activity by
-                                    Department</h2>
-                                <canvas id="borrowByDeptChart"></canvas>
-                            </div>
-                            <div class="report-chart-container lg:col-span-2">
-                                <h2 class="text-xl font-bold text-red-800 mb-4">5. Borrower Type Breakdown</h2>
-                                <canvas id="borrowerTypeChart" class="max-h-80 mx-auto"></canvas>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div id="collection-inventory">
-                        <h2 class="font-extrabold text-3xl pl-8 pt-4 text-red-900">COLLECTION & INVENTORY REPORTS</h2>
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
-                            <div class="report-chart-container">
-                                <h2 class="text-xl font-bold text-red-800 mb-4">1. Top 5 Most Borrowed Books
-                                </h2>
-                                <canvas id="topBooksChart"></canvas>
+                            <div class="info p-6 rounded-lg shadow flex items-start">
+                                <div class="text-5xl text-white mr-4">
+                                    <i class="fas fa-book-reader"></i>
+                                </div>
+                                <div class="flex flex-col items-end text-white w-full">
+                                    <span class="text-4xl font-bold text-red-900">
+                                        <?= htmlspecialchars($total_borrowed_books ?? 0) ?>
+                                    </span>
+                                    <h2 class="title text-sm text-gray-300 font-semibold">Total Borrowed Books</h2>
+                                </div>
                             </div>
-                            <div class="report-chart-container">
-                                <h2 class="text-xl font-bold text-red-800 mb-4">2. Top 5 Popular Categories (By Borrow)
-                                </h2>
-                                <canvas id="borrowTrendCategoryChart"></canvas>
-                            </div>
-                            <div class="report-chart-container">
-                                <h2 class="text-xl font-bold text-red-800 mb-4">3. Book Status Overview</h2>
-                                <canvas id="bookStatusChart" class="max-h-80 mx-auto"></canvas>
-                            </div>
-                            <div class="report-chart-container">
-                                <h2 class="text-xl font-bold text-red-800 mb-4">4. Books per Category (Inventory)</h2>
-                                <canvas id="booksPerCategoryChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div id="fines-compliance">
-                        <h2 class="font-extrabold text-3xl pl-8 pt-4 text-red-900">FINES & COMPLIANCE REPORTS</h2>
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
-                            <div class="report-chart-container">
-                                <h2 class="text-xl font-bold text-red-800 mb-4">1. Fine Collection Over Time
-                                    (Last 12 Mo.)</h2>
-                                <canvas id="monthlyFineTrendChart"></canvas>
+                            <div class="info p-6 rounded-lg shadow flex items-start">
+                                <div class="text-5xl text-white mr-4">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="flex flex-col items-end text-white w-full">
+                                    <span class="text-4xl font-bold text-red-900">
+                                        <?= htmlspecialchars($total_borrowers ?? 0) ?>
+                                    </span>
+                                    <h2 class="title text-sm text-gray-300 font-semibold">Total Borrowers</h2>
+                                </div>
                             </div>
-                            <div class="report-chart-container">
-                                <h2 class="text-xl font-bold text-red-800 mb-4">2. Late Returns Trend (Last
-                                    12 Mo.)</h2>
-                                <canvas id="lateReturnsChart"></canvas>
+
+                            <div class="info p-6 rounded-lg shadow flex items-start">
+                                <div class="text-5xl text-white mr-4">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </div>
+                                <div class="flex flex-col items-end text-white w-full">
+                                    <span class="text-4xl font-bold text-red-900">
+                                        <?= number_format($avg_borrowing_per_user, 1) ?>
+                                    </span>
+                                    <h2 class="title text-sm text-gray-300 font-semibold">Average Borrowing per User
+                                    </h2>
+                                </div>
                             </div>
-                            <div class="report-chart-container">
-                                <h2 class="text-xl font-bold text-red-800 mb-4">3. Top 5 Users with Unpaid Fines
-                                </h2>
-                                <canvas id="topUnpaidFinesChart"></canvas>
+
+                            <div class="info p-6 rounded-lg shadow flex items-start">
+                                <div class="text-5xl text-white mr-4">
+                                    <i class="fas fa-bookmark"></i>
+                                </div>
+                                <div class="flex flex-col items-end text-white w-full">
+                                    <span class="text-4xl font-bold text-red-900">
+                                        <?= htmlspecialchars($summary_total_categories['total_categories'] ?? 0) ?>
+                                    </span>
+                                    <h2 class="title text-sm text-gray-300 font-semibold">Total Categories</h2>
+                                </div>
                             </div>
-                            <div class="report-chart-container">
-                                <h2 class="text-xl font-bold text-red-800 mb-4">4. Fine Collection Summary</h2>
-                                <canvas id="fineSummaryChart" class="max-h-80 mx-auto"></canvas>
+
+                            <div class="info p-6 rounded-lg shadow flex items-start">
+                                <div class="text-5xl text-white mr-4">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                                <div class="flex flex-col items-end text-white w-full">
+                                    <span class="text-4xl font-bold text-red-900">
+                                        <?= number_format($summary_on_time_rate['rate'] ?? 0, 1) ?>%
+                                    </span>
+                                    <h2 class="title text-sm text-gray-300 font-semibold">On-Time Return Rate
+                                    </h2>
+                                </div>
                             </div>
-                            <div class="report-chart-container lg:col-span-2">
-                                <h2 class="text-xl font-bold text-red-800 mb-4">5. Overdue Books Summary
-                                </h2>
-                                <div class="overflow-x-auto">
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <th>Book Title</th>
-                                                <th>Borrower</th>
-                                                <th>Due Date</th>
-                                                <th>Days Overdue</th>
-                                                <th>Fine (₱)</th>
-                                                <th>Fine Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php if (empty($overdue_books_summary)): ?>
-                                                <tr>
-                                                    <td colspan="6" class="text-center py-4">No overdue books
-                                                        found.</td>
-                                                </tr>
-                                            <?php else: ?>
-                                                <?php foreach ($overdue_books_summary as $item): ?>
-                                                    <tr>
-                                                        <td><?= htmlspecialchars($item['book_title']) ?></td>
-                                                        <td><?= htmlspecialchars($item['fName'] . ' ' . $item['lName']) ?>
-                                                        </td>
-                                                        <td><?= htmlspecialchars($item['expected_return_date']) ?>
-                                                        </td>
-                                                        <td><?= htmlspecialchars($item['days_overdue']) ?></td>
-                                                        <td><?= number_format($item['fine_amount'], 2) ?></td>
-                                                        <td><?= $item['fine_status'] ?></td>
-                                                    </tr>
-                                                <?php endforeach; ?>
-                                            <?php endif; ?>
-                                        </tbody>
-                                    </table>
+
+                            <div class="info p-6 rounded-lg shadow flex items-start">
+                                <div class="text-5xl text-white mr-4">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                                <div class="flex flex-col items-end text-white w-full">
+                                    <span class="text-4xl font-bold text-red-900">
+                                        ₱<?= number_format($fine_collection_summary['total_collected'] ?? 0, 2) ?>
+                                    </span>
+                                    <h2 class="title text-sm text-gray-300 font-semibold">Total Fines Collected
+                                    </h2>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <div id="user-activity">
+                    <h2 class="font-extrabold text-3xl pl-8 pt-4 text-red-900">USER & BORROWING ACTIVITY</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                        <div class="report-chart-container">
+                            <h2 class="text-xl font-bold text-red-800 mb-4">1. Monthly Borrowing Trend (Last
+                                12 Mo.)</h2>
+                            <canvas id="monthlyBorrowReturnChart"></canvas>
+                        </div>
+                        <div class="report-chart-container">
+                            <h2 class="text-xl font-bold text-red-800 mb-4">2. User Registration Trend (Last
+                                12 Mo.)</h2>
+                            <canvas id="userRegTrendChart"></canvas>
+                        </div>
+                        <div class="report-chart-container">
+                            <h2 class="text-xl font-bold text-red-800 mb-4">3. Top 5 Most Active Borrowers
+                            </h2>
+                            <canvas id="topBorrowersChart"></canvas>
+                        </div>
+                        <div class="report-chart-container">
+                            <h2 class="text-xl font-bold text-red-800 mb-4">4. Borrowing Activity by
+                                Department</h2>
+                            <canvas id="borrowByDeptChart"></canvas>
+                        </div>
+                        <div class="report-chart-container lg:col-span-2">
+                            <h2 class="text-xl font-bold text-red-800 mb-4">5. Borrower Type Breakdown</h2>
+                            <canvas id="borrowerTypeChart" class="max-h-80 mx-auto"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="collection-inventory">
+                    <h2 class="font-extrabold text-3xl pl-8 pt-4 text-red-900">COLLECTION & INVENTORY REPORTS</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                        <div class="report-chart-container">
+                            <h2 class="text-xl font-bold text-red-800 mb-4">1. Top 5 Most Borrowed Books
+                            </h2>
+                            <canvas id="topBooksChart"></canvas>
+                        </div>
+                        <div class="report-chart-container">
+                            <h2 class="text-xl font-bold text-red-800 mb-4">2. Top 5 Popular Categories (By Borrow)
+                            </h2>
+                            <canvas id="borrowTrendCategoryChart"></canvas>
+                        </div>
+                        <div class="report-chart-container">
+                            <h2 class="text-xl font-bold text-red-800 mb-4">3. Book Status Overview</h2>
+                            <canvas id="bookStatusChart" class="max-h-80 mx-auto"></canvas>
+                        </div>
+                        <div class="report-chart-container">
+                            <h2 class="text-xl font-bold text-red-800 mb-4">4. Books per Category (Inventory)</h2>
+                            <canvas id="booksPerCategoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="fines-compliance">
+                    <h2 class="font-extrabold text-3xl pl-8 pt-4 text-red-900">FINES & COMPLIANCE REPORTS</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                        <div class="report-chart-container">
+                            <h2 class="text-xl font-bold text-red-800 mb-4">1. Fine Collection Over Time
+                                (Last 12 Mo.)</h2>
+                            <canvas id="monthlyFineTrendChart"></canvas>
+                        </div>
+                        <div class="report-chart-container">
+                            <h2 class="text-xl font-bold text-red-800 mb-4">2. Late Returns Trend (Last
+                                12 Mo.)</h2>
+                            <canvas id="lateReturnsChart"></canvas>
+                        </div>
+                        <div class="report-chart-container">
+                            <h2 class="text-xl font-bold text-red-800 mb-4">3. Top 5 Users with Unpaid Fines
+                            </h2>
+                            <canvas id="topUnpaidFinesChart"></canvas>
+                        </div>
+                        <div class="report-chart-container">
+                            <h2 class="text-xl font-bold text-red-800 mb-4">4. Fine Collection Summary</h2>
+                            <canvas id="fineSummaryChart" class="max-h-80 mx-auto"></canvas>
+                        </div>
+                        <div class="report-chart-container lg:col-span-2">
+                            <h2 class="text-xl font-bold text-red-800 mb-4">5. Overdue Books Summary
+                            </h2>
+                            <div class="overflow-x-auto">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Book Title</th>
+                                            <th>Borrower</th>
+                                            <th>Due Date</th>
+                                            <th>Days Overdue</th>
+                                            <th>Fine (₱)</th>
+                                            <th>Fine Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (empty($overdue_books_summary)): ?>
+                                            <tr>
+                                                <td colspan="6" class="text-center py-4">No overdue books
+                                                    found.</td>
+                                            </tr>
+                                        <?php else: ?>
+                                            <?php foreach ($overdue_books_summary as $item): ?>
+                                                <tr>
+                                                    <td><?= htmlspecialchars($item['book_title']) ?></td>
+                                                    <td><?= htmlspecialchars($item['fName'] . ' ' . $item['lName']) ?>
+                                                    </td>
+                                                    <td><?= htmlspecialchars($item['expected_return_date']) ?>
+                                                    </td>
+                                                    <td><?= htmlspecialchars($item['days_overdue']) ?></td>
+                                                    <td><?= number_format($item['fine_amount'], 2) ?></td>
+                                                    <td><?= $item['fine_status'] ?></td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-    </div>
-    </main>
+        </main>
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function () {

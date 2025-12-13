@@ -60,47 +60,46 @@ $categories = $categoryObj->viewCategory();
     <?php require_once(__DIR__ . '/../shared/dashboardHeader.php'); ?>
 
     <main class="overflow-y-auto">
-        <div class="container">
-            <div class="section h-full">
-                <div class="title flex w-full items-center justify-between">
-                    <h1 class="text-red-800 font-bold text-4xl">MANAGE CATEGORIES</h1>
-                    <a id="openAddCategoryModalBtn" class="addBtn" href="categorySection.php?modal=add">+ Add
-                        Category</a>
-                </div>
+
+        <div class="section h-full">
+            <div class="title flex w-full items-center justify-between">
+                <h1 class="text-red-800 font-bold text-4xl">MANAGE CATEGORIES</h1>
+                <a id="openAddCategoryModalBtn" class="addBtn" href="categorySection.php?modal=add">+ Add
+                    Category</a>
+            </div>
 
 
-                <div class="view">
-                    <table>
-                        <tr>
-                            <th>No</th>
-                            <th>Category Name</th>
-                            <th>Actions</th>
-                        </tr>
+            <div class="view">
+                <table>
+                    <tr>
+                        <th>No</th>
+                        <th>Category Name</th>
+                        <th>Actions</th>
+                    </tr>
 
-                        <?php
-                        $no = 1;
-                        foreach ($categories as $cat) {
-                            ?>
-                            <tr>
-                                <td><?= $no++ ?></td>
-                                <td><?= $cat["category_name"] ?></td>
-                                <td class="action text-center">
-                                    <a class="actionBtn bg-blue-500 hover:bg-blue-600"
-                                        href="categorySection.php?modal=edit&id=<?= $cat['categoryID'] ?>">Edit</a>
-                                    <a class="actionBtn bg-red-500 hover:bg-red-600"
-                                        href="categorySection.php?modal=delete&id=<?= $cat['categoryID'] ?>">
-                                        Delete
-                                    </a>
-                                </td>
-                            </tr>
-                            <?php
-                        }
+                    <?php
+                    $no = 1;
+                    foreach ($categories as $cat) {
                         ?>
-                    </table>
-                </div>
+                        <tr>
+                            <td><?= $no++ ?></td>
+                            <td><?= $cat["category_name"] ?></td>
+                            <td class="action text-center">
+                                <a class="actionBtn bg-blue-500 hover:bg-blue-600"
+                                    href="categorySection.php?modal=edit&id=<?= $cat['categoryID'] ?>">Edit</a>
+                                <a class="actionBtn bg-red-500 hover:bg-red-600"
+                                    href="categorySection.php?modal=delete&id=<?= $cat['categoryID'] ?>">
+                                    Delete
+                                </a>
+                            </td>
+                        </tr>
+                        <?php
+                    }
+                    ?>
+                </table>
             </div>
         </div>
-    </main>
+</main>
 </div>
 
 <div id="addCategoryModal" class="modal <?= $open_modal == 'addCategoryModal' ? 'open' : '' ?>">

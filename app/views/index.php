@@ -11,7 +11,7 @@
     <script src="../../public/assets/js/tailwind.3.4.17.js"></script>
 
     <link rel="stylesheet" href="../../public/assets/css/styles.css">
-    <link rel="stylesheet" href="../../public/assets/css/header_footer2.css">
+    <link rel="stylesheet" href="../../public/assets/css/header_footer.css">
 </head>
 
 <body>

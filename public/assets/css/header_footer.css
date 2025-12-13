@@ -1,3 +1,11 @@
+:root {
+  --wmsu-red: #931c19;     
+  --wmsu-dark: #610101;   
+  --wmsu-gold: #FFCC70; 
+  --wmsu-gold-hover: #e5b760; 
+  --white: #ffffff;
+}
+
 @font-face {
   font-family: "Licorice";
   src: url("../fonts/Licorice-Regular.ttf") format("truetype");

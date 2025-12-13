@@ -16,7 +16,7 @@
 
 /* --- HEADER FIX --- */
 header {
-  /* Matches the fix from your contact.css + header_footer2.css */
+  /* Matches the fix from your contact.css + header_footer.css */
   margin-bottom: 5rem !important;
   margin-top: 0;
   z-index: 999;
@@ -27,8 +27,13 @@ header {
 body {
   font-family: Verdana, Geneva, Tahoma, sans-serif;
   /* Added background-attachment: fixed */
-  background: linear-gradient(135deg, rgba(237, 211, 143, 0.5), rgba(237, 211, 143, 0.4)), url('../images/page.jpg');
-  background-attachment: fixed; 
+  background: linear-gradient(
+      135deg,
+      rgba(237, 211, 143, 0.5),
+      rgba(237, 211, 143, 0.4)
+    ),
+    url("../images/page.jpg");
+  background-attachment: fixed;
   background-repeat: no-repeat; /* Changed to no-repeat since it's fixed */
   background-size: cover;
   background-position: center;
@@ -54,7 +59,7 @@ body {
 .hero-section {
   position: relative;
   height: 50vh;
-  background-image: url("../images/1university_library_bg.png");
+  background-image: url("../images/university_library_bg.png");
   background-size: cover;
   background-position: center 30%;
   background-attachment: fixed;
@@ -89,15 +94,15 @@ body {
 }
 
 .hero-subtitle {
-    font-size: 1.25rem;
-    margin-bottom: 2.5rem;
-    font-weight: 300;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--wmsu-gold);
-    border-bottom: 2px solid var(--wmsu-gold);
-    display: inline-block;
-    padding-bottom: 5px;
+  font-size: 1.25rem;
+  margin-bottom: 2.5rem;
+  font-weight: 300;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--wmsu-gold);
+  border-bottom: 2px solid var(--wmsu-gold);
+  display: inline-block;
+  padding-bottom: 5px;
 }
 /* --- Content Sections --- */
 .section-title {
@@ -107,11 +112,10 @@ body {
 }
 
 .section-text {
-    background-color: rgba(255, 255, 255, 0.627);
-    padding: 1.5rem 2rem;
-    border-radius: 0.75rem;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-    
+  background-color: rgba(255, 255, 255, 0.627);
+  padding: 1.5rem 2rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
 .section-title::after {

@@ -10,7 +10,6 @@ class BorrowLists extends Database
 
     public function fetchAllBorrrowList($userID)
     {
-        // Added JOIN to book_authors and authors, and GROUP BY to concatenate names
         $sql = "SELECT bl.*, b.book_title, b.book_condition, b.book_copies, b.book_cover_dir,
                        GROUP_CONCAT(a.author_name SEPARATOR ', ') as author_names
                 FROM borrowing_lists bl

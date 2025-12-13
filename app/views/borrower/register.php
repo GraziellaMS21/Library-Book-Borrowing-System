@@ -26,8 +26,8 @@ if ($success_message === 'pending') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register Account</title>
-    <link rel="stylesheet" href="../../../public/assets/css/login&register.css" />
-    <link rel="stylesheet" href="../../../public/assets/css/header_footer2.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/login_register.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/header_footer.css" />
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
     <style>
         .modal {
@@ -100,10 +100,10 @@ if ($success_message === 'pending') {
                             <?php
                             foreach ($userTypes as $type) {
                                 ?>
-                                <option value="<?= $type["userTypeID"] ?>" <?= isset($register["userTypeID"]) && $register["userTypeID"] == $type["userTypeID"] ? "selected" : "" ?>>
-                                    <?= $type["type_name"] ?>
-                                </option>
-                                <?php
+                                    <option value="<?= $type["userTypeID"] ?>" <?= isset($register["userTypeID"]) && $register["userTypeID"] == $type["userTypeID"] ? "selected" : "" ?>>
+                                        <?= $type["type_name"] ?>
+                                    </option>
+                                    <?php
                             }
                             ?>
                         </select>
@@ -143,10 +143,10 @@ if ($success_message === 'pending') {
                             <?php
                             foreach ($departments as $dept) {
                                 ?>
-                                <option value="<?= $dept["departmentID"] ?>" <?= isset($register["departmentID"]) && $register["departmentID"] == $dept["departmentID"] ? "selected" : "" ?>>
-                                    <?= $dept["department_name"] ?>
-                                </option>
-                                <?php
+                                    <option value="<?= $dept["departmentID"] ?>" <?= isset($register["departmentID"]) && $register["departmentID"] == $dept["departmentID"] ? "selected" : "" ?>>
+                                        <?= $dept["department_name"] ?>
+                                    </option>
+                                    <?php
                             }
                             ?>
                         </select>

@@ -93,8 +93,8 @@ $success_message = '';
     <meta name="viewport" content="width=device-width, initial-width=1.0">
     <title>Unpaid Fines</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/borrower1.css" />
-    <link rel="stylesheet" href="../../../public/assets/css/header_footer2.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/borrower.css" />
+    <link rel="stylesheet" href="../../../public/assets/css/header_footer.css" />
 </head>
 
 <body class="min-h-screen bg-gray-50">
@@ -110,96 +110,96 @@ $success_message = '';
         <div class="bg-white p-6 rounded-xl shadow-lg">
 
             <?php if (empty($books_to_display)): ?>
-                <div class="py-10 text-center bg-gray-100 rounded-lg">
-                    <p class="text-lg text-gray-500">
-                        No **Unpaid Fines** currently found. Please contact the administrator for more details on your
-                        blocked account status.
-                    </p>
-                    <a href="../../app/views/borrower/login.php"
-                        class="mt-4 inline-block bg-red-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
-                        Return to Login
-                    </a>
-                </div>
+                    <div class="py-10 text-center bg-gray-100 rounded-lg">
+                        <p class="text-lg text-gray-500">
+                            No **Unpaid Fines** currently found. Please contact the administrator for more details on your
+                            blocked account status.
+                        </p>
+                        <a href="../../app/views/borrower/login.php"
+                            class="mt-4 inline-block bg-red-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
+                            Return to Login
+                        </a>
+                    </div>
             <?php else: ?>
 
-                <div
-                    class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 flex justify-between items-center">
-                    <span class="text-xl font-bold">Total Unpaid Fine Amount:</span>
-                    <span class="text-3xl font-extrabold">₱<?= number_format($total_unpaid_fines, 2) ?></span>
-                </div>
+                    <div
+                        class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 flex justify-between items-center">
+                        <span class="text-xl font-bold">Total Unpaid Fine Amount:</span>
+                        <span class="text-3xl font-extrabold">₱<?= number_format($total_unpaid_fines, 2) ?></span>
+                    </div>
 
-                <div class="overflow-x-auto list-container">
-                    <table class="table-auto-layout text-left whitespace-nowrap w-full">
-                        <thead>
-                            <tr class="text-gray-600 border-b-2 border-red-700">
-                                <th class="py-3 px-4">Book Title</th>
-                                <th class="py-3 px-4 hidden sm:table-cell">Author</th>
-                                <th class="py-3 px-4">Copies</th>
-                                <th class="py-3 px-4 hidden md:table-cell">Request Date</th>
-                                <th class="py-3 px-4">Fine Reason</th>
-                                <th class="py-3 px-4">Fine Amount</th>
-                                <th class="py-3 px-4">Fine Status</th>
-                                <th class="py-3 px-4 w-20">Details</th>
-                            </tr>
-                        </thead>
-                        <tbody id="list-body">
-                            <?php foreach ($books_to_display as $book): ?>
-                                <tr class="border-b hover:bg-gray-50" data-borrow-id="<?= $book['borrowID'] ?>">
-                                    <td class="py-4 px-4 text-red-800 font-bold max-w-xs">
-                                        <div class="flex items-center space-x-2 min-w-0">
-                                            <div
-                                                class="w-12 h-16 shadow-md rounded-sm overflow-hidden bg-gray-200 border flex-shrink-0 hidden sm:block">
-                                                <?php if ($book['book_cover_dir']): ?>
-                                                    <img src="<?= "../../../" . htmlspecialchars($book['book_cover_dir']) ?>"
-                                                        alt="Cover" class="w-full h-full object-cover">
-                                                <?php else: ?>
-                                                    <div
-                                                        class="flex items-center justify-center w-full h-full text-xs text-gray-500 text-center p-1">
-                                                        N/A
-                                                    </div>
-                                                <?php endif; ?>
-                                            </div>
-                                            <span class="break-words whitespace-normal overflow-hidden">
-                                                <?= htmlspecialchars($book['book_title']) ?>
-                                            </span>
-                                        </div>
-                                    </td>
-
-                                    <td class="py-4 px-4 hidden sm:table-cell text-gray-700 whitespace-normal">
-                                        <?= htmlspecialchars($book['author']) ?>
-                                    </td>
-
-                                    <td class="py-4 px-4 text-gray-700">
-                                        <?= htmlspecialchars($book['no_of_copies']) ?>
-                                    </td>
-
-
-                                    <td class="py-4 px-4 hidden md:table-cell text-sm">
-                                        <?= date('M d, Y', strtotime($book['request_date'])) ?>
-                                    </td>
-                                    <td class="py-4 px-4 text-sm">
-                                        <?= htmlspecialchars($book['fine_reason'] ?? 'N/A') ?>
-                                    </td>
-                                    <td class="py-4 px-4 text-sm font-bold">
-                                        <span class="text-red-800">₱<?= number_format($book['fine_amount'], 2) ?></span>
-                                    </td>
-                                    <td class="py-4 px-4 text-sm">
-                                        <span
-                                            class="px-3 py-1 text-xs font-semibold rounded-full <?= getStatusClass($book['fine_status']) ?>">
-                                            <?= htmlspecialchars($book['fine_status'] ?? 'N/A') ?>
-                                        </span>
-                                    </td>
-                                    <td class="py-4 px-4">
-                                        <button
-                                            class="px-2 py-1 rounded text-white bg-gray-600 hover:bg-gray-700 text-sm font-medium">
-                                            View
-                                        </button>
-                                    </td>
+                    <div class="overflow-x-auto list-container">
+                        <table class="table-auto-layout text-left whitespace-nowrap w-full">
+                            <thead>
+                                <tr class="text-gray-600 border-b-2 border-red-700">
+                                    <th class="py-3 px-4">Book Title</th>
+                                    <th class="py-3 px-4 hidden sm:table-cell">Author</th>
+                                    <th class="py-3 px-4">Copies</th>
+                                    <th class="py-3 px-4 hidden md:table-cell">Request Date</th>
+                                    <th class="py-3 px-4">Fine Reason</th>
+                                    <th class="py-3 px-4">Fine Amount</th>
+                                    <th class="py-3 px-4">Fine Status</th>
+                                    <th class="py-3 px-4 w-20">Details</th>
                                 </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody id="list-body">
+                                <?php foreach ($books_to_display as $book): ?>
+                                        <tr class="border-b hover:bg-gray-50" data-borrow-id="<?= $book['borrowID'] ?>">
+                                            <td class="py-4 px-4 text-red-800 font-bold max-w-xs">
+                                                <div class="flex items-center space-x-2 min-w-0">
+                                                    <div
+                                                        class="w-12 h-16 shadow-md rounded-sm overflow-hidden bg-gray-200 border flex-shrink-0 hidden sm:block">
+                                                        <?php if ($book['book_cover_dir']): ?>
+                                                                <img src="<?= "../../../" . htmlspecialchars($book['book_cover_dir']) ?>"
+                                                                    alt="Cover" class="w-full h-full object-cover">
+                                                        <?php else: ?>
+                                                                <div
+                                                                    class="flex items-center justify-center w-full h-full text-xs text-gray-500 text-center p-1">
+                                                                    N/A
+                                                                </div>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <span class="break-words whitespace-normal overflow-hidden">
+                                                        <?= htmlspecialchars($book['book_title']) ?>
+                                                    </span>
+                                                </div>
+                                            </td>
+
+                                            <td class="py-4 px-4 hidden sm:table-cell text-gray-700 whitespace-normal">
+                                                <?= htmlspecialchars($book['author']) ?>
+                                            </td>
+
+                                            <td class="py-4 px-4 text-gray-700">
+                                                <?= htmlspecialchars($book['no_of_copies']) ?>
+                                            </td>
+
+
+                                            <td class="py-4 px-4 hidden md:table-cell text-sm">
+                                                <?= date('M d, Y', strtotime($book['request_date'])) ?>
+                                            </td>
+                                            <td class="py-4 px-4 text-sm">
+                                                <?= htmlspecialchars($book['fine_reason'] ?? 'N/A') ?>
+                                            </td>
+                                            <td class="py-4 px-4 text-sm font-bold">
+                                                <span class="text-red-800">₱<?= number_format($book['fine_amount'], 2) ?></span>
+                                            </td>
+                                            <td class="py-4 px-4 text-sm">
+                                                <span
+                                                    class="px-3 py-1 text-xs font-semibold rounded-full <?= getStatusClass($book['fine_status']) ?>">
+                                                    <?= htmlspecialchars($book['fine_status'] ?? 'N/A') ?>
+                                                </span>
+                                            </td>
+                                            <td class="py-4 px-4">
+                                                <button
+                                                    class="px-2 py-1 rounded text-white bg-gray-600 hover:bg-gray-700 text-sm font-medium">
+                                                    View
+                                                </button>
+                                            </td>
+                                        </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
             <?php endif; ?>
         </div>
     </div>

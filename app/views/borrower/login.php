@@ -30,7 +30,7 @@ if ($current_view === 'verify' && empty($reset_email)) {
     $current_view = 'forgot';
 }
 if ($current_view === 'reset' && (empty($_SESSION['otp_verified']) || empty($reset_email))) {
-    $current_view = 'forgot'; 
+    $current_view = 'forgot';
 }
 
 $status_message = $_GET['status'] ?? '';
@@ -58,16 +58,20 @@ if ($status_message === 'pending') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>
-        <?php 
-            if($current_view == 'login') echo 'Log In';
-            elseif($current_view == 'forgot') echo 'Forgot Password';
-            elseif($current_view == 'verify') echo 'Verify OTP';
-            elseif($current_view == 'reset') echo 'Reset Password';
+        <?php
+        if ($current_view == 'login')
+            echo 'Log In';
+        elseif ($current_view == 'forgot')
+            echo 'Forgot Password';
+        elseif ($current_view == 'verify')
+            echo 'Verify OTP';
+        elseif ($current_view == 'reset')
+            echo 'Reset Password';
         ?>
     </title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <link rel="stylesheet" href="../../../public/assets/css/login&register.css">
-    <link rel="stylesheet" href="../../../public/assets/css/header_footer2.css">
+    <link rel="stylesheet" href="../../../public/assets/css/login_register.css">
+    <link rel="stylesheet" href="../../../public/assets/css/header_footer.css">
     <style>
         .modal {
             display: none;
@@ -122,9 +126,9 @@ if ($status_message === 'pending') {
                 <form action="../../../app/controllers/loginController.php" method="POST">
                     
                     <?php if (!empty($success)): ?>
-                        <div class="p-3 mb-4 text-sm text-green-700 bg-green-100 rounded-lg text-center w-full">
-                            <?= $success ?>
-                        </div>
+                            <div class="p-3 mb-4 text-sm text-green-700 bg-green-100 rounded-lg text-center w-full">
+                                <?= $success ?>
+                            </div>
                     <?php endif; ?>
 
                     <p class="errors" name="invalid"><?= $errors["invalid"] ?? "" ?></p>
@@ -170,9 +174,9 @@ if ($status_message === 'pending') {
                 <form action="../../../app/controllers/forgotPassController.php?action=send_otp" method="POST" class="w-full">
                     
                     <?php if (!empty($errors["invalid"])): ?>
-                        <div class="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg text-center">
-                            <?= $errors["invalid"] ?>
-                        </div>
+                            <div class="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg text-center">
+                                <?= $errors["invalid"] ?>
+                            </div>
                     <?php endif; ?>
 
                     <div class="input mb-6">
@@ -207,15 +211,15 @@ if ($status_message === 'pending') {
                 <form action="../../../app/controllers/forgotPassController.php?action=verify_otp" method="POST" class="w-full">
                     
                     <?php if (!empty($success)): ?>
-                        <div class="p-3 mb-4 text-sm text-green-700 bg-green-100 rounded-lg text-center">
-                            <?= $success ?>
-                        </div>
+                            <div class="p-3 mb-4 text-sm text-green-700 bg-green-100 rounded-lg text-center">
+                                <?= $success ?>
+                            </div>
                     <?php endif; ?>
 
                     <?php if (!empty($errors["otp"])): ?>
-                        <div class="p-3 mb-2 text-sm text-red-700 bg-red-100 rounded-lg text-center">
-                            <?= $errors["otp"] ?>
-                        </div>
+                            <div class="p-3 mb-2 text-sm text-red-700 bg-red-100 rounded-lg text-center">
+                                <?= $errors["otp"] ?>
+                            </div>
                     <?php endif; ?>
 
                     <div class="input mb-6">
@@ -267,9 +271,9 @@ if ($status_message === 'pending') {
                 <form action="../../../app/controllers/forgotPassController.php?action=reset" method="POST" class="w-full">
 
                     <?php if (!empty($errors["invalid"])): ?>
-                        <div class="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg text-center">
-                            <?= $errors["invalid"] ?>
-                        </div>
+                            <div class="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg text-center">
+                                <?= $errors["invalid"] ?>
+                            </div>
                     <?php endif; ?>
 
                     <div class="w-full mb-4 text-center">
@@ -282,7 +286,7 @@ if ($status_message === 'pending') {
                         <input type="password" class="input-field w-full border p-2 rounded" name="password"
                             placeholder="Enter your new password" required>
                         <?php if (!empty($errors["password"])): ?>
-                            <span class="text-xs text-red-600"><?= $errors["password"] ?></span>
+                                <span class="text-xs text-red-600"><?= $errors["password"] ?></span>
                         <?php endif; ?>
                     </div>
 
@@ -291,7 +295,7 @@ if ($status_message === 'pending') {
                         <input type="password" class="input-field w-full border p-2 rounded" name="confirm_password"
                             placeholder="Confirm your new password" required>
                         <?php if (!empty($errors["confirm_password"])): ?>
-                            <span class="text-xs text-red-600"><?= $errors["confirm_password"] ?></span>
+                                <span class="text-xs text-red-600"><?= $errors["confirm_password"] ?></span>
                         <?php endif; ?>
                     </div>
 
@@ -329,13 +333,13 @@ if ($status_message === 'pending') {
             <h2 class="text-2xl font-bold mb-4 text-red-700">Account Blocked</h2>
             <p class="mb-6 text-gray-700">Your account is <strong class="text-red-600">BLOCKED</strong>.</p>
             <?php if (is_array($borrow_detail) && !empty($borrow_detail)) { ?>
-                <p class="mb-6 text-gray-700 font-semibold">Please settle your unpaid fine.</p>
-                <div class="flex justify-center mt-6">
-                    <?php $_SESSION['temp_blocked_user_id'] = $userID; ?>
-                    <a href="../../../app/views/borrower/blockedPage.php" class="text-red-800 px-6 py-3 font-semibold">Check Unpaid -></a>
-                </div>
+                    <p class="mb-6 text-gray-700 font-semibold">Please settle your unpaid fine.</p>
+                    <div class="flex justify-center mt-6">
+                        <?php $_SESSION['temp_blocked_user_id'] = $userID; ?>
+                        <a href="../../../app/views/borrower/blockedPage.php" class="text-red-800 px-6 py-3 font-semibold">Check Unpaid -></a>
+                    </div>
             <?php } else { ?>
-                <p class="mb-6 text-gray-700 font-semibold">Please contact the administrator to review your account status.</p>
+                    <p class="mb-6 text-gray-700 font-semibold">Please contact the administrator to review your account status.</p>
             <?php } ?>
             <div class="flex justify-center mt-6">
                 <button id="closeBlockedModalBtn" class="bg-red-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">Close</button>
