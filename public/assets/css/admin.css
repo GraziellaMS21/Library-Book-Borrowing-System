@@ -382,10 +382,13 @@ input[type="submit"]:hover {
   animation: fadeIn 0.3s ease;
   z-index: 1000;
   padding: 1rem;
+  left: 0;
+  top: 0;
+  overflow: auto;
 }
 
 .modal.open {
-  display: flex;
+  display: block;
 }
 
 .modal-content {
@@ -402,6 +405,15 @@ input[type="submit"]:hover {
   left: 50%;
   transform: translate(-50%, -50%);
   animation: fadeIn 0.3s ease;
+}
+
+
+.modal-content {
+  background-color: #fefefe;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  border-radius: 8px;
 }
 
 /* Modal Heading Style */
@@ -559,7 +571,35 @@ canvas {
   max-height: 250px;
 }
 
-/* This is from the previous step and is still needed */
-#overview, #borrowing, #fines, #user, #inventory, #overdue {
-    scroll-margin-top: 80px; /* Adjust this value to match your header height */
+.report-chart-container {
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  /* Centers empty message vertically */
+}
+
+/* Style for the navigation links */
+.tabs a {
+  padding: 0.75rem 1.25rem;
+  font-weight: 600;
+  color: #4b5563;
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+.tabs a:hover {
+  color: #931c19;
+  /* red-800 */
+  border-bottom-color: #931c19;
+}
+
+/* This prevents the section title from hiding under the sticky header */
+#overview,
+#user-activity,
+#collection-inventory,
+#fines-compliance {
+  scroll-margin-top: 80px;
+  /* Adjust this value to match your header height */
 }

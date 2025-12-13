@@ -270,20 +270,34 @@ class BorrowDetails extends Database
         $comparison = new DateTime($comparison_date_string);
         $expected = new DateTime($expected_return_date);
         $results = ['is_lost' => false, 'fine_amount' => 0.00, 'fine_reason' => null, 'fine_status' => null];
+        
         if ($comparison > $expected) {
             $interval = $expected->diff($comparison);
             $days_late = $interval->days;
-            $MAX_LATE_DAYS = 105;
-            $MAX_LATE_FEE = 300.00;
+            
+            // Configuration
+            $MAX_LATE_WEEKS = 10;
+            $MAX_LATE_DAYS = $MAX_LATE_WEEKS * 7; // 70 days
+            $DAILY_FINE = 5.00;
+            
             if ($days_late >= $MAX_LATE_DAYS) {
+                // Status: LOST (Overdue > 10 Weeks)
                 $results['is_lost'] = true;
+                
+                // Calculate max accumulated fine (e.g., 70 days * 5 = 350)
+                $max_accumulated_fine = $MAX_LATE_DAYS * $DAILY_FINE;
+                
+                // Fetch replacement cost
                 $replacement_cost = $bookObj->fetchBookReplacementCost($bookID);
-                $results['fine_amount'] = $MAX_LATE_FEE + $replacement_cost;
-                $results['fine_reason'] = 'Lost';
+                
+                // Final calculation: Max Fine + Replacement Cost
+                $results['fine_amount'] = $max_accumulated_fine + $replacement_cost;
+                $results['fine_reason'] = 'Lost'; 
                 $results['fine_status'] = 'Unpaid';
             } else {
-                $weeks_late = ceil($days_late / 7);
-                $late_fine_amount = $weeks_late * 20.00;
+                // Status: LATE (Daily calculation)
+                $late_fine_amount = $days_late * $DAILY_FINE;
+                
                 $results['fine_amount'] = $late_fine_amount;
                 $results['fine_reason'] = 'Late';
                 $results['fine_status'] = 'Unpaid';

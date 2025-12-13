@@ -46,6 +46,7 @@ $pending_users_count = count($pending_users);
 
 $borrow_details = $borrowObj->viewBorrowDetails('', 'pending');
 
+$userDashboard = $userObj->fetchUserName($_SESSION["user_id"]);
 ?>
 
 
@@ -65,6 +66,20 @@ $borrow_details = $borrowObj->viewBorrowDetails('', 'pending');
     <div class="w-full h-screen flex flex-col">
         <?php require_once(__DIR__ . '/../shared/dashboardHeader.php'); ?>
         <main class="overflow-y-auto">
+            <h2 class="flex items-center gap-2 m-8 text-4xl font-bold text-gray-800">
+                Welcome,
+                <span class="text-red-900">
+                    <?php
+                    if (isset($userDashboard)) {
+                        echo htmlspecialchars($userDashboard["fName"] . " " . $userDashboard["lName"]);
+                    } else {
+                        echo "Admin User";
+                    }
+                    ?>
+                </span>
+                !
+            </h2>
+
             <section id="dashboardSection" class="section dashboardSection grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="info p-4 flex items-start rounded-2xl shadow-md">
                     <div class="text-5xl text-white mr-4">
@@ -249,58 +264,7 @@ $borrow_details = $borrowObj->viewBorrowDetails('', 'pending');
             </section>
 
 
-            <h2 class="font-extrabold text-3xl pl-8 pt-4 text-red-900">ACTIVITY FEED</h2>
-            <!-- <section class="section mt-8">
-                    <h2 class="text-2xl font-bold mb-4">Books Due Today
-                        (<?= htmlspecialchars($books_due_today_count) ?>)</h2>
-                    <div class="view bg-white p-4 rounded-lg shadow-md">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>No</th>
-                                    <th>User Name</th>
-                                    <th>Book Title</th>
-                                    <th>Copies</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (empty($books_due_today)): ?>
-                                    <tr>
-                                        <td colspan="5" class="text-center py-4 text-gray-500">
-                                            No books are due today.
-                                        </td>
-                                    </tr>
-                                <?php else:
-                                    $no = 1;
-                                    foreach ($books_due_today as $detail) {
-                                        $fullName = htmlspecialchars($detail["lName"] . ', ' . $detail["fName"]);
-                                        $bookTitle = htmlspecialchars($detail["book_title"]);
-                                        $borrowID = $detail["borrowID"];
-                                        ?>
-                                        <tr>
-                                            <td><?= $no++; ?></td>
-                                            <td><?= $fullName ?></td>
-                                            <td><?= $bookTitle ?></td>
-                                            <td><?= $detail["no_of_copies"] ?></td>
-                                            <td class="action text-center">
-                                                <a class="actionBtn bg-green-500 hover:bg-green-600 text-white inline-block mb-1"
-                                                    href="borrowDetailsSection.php?modal=return&id=<?= $borrowID ?>&tab=borrowed">
-                                                    Mark Returned
-                                                </a>
-                                                <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-white inline-block mb-1"
-                                                    href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=borrowed">
-                                                    View
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    <?php }
-                                endif;
-                                ?>
-                            </tbody>
-                        </table> -->
-            <!-- </div>
-                </section> -->
+            <h2 class="font-extrabold text-3xl pl-8 pt-4 text-red-900">PENDING ACTIVITIES</h2>
             <section class="section mt-8">
                 <h2 class="text-2xl font-bold mb-4">Pending Borrow Requests
                     (<?= htmlspecialchars($pending_borrow_requests_count) ?>)</h2>
