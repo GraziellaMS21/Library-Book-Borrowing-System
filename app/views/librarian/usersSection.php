@@ -307,7 +307,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                     Reason for blocking <span class="font-bold user-name-span"></span>:
                 </p>
 
-                <div class="bg-gray-100 p-4 rounded mb-4 text-sm h-32 overflow-y-auto">
+                <div class="bg-gray-100 p-4 rounded mb-4 text-sm h-32 overflow-y-auto w-full">
                     <?php if(empty($blockReasons)): ?>
                         <p class="text-gray-500 italic">No preset reasons available.</p>
                     <?php else: ?>
@@ -320,8 +320,10 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                     <?php endif; ?>
                 </div>
 
-                <label class="font-semibold block mb-1">Additional Details:</label>
-                <textarea name="reason_custom" rows="3" class="w-full border rounded p-2" placeholder="Type specific details..."></textarea>
+                <div class="flex justify-center flex-col w-full">
+                    <label class="font-semibold block mb-1">Additional Details:</label>
+                    <textarea name="reason_custom" rows="3" class="w-full border rounded p-2" placeholder="Type specific details..."></textarea>
+                </div>
 
                 <input type="submit" value="Confirm Block" class="mt-4 bg-yellow-600 text-white font-bold py-2 px-4 rounded w-full cursor-pointer hover:bg-yellow-700">
             </form>
@@ -341,7 +343,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                     Reason for unblocking <span class="font-bold user-name-span"></span>:
                 </p>
 
-                <div class="bg-gray-100 p-4 rounded mb-4 text-sm h-32 overflow-y-auto">
+                <div class="bg-gray-100 p-4 rounded mb-4 text-sm h-32 overflow-y-auto w-full">
                     <?php if(empty($unblockReasons)): ?>
                         <p class="text-gray-500 italic">No preset reasons available.</p>
                     <?php else: ?>
@@ -353,9 +355,11 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
-
-                <label class="font-semibold block mb-1">Additional Details:</label>
-                <textarea name="reason_custom" rows="3" class="w-full border rounded p-2" placeholder="Type specific details..."></textarea>
+                
+                <div class="flex justify-center flex-col w-full">
+                    <label class="font-semibold block mb-1">Additional Details:</label>
+                    <textarea name="reason_custom" rows="3" class="w-full border rounded p-2" placeholder="Type specific details..."></textarea>
+                </div>
 
                 <input type="submit" value="Confirm Unblock" class="mt-4 bg-green-600 text-white font-bold py-2 px-4 rounded w-full cursor-pointer hover:bg-green-700">
             </form>

@@ -100,7 +100,7 @@ if (!function_exists('timeAgo')) {
                     </div>
 
                     <div class="border-t border-gray-200 mt-2 pt-2">
-                        <a href="myBorrowedBooks.php" id="viewNotif" class="text-sm text-center block text-red-900">View
+                        <a href="../../../app/views/borrower/notifications.php" id="viewNotif" class="text-sm text-center block text-red-900">View
                             All Notifications</a>
                     </div>
                 </div>
@@ -183,7 +183,6 @@ if (!function_exists('timeAgo')) {
         fetch(`../../controllers/notificationController.php?action=markRead&id=${notifID}&ajax=1`)
         .then(response => {
             // Even if controller redirects, we just proceed to update UI
-            // Ideally, controller should return JSON like {status: 'success'}
             return response.text(); 
         })
         .then(data => {

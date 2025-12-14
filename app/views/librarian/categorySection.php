@@ -61,7 +61,7 @@ $categories = $categoryObj->viewCategory();
 
     <main class="overflow-y-auto">
 
-        <div class="section h-full">
+        <div class="section">
             <div class="title flex w-full items-center justify-between">
                 <h1 class="text-red-800 font-bold text-4xl">MANAGE CATEGORIES</h1>
                 <a id="openAddCategoryModalBtn" class="addBtn" href="categorySection.php?modal=add">+ Add

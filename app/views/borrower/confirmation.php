@@ -401,8 +401,8 @@ if (empty($books_to_checkout) && empty($errors)) {
                             <ul class="list-disc ml-5 text-gray-700 space-y-2 text-base">
                                 <li>Borrowed items must be returned on or before the <strong>Expected Return Date</strong>.
                                 </li>
-                                <li><strong>Late Return Penalty:</strong> A fine of <strong class="text-red-700">₱20.00 per
-                                        week</strong> will be incurred for each item returned past the due date.</li>
+                                <li><strong>Late Return Penalty:</strong> A fine of <strong class="text-red-700">₱5.00 per
+                                        day</strong> will be incurred for each item returned past the due date.</li>
                                 <li><strong>Damage or Loss:</strong> Borrower is responsible for replacement/repair costs of
                                     damaged or lost books.</li>
                                 <li><strong>Non-Compliance:</strong> May result in the suspension of borrowing privileges.</li>

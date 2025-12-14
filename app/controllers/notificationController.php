@@ -5,29 +5,39 @@ require_once(__DIR__ . "/../models/manageNotifications.php");
 
 // Ensure user is logged in
 if (!isset($_SESSION["user_id"])) {
-    exit; // Do nothing if not logged in
+    exit;
 }
 
 $userID = $_SESSION["user_id"];
 $action = $_GET['action'] ?? '';
 $notifID = $_GET['id'] ?? '';
-$page = $_GET['page'];
+$page = $_GET['page'] ?? '';
+
+$notificationObj = new Notification();
 
 if ($action === 'markRead') {
-    $notificationObj = new Notification();
-    $notificationObj->markAsRead( $notifID);
+    $notificationObj->markAsRead($notifID);
 
-    header("Location: ../../app/views/borrower/{$page}");
+    // If request came from AJAX (header), just exit
+    if (isset($_GET['ajax'])) {
+        echo "success";
+        exit;
+    }
+
+    // Redirect back to referring page or specific page
+    if ($page === 'notifications.php') {
+        header("Location: ../../app/views/borrower/notifications.php?tab=unread"); 
+        // Redirecting to tab=unread or just notifications.php depending on UX preference
+        header("Location: " . $_SERVER['HTTP_REFERER']);
+    } else {
+        header("Location: " . $_SERVER['HTTP_REFERER']);
+    }
     exit;
-} // Inside notificationController.php
+}
 
 if ($action === 'markAllRead') {
-    if (isset($_SESSION['user_id'])) {
-        $notifObj = new Notification();
-        // You need to create this method in your model
-        $notifObj->markAllAsRead($_SESSION['user_id']); 
-    }
-    // If this was an AJAX request, just exit so we don't redirect
+    $notificationObj->markAllAsRead($userID);
+    
     if (isset($_GET['ajax'])) {
         echo "success";
         exit;
@@ -36,7 +46,12 @@ if ($action === 'markAllRead') {
     exit;
 }
 
-// Intentionally output nothing.
-// This prevents the iframe from showing errors and respects "no json_encode".
+// New Delete Action
+if ($action === 'delete') {
+    $notificationObj->deleteNotification($notifID);
+    header("Location: " . $_SERVER['HTTP_REFERER']);
+    exit;
+}
+
 exit;
 ?>

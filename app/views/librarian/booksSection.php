@@ -100,7 +100,7 @@ $books = $bookObj->viewBook($search, $categoryID);
 
     <main class="overflow-y-auto">
         <div class="section">
-            <div class="title flex w-full my-8 items-center">
+            <div class="title flex w-full my-8 items-center justify-between">
                 <h1 class="text-red-800 font-bold text-4xl">MANAGE BOOKS</h1>
                 <a id="openAddBookModalBtn" class="addBtn" href="booksSection.php?modal=add" ?>+ Add Book</a>
 
