@@ -58,7 +58,142 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    // --- EDIT USER (Unchanged) ---
+    // ==========================================================
+    // NEW: ACTION - CHANGE PASSWORD
+    // ==========================================================
+    if ($action === 'change_password') {
+        $current_password = $_POST['current_password'] ?? '';
+        $new_password = $_POST['new_password'] ?? '';
+        $c_password = $_POST['c_password'] ?? '';
+
+        // Basic Validation
+        if (empty($new_password) || empty($c_password)) {
+            $_SESSION['errors']['password'] = "All password fields are required.";
+        } elseif ($new_password !== $c_password) {
+            $_SESSION['errors']['password'] = "New password and confirmation do not match.";
+        } 
+        
+        // elseif (strlen($new_password) < 6) { 
+        //     $_SESSION['errors']['password'] = "Password must be at least 6 characters long.";
+        // }
+
+        // Verify Old Password (Optional: Verify against DB if needed)
+        // If you want to force check old password, you'd call $userObj->verifyPassword($userID, $current_password) here.
+
+        if (empty($_SESSION['errors'])) {
+            // Ensure you have a 'changePassword' method in your manageUsers.php model
+            if ($userObj->changePassword($userID,$new_password)) {
+                $_SESSION['success_msg'] = "Password updated successfully.";
+                header("Location: ../../app/views/borrower/profile.php?success=password");
+                exit;
+            } else {
+                $_SESSION['errors']['db'] = "Failed to update password. Please try again.";
+            }
+        }
+
+        // Redirect back on error
+        header("Location: ../../app/views/borrower/profile.php?error=password");
+        exit;
+    }
+
+    // ==========================================================
+    // NEW: ACTION - EDIT PROFILE (BORROWER)
+    // ==========================================================
+    if ($action === 'edit_profile_borrower') {
+        // Collect Data
+        $user["lName"] = trim(htmlspecialchars($_POST["lName"] ?? ''));
+        $user["fName"] = trim(htmlspecialchars($_POST["fName"] ?? ''));
+        $user["middleIn"] = trim(htmlspecialchars($_POST["middleIn"] ?? ''));
+        $user["contact_no"] = trim(htmlspecialchars($_POST["contact_no"] ?? ''));
+        $user["email"] = trim(htmlspecialchars($_POST["email"] ?? ''));
+        
+        // Hidden fields usually present in form or session for updates
+        $user["departmentID"] = $_POST["departmentID"] ?? $_SESSION['departmentID'] ?? ''; 
+        $user["userTypeID"] = $_POST["userTypeID"] ?? $_SESSION['userTypeID'] ?? '';
+        $user["role"] = $_POST["role"] ?? $_SESSION['role'] ?? 'Borrower';
+
+        // Validations
+        if (empty($user["lName"])) $errors["lName"] = "Last Name is required.";
+        if (empty($user["fName"])) $errors["fName"] = "First Name is required.";
+        
+        if (empty($user["email"])) {
+            $errors["email"] = "Email is required.";
+        } elseif (!filter_var($user["email"], FILTER_VALIDATE_EMAIL)) {
+            $errors["email"] = "Invalid email format.";
+        } elseif ($userObj->isEmailExist($user["email"], $userID)) {
+            $errors["email"] = "Email address already taken.";
+        }
+
+        // Handle Image Upload
+        $existing_image_name = trim(htmlspecialchars($_POST["existing_image_name"] ?? ''));
+        $existing_image_dir = trim(htmlspecialchars($_POST["existing_image_dir"] ?? ''));
+        $new_image_name = $existing_image_name;
+        $new_image_dir = $existing_image_dir;
+
+        if (isset($_FILES['profile_img']) && $_FILES['profile_img']['error'] === UPLOAD_ERR_OK) {
+            $file = $_FILES['profile_img'];
+            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            $allowed = ['jpg', 'jpeg', 'png', 'gif'];
+
+            if (!in_array($ext, $allowed)) {
+                $errors['profile_img'] = "Invalid file type. Only JPG, JPEG, PNG, and GIF allowed.";
+            } else {
+                $new_name = uniqid('id_', true) . "." . $ext;
+                $target_path = $upload_dir . $new_name;
+
+                if (move_uploaded_file($file['tmp_name'], $target_path)) {
+                    $new_image_name = $new_name;
+                    $new_image_dir = "public/uploads/id_images/" . $new_name;
+                    
+                    // Remove old image if it exists and isn't default
+                    if ($existing_image_name && file_exists(__DIR__ . "/../../" . $existing_image_dir)) {
+                        unlink(__DIR__ . "/../../" . $existing_image_dir);
+                    }
+                } else {
+                    $errors['profile_img'] = "Failed to upload image.";
+                }
+            }
+        }
+
+        if (empty(array_filter($errors))) {
+            // Set Object Properties
+            $userObj->lName = $user["lName"];
+            $userObj->fName = $user["fName"];
+            $userObj->middleIn = $user["middleIn"];
+            $userObj->contact_no = $user["contact_no"];
+            $userObj->departmentID = $user["departmentID"];
+            $userObj->email = $user["email"];
+            $userObj->userTypeID = $user["userTypeID"];
+            $userObj->role = $user["role"];
+            $userObj->imageID_name = $new_image_name;
+            $userObj->imageID_dir = $new_image_dir;
+
+            if ($userObj->editUser($userID)) {
+                // UPDATE SESSION VARIABLES IMMEDIATELY
+                $_SESSION['fName'] = $user["fName"];
+                $_SESSION['lName'] = $user["lName"];
+                $_SESSION['email'] = $user["email"];
+                $_SESSION['imageID_dir'] = $new_image_dir;
+
+                $_SESSION['success_msg'] = "Profile updated successfully.";
+                header("Location: ../../app/views/borrower/settings.php?success=edit");
+                exit;
+            } else {
+                $_SESSION["errors"] = ["db_error" => "Database update failed."];
+                $_SESSION["old"] = $user; // Repopulate form
+                header("Location: ../../app/views/borrower/profile.php?error=db");
+                exit;
+            }
+        } else {
+            $_SESSION["errors"] = $errors;
+            $_SESSION["old"] = $user;
+            header("Location: ../../app/views/borrower/profile.php?error=validation");
+            exit;
+        }
+    }
+
+
+    // --- EDIT USER (Existing Admin Edit Logic) ---
     if ($action === 'edit') {
         $user["lName"] = trim(htmlspecialchars($_POST["lName"] ?? ''));
         $user["fName"] = trim(htmlspecialchars($_POST["fName"] ?? ''));

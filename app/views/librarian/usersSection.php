@@ -82,7 +82,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
     <style>
         .modal { display: none; position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
         .modal.open { display: block; }
-        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; border-radius: 8px; }
+        .modal-content { background-color: #fefefe; padding: 20px; border: 1px solid #888; width: 80%; border-radius: 8px; }
     </style>
 </head>
 
@@ -179,7 +179,13 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                                         <td><?= $user["email"] ?></td>
                                         <td class="text-center">
                                             <?php if ($image_url) { ?>
-                                                <img src="<?= $image_url ?>" alt="ID" class="w-16 h-16 object-cover rounded mx-auto border border-gray-300" title="<?= $user["imageID_name"] ?>">
+                                                <img 
+                                                    src="<?= $image_url ?>" 
+                                                    alt="ID" 
+                                                    class="w-16 h-16 object-cover rounded mx-auto border border-gray-300 cursor-zoom-in hover:opacity-75 transition-opacity" 
+                                                    title="<?= $user["imageID_name"] ?>"
+                                                    onclick="openImageModal(this.src)"
+                                                >
                                             <?php } else { ?>
                                                 <span class="text-gray-500 text-xs">N/A</span>
                                             <?php } ?>
@@ -477,16 +483,29 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
             <span class="close close-times" data-modal="viewDetailsUserModal" data-tab="<?= $current_tab ?>">&times;</span>
             <h2 class="text-2xl font-bold mb-4">User Details</h2>
             <div class="user-details grid grid-cols-2 gap-y-2 gap-x-4 text-base">
-                <div class="col-span-2 mb-4 relative justify-items-center">
-                    <p class="font-semibold mb-2">ID Image:</p>
-                    <?php
-                    $modal_image_url = !empty($modal_user['imageID_dir']) ? "../../../" . $modal_user['imageID_dir'] : null;
-                    if ($modal_image_url) { ?>
-                        <img src="<?= $modal_image_url ?>" alt="User ID Image" class="max-w-xs max-h-40 border rounded shadow-md">
-                    <?php } else { ?>
-                        <p class="text-gray-500">No ID Image Uploaded</p>
-                    <?php } ?>
-                    <button type="button" id="openImage" class="enlarge"><i class="fa-solid fa-expand" style="color: #ffffff;"></i></button>
+                <div class="col-span-2 mb-4 relative flex justify-center">
+                    <div class="text-center w-full">
+                        <p class="font-semibold mb-2">ID Image:</p>
+                        <?php
+                        $modal_image_url = !empty($modal_user['imageID_dir']) ? "../../../" . $modal_user['imageID_dir'] : null;
+                        if ($modal_image_url) { ?>
+                             <div class="w-full max-w-xs aspect-[4/3] bg-gray-100 rounded-lg border-2 border-gray-300 border-dashed flex items-center justify-center overflow-hidden shadow-inner group relative mx-auto">
+                                <img 
+                                    src="<?= $modal_image_url ?>" 
+                                    alt="User ID Image" 
+                                    class="w-full h-full object-contain cursor-zoom-in hover:scale-105 transition-transform duration-300"
+                                    onclick="openImageModal(this.src)"
+                                >
+                                <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <span class="bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">Click to Zoom</span>
+                                </div>
+                            </div>
+                        <?php } else { ?>
+                            <div class="w-full max-w-xs h-32 bg-gray-100 rounded-lg border border-gray-300 flex items-center justify-center mx-auto">
+                                <p class="text-gray-500">No ID Image Uploaded</p>
+                            </div>
+                        <?php } ?>
+                    </div>
                 </div>
 
                 <p class="col-span-2"><strong>Last Name:</strong> <?= $modal_user['lName'] ?? 'N/A' ?></p>
@@ -558,42 +577,34 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
         </div>
     </div>
 
-    <div id="imageEnlargeModal" class="modal hidden">
-        <div class="modal-content !max-w-4xl text-center">
-            <span class="close-times cursor-pointer float-right text-2xl" id="closeImage">&times;</span>
-            <p class="font-semibold mb-2">Image:</p>
-            <?php
-            $modal_image_url = !empty($modal_user['imageID_dir']) ? "../../../" . $modal_user['imageID_dir'] : null;
-            if ($modal_image_url) { ?>
-                <img src="<?= $modal_image_url ?>" alt="Book Cover Image" class="w-full h-auto max-h-[80vh] object-contain mx-auto">
-            <?php } else { ?>
-                <p class="text-gray-500">No ID Image Uploaded</p>
-            <?php } ?>
-        </div>
+    <div id="imageModal" class="fixed inset-0 z-[60] hidden bg-black bg-opacity-95 flex items-center justify-center p-4" onclick="closeImageModal()">
+        <span class="absolute top-6 right-6 text-white text-5xl cursor-pointer hover:text-gray-300 font-bold">&times;</span>
+        <img id="expandedImg" class="max-w-full max-h-full rounded-md shadow-2xl object-contain" src="">
     </div>
 
 </body>
 <script src="../../../public/assets/js/modal.js"></script>
 <script>
+    // Functions for the Consistent Dark Zoom Modal
+    function openImageModal(src) {
+        const modal = document.getElementById('imageModal');
+        const img = document.getElementById('expandedImg');
+        img.src = src;
+        modal.style.display = 'flex'; // Use flex to center with Tailwind classes
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    function closeImageModal() {
+        const modal = document.getElementById('imageModal');
+        modal.style.display = 'none';
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto'; // Restore scrolling
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
-        const closeImage = document.getElementById("closeImage");
-        const imageEnlargeModal = document.getElementById("imageEnlargeModal");
-        const openImage = document.getElementById("openImage");
-
-        if(openImage && imageEnlargeModal) {
-            openImage.addEventListener("click", () => {
-                imageEnlargeModal.style.display = 'block';
-            });
-            closeImage.addEventListener("click", () => {
-                imageEnlargeModal.style.display = 'none';
-            });
-            window.addEventListener('click', (e) => {
-                if (e.target === imageEnlargeModal) {
-                    imageEnlargeModal.style.display = 'none';
-                }
-            });
-        }
-
+        
+        // Existing modal logic
         document.querySelectorAll('.open-modal-btn').forEach(button => {
             button.addEventListener('click', function() {
                 const targetId = this.getAttribute('data-target');

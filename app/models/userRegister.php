@@ -8,10 +8,7 @@ class Register extends Database
     public $middleIn = "";
     public $contact_no = "";
     public $id_number = "";
-    
-    // CHANGED: Renamed from $college_department to $departmentID to match database foreign key
     public $departmentID = ""; 
-    
     public $imageID_name = "";
     public $imageID_dir = "";
     public $email = "";
@@ -20,14 +17,18 @@ class Register extends Database
     public $date_registered = "";
     public $role = "";
     public $registration_status = "Pending";
+    
+    // Added for Email Verification
+    public $verification_code = "";
+    public $verification_expiry = "";
 
     protected $db;
 
     public function addUser()
     {
-        // CHANGED: SQL Query now uses departmentID instead of college_department
-        $sql = "INSERT INTO users (lName, fName, middleIn, id_number, departmentID, imageID_name, imageID_dir, contact_no, email, password, role, userTypeID, date_registered, registration_status) 
-                VALUES (:lName, :fName, :middleIn, :id_number, :departmentID, :imageID_name, :imageID_dir, :contact_no, :email, :password, :role, :userTypeID, :date_registered, :registration_status)";
+        // CHANGED: Added verification_code, verification_expiry and set status to 'Unverified'
+        $sql = "INSERT INTO users (lName, fName, middleIn, id_number, departmentID, imageID_name, imageID_dir, contact_no, email, password, role, userTypeID, date_registered, registration_status, verification_code, verification_expiry) 
+                VALUES (:lName, :fName, :middleIn, :id_number, :departmentID, :imageID_name, :imageID_dir, :contact_no, :email, :password, :role, :userTypeID, :date_registered, :registration_status, :verification_code, :verification_expiry)";
 
         $query = $this->connect()->prepare($sql);
 
@@ -35,10 +36,7 @@ class Register extends Database
         $query->bindParam(":fName", $this->fName);
         $query->bindParam(":middleIn", $this->middleIn);
         $query->bindParam(":id_number", $this->id_number);
-        
-        // CHANGED: Bind the new property
         $query->bindParam(":departmentID", $this->departmentID);
-        
         $query->bindParam(":imageID_name", $this->imageID_name);
         $query->bindParam(":imageID_dir", $this->imageID_dir);
         $query->bindParam(":contact_no", $this->contact_no);
@@ -46,16 +44,20 @@ class Register extends Database
         $query->bindParam(":password", $this->password);
 
         $role = 'Borrower';
-        $this->registration_status = "Pending";
+        // Set initial status to Unverified so they can't login yet
+        $this->registration_status = "Unverified";
 
         $query->bindParam(":role", $role);
         $query->bindParam(":userTypeID", $this->userTypeID);
         $query->bindParam(":date_registered", $this->date_registered);
         $query->bindParam(":registration_status", $this->registration_status);
+        
+        // Bind Verification Params
+        $query->bindParam(":verification_code", $this->verification_code);
+        $query->bindParam(":verification_expiry", $this->verification_expiry);
 
         return $query->execute();
     }
-
 
     public function fetchUserType()
     {
@@ -91,6 +93,25 @@ class Register extends Database
             return true;
         } else
             return false;
+    }
+
+    // New Function: Verify OTP
+    public function verifyEmailOtp($email, $otp) {
+        $sql = "SELECT * FROM users WHERE email = :email AND verification_code = :otp AND verification_expiry > NOW()";
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(":email", $email);
+        $query->bindParam(":otp", $otp);
+        $query->execute();
+
+        return $query->fetch(); // Returns user data if match, false otherwise
+    }
+
+    // New Function: Mark Email as Verified (Set to Pending for Admin)
+    public function markEmailVerified($email) {
+        $sql = "UPDATE users SET registration_status = 'Pending', verification_code = NULL, verification_expiry = NULL WHERE email = :email";
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(":email", $email);
+        return $query->execute();
     }
 }
 ?>

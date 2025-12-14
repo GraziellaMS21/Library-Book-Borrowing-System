@@ -150,7 +150,8 @@ class Book extends Database
             LEFT JOIN book_authors ba ON b.bookID = ba.bookID
             LEFT JOIN authors a ON ba.authorID = a.authorID";
 
-        $conditions = [];
+        // [MODIFIED] Added filter for soft delete
+        $conditions = ["b.is_removed = 0"];
 
         if ($search != "") {
             $conditions[] = "(b.book_title LIKE CONCAT('%', :search, '%') 
@@ -191,18 +192,22 @@ class Book extends Database
 
     public function deleteBook($pid)
     {
-        $book = $this->fetchBook($pid);
-        $sql = "DELETE FROM books WHERE bookID = :id";
+        // [MODIFIED] Changed DELETE to UPDATE is_removed
+        $sql = "UPDATE books SET is_removed = 1 WHERE bookID = :id";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":id", $pid);
         $result = $query->execute();
 
+        // [MODIFIED] Commented out file deletion so image persists if book is restored
+        /*
+        $book = $this->fetchBook($pid);
         if ($result && $book && !empty($book['book_cover_dir'])) {
             $absolute_path = __DIR__ . "/../../" . $book['book_cover_dir'];
             if (file_exists($absolute_path)) {
                 @unlink($absolute_path);
             }
         }
+        */
         return $result;
     }
 
@@ -215,7 +220,7 @@ class Book extends Database
                 JOIN category c ON b.categoryID = c.categoryID 
                 LEFT JOIN book_authors ba ON b.bookID = ba.bookID
                 LEFT JOIN authors a ON ba.authorID = a.authorID
-                WHERE b.categoryID = :categoryID 
+                WHERE b.categoryID = :categoryID AND b.is_removed = 0
                 GROUP BY b.bookID
                 ORDER BY b.book_title ASC 
                 LIMIT 3";
@@ -271,7 +276,8 @@ class Book extends Database
     }
 
     public function countTotalDistinctBooks() {
-        $sql = "SELECT COUNT(book_title) AS total_books FROM books";
+        // [MODIFIED] Added is_removed filter
+        $sql = "SELECT COUNT(book_title) AS total_books FROM books WHERE is_removed = 0";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         $result = $query->fetch(PDO::FETCH_ASSOC);
@@ -279,7 +285,8 @@ class Book extends Database
     }
 
     public function countTotalBookCopies() {
-        $sql = "SELECT (SELECT SUM(book_copies) FROM books) AS total_books";
+        // [MODIFIED] Added is_removed filter
+        $sql = "SELECT (SELECT SUM(book_copies) FROM books WHERE is_removed = 0) AS total_books";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         $result = $query->fetch(PDO::FETCH_ASSOC);
@@ -287,7 +294,8 @@ class Book extends Database
     }
 
     public function fetchCategory() {
-        $sql = "SELECT * FROM category";
+        // [MODIFIED] Added is_removed filter
+        $sql = "SELECT * FROM category WHERE is_removed = 0";
         $query = $this->connect()->prepare($sql);
         if ($query->execute()) {
             return $query->fetchAll();
@@ -321,7 +329,8 @@ class Book extends Database
     }
 
     public function fetchBookTitles() {
-        $sql = "SELECT bookID, book_title FROM books";
+        // [MODIFIED] Added is_removed filter
+        $sql = "SELECT bookID, book_title FROM books WHERE is_removed = 0";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         return $query->fetchAll();
@@ -329,9 +338,10 @@ class Book extends Database
 
     public function isTitleExist($book_title, $bookID = "") {
         if ($bookID) {
-            $sql = "SELECT COUNT(bookID) as total_books FROM books  WHERE book_title = :book_title AND bookID <> :bookID";
+            // [MODIFIED] Check is_removed so we can reuse names of deleted books
+            $sql = "SELECT COUNT(bookID) as total_books FROM books WHERE book_title = :book_title AND bookID <> :bookID AND is_removed = 0";
         } else {
-            $sql = "SELECT COUNT(bookID) as total_books FROM books WHERE book_title = :book_title";
+            $sql = "SELECT COUNT(bookID) as total_books FROM books WHERE book_title = :book_title AND is_removed = 0";
         }
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":book_title", $book_title);
@@ -344,7 +354,8 @@ class Book extends Database
     }
 
     public function countBooksByCategory($categoryID) {
-        $sql = "SELECT COUNT(*) AS total FROM books WHERE categoryID = :categoryID";
+        // [MODIFIED] Added is_removed filter
+        $sql = "SELECT COUNT(*) AS total FROM books WHERE categoryID = :categoryID AND is_removed = 0";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(':categoryID', $categoryID);
         $query->execute();

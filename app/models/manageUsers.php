@@ -19,21 +19,49 @@ class User extends Database
     // public $status_reason = ""; // Removed in 3NF
     protected $db;
 
+    // ==========================================================
+    // NEW: CHANGE PASSWORD METHOD
+    // ==========================================================
+    public function changePassword($userID, $new_password)
+    {
+        $sql = "UPDATE users SET password = :password WHERE userID = :userID";
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(':password', $new_password);
+        $query->bindParam(':userID', $userID);
+        return $query->execute();
+    }
+
     public function editUser($userID)
     {
+        // Added id_number to the SQL query
         $sql = "UPDATE users SET 
-                    lName = :lName, fName = :fName, middleIn = :middleIn, 
-                    contact_no = :contact_no, departmentID = :departmentID, 
-                    email = :email, userTypeID = :userTypeID, role = :role,
-                    imageID_name = :imageID_name, imageID_dir = :imageID_dir
+                    lName = :lName, 
+                    fName = :fName, 
+                    middleIn = :middleIn, 
+                    contact_no = :contact_no, 
+                    departmentID = :departmentID, 
+                    id_number = :id_number,  
+                    email = :email, 
+                    userTypeID = :userTypeID, 
+                    role = :role,
+                    imageID_name = :imageID_name, 
+                    imageID_dir = :imageID_dir
                 WHERE userID = :userID";
 
         $query = $this->connect()->prepare($sql);
+
+        // LOGIC: Convert empty strings to NULL for optional fields
+        // This prevents Foreign Key constraints from failing if no department is selected
+        $deptID = empty($this->departmentID) ? null : $this->departmentID;
         $query->bindParam(":lName", $this->lName);
         $query->bindParam(":fName", $this->fName);
         $query->bindParam(":middleIn", $this->middleIn);
         $query->bindParam(":contact_no", $this->contact_no);
-        $query->bindParam(":departmentID", $this->departmentID);
+
+        // Bind the processed variables (NULL or Value)
+        $query->bindParam(":departmentID", $deptID);
+        $query->bindParam(":id_number", $idNum);
+
         $query->bindParam(":imageID_name", $this->imageID_name);
         $query->bindParam(":imageID_dir", $this->imageID_dir);
         $query->bindParam(":email", $this->email);
@@ -47,6 +75,10 @@ class User extends Database
     public function viewUser($search = "", $userType = "", $statusFilter = "")
     {
         $whereConditions = [];
+
+        // [MODIFIED] Always filter out deleted users
+        $whereConditions[] = "u.is_removed = 0";
+
         $dbStatus = ucfirst($statusFilter);
 
         $sql = "SELECT u.*, ut.type_name, d.department_name
@@ -139,9 +171,10 @@ class User extends Database
     public function isEmailExist($email, $userID = "")
     {
         if ($userID) {
-            $sql = "SELECT COUNT(userID) as total_users FROM users WHERE email = :email AND userID <> :userID";
+            // [MODIFIED] Check is_removed
+            $sql = "SELECT COUNT(userID) as total_users FROM users WHERE email = :email AND userID <> :userID AND is_removed = 0";
         } else {
-            $sql = "SELECT COUNT(userID) as total_users FROM users WHERE email = :email";
+            $sql = "SELECT COUNT(userID) as total_users FROM users WHERE email = :email AND is_removed = 0";
         }
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":email", $email);
@@ -183,8 +216,9 @@ class User extends Database
         $qHist->bindParam(':userID', $userID);
         $qHist->execute();
         $history = $qHist->fetch(PDO::FETCH_ASSOC);
-        
-        if (!$history) return ['remarks' => '', 'reasons' => [], 'admin_name' => 'System', 'date' => ''];
+
+        if (!$history)
+            return ['remarks' => '', 'reasons' => [], 'admin_name' => 'System', 'date' => ''];
 
         $sqlReasons = "SELECT r.reason_text FROM user_status_event_reasons e 
                        JOIN ref_status_reasons r ON e.reasonID = r.reasonID 
@@ -192,7 +226,7 @@ class User extends Database
         $qReas = $this->connect()->prepare($sqlReasons);
         $qReas->bindParam(':historyID', $history['historyID']);
         $qReas->execute();
-        
+
         return [
             'remarks' => $history['additional_remarks'],
             'reasons' => $qReas->fetchAll(PDO::FETCH_COLUMN),
@@ -205,14 +239,14 @@ class User extends Database
     public function updateUserStatus($userID, $newRegStatus, $newAccStatus, $actionType, $remarks = "", $reasonIDs = [], $adminID = null)
     {
         $this->db = $this->connect();
-        
+
         try {
             $this->db->beginTransaction();
 
             // 1. Update the Users Table (Status only)
             $sql = "UPDATE users SET ";
             $params = [':userID' => $userID];
-            
+
             if ($newRegStatus != "" && $newAccStatus != "") {
                 $sql .= "registration_status = :newReg, account_status = :newAcc";
                 $params[':newReg'] = $newRegStatus;
@@ -224,18 +258,19 @@ class User extends Database
                 $sql .= "account_status = :newAcc";
                 $params[':newAcc'] = $newAccStatus;
             }
-            
+
             $sql .= " WHERE userID = :userID";
             $query = $this->db->prepare($sql);
-            foreach ($params as $key => $value) $query->bindValue($key, $value);
+            foreach ($params as $key => $value)
+                $query->bindValue($key, $value);
             $query->execute();
 
             // 2. Insert into History with performed_by
             $sqlHist = "INSERT INTO user_status_history (userID, action_type, additional_remarks, performed_by) VALUES (:uid, :action, :remarks, :adminID)";
             $stmtHist = $this->db->prepare($sqlHist);
             $stmtHist->execute([
-                ':uid' => $userID, 
-                ':action' => $actionType, 
+                ':uid' => $userID,
+                ':action' => $actionType,
                 ':remarks' => $remarks,
                 ':adminID' => $adminID
             ]);
@@ -258,7 +293,7 @@ class User extends Database
             return false;
         }
     }
-    
+
     // --- 3NF METHODS END ---
 
     public function deleteUser($userID)
@@ -268,11 +303,13 @@ class User extends Database
         $checkQuery->bindParam(":userID", $userID);
         $checkQuery->execute();
         $targetUser = $checkQuery->fetch(PDO::FETCH_ASSOC);
-        
+
         if ($targetUser && $targetUser['role'] === 'Super Admin') {
             return false;
         }
-        $sql = "DELETE FROM users WHERE userID = :userID";
+
+        // [MODIFIED] Changed DELETE to UPDATE is_removed
+        $sql = "UPDATE users SET is_removed = 1 WHERE userID = :userID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":userID", $userID);
         return $query->execute();
@@ -280,7 +317,8 @@ class User extends Database
 
     public function countTotalActiveBorrowers()
     {
-        $sql = "SELECT COUNT(userID) AS total_borrowers FROM users WHERE role = 'Borrower' AND account_status = 'Active'";
+        // [MODIFIED] Added is_removed filter
+        $sql = "SELECT COUNT(userID) AS total_borrowers FROM users WHERE role = 'Borrower' AND account_status = 'Active' AND is_removed = 0";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         $result = $query->fetch(PDO::FETCH_ASSOC);
@@ -289,7 +327,8 @@ class User extends Database
 
     public function countPendingUsers()
     {
-        $sql = "SELECT COUNT(userID) AS total_pending FROM users WHERE registration_status = 'Pending' AND role = 'Borrower'";
+        // [MODIFIED] Added is_removed filter
+        $sql = "SELECT COUNT(userID) AS total_pending FROM users WHERE registration_status = 'Pending' AND role = 'Borrower' AND is_removed = 0";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         $result = $query->fetch(PDO::FETCH_ASSOC);
@@ -298,7 +337,8 @@ class User extends Database
 
     public function getUserRegistrationTrend()
     {
-        $sql = "SELECT DATE(date_registered) AS reg_date, COUNT(userID) AS new_users FROM users WHERE date_registered >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY DATE(date_registered) ORDER BY reg_date ASC";
+        // [MODIFIED] Optional: filter removed users from statistics? Usually yes.
+        $sql = "SELECT DATE(date_registered) AS reg_date, COUNT(userID) AS new_users FROM users WHERE date_registered >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND is_removed = 0 GROUP BY DATE(date_registered) ORDER BY reg_date ASC";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);

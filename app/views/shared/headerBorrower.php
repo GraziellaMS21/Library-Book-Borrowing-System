@@ -112,7 +112,7 @@ if (!function_exists('timeAgo')) {
                     Account</button>
                 <div id="account-dropdown"
                     class="absolute right-0 mt-3 p-4 w-60 bg-white rounded-lg shadow-xl border border-red-900 z-30 hidden">
-                    <a href="profile.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Profile</a>
+                    <a href="myProfile.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Profile</a>
                     <a href="myBorrowedBooks.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My
                         Borrowed Books</a>
                     <a href="settings.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>

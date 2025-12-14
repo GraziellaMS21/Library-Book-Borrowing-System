@@ -9,16 +9,23 @@ $registerObj = new Register();
 $userTypes = $registerObj->fetchUserType();
 $departments = $registerObj->fetchDepartments();
 
-// Check for the success parameter in the URL
+// Check for parameters in the URL
 $current_modal = $_GET['modal'] ?? '';
 $success_message = $_GET['success'] ?? '';
+$view_mode = $_GET['view'] ?? ''; // NEW: Check if we are in verification mode
 $open_modal = '';
 
 if ($success_message === 'pending') {
     $open_modal = 'successPendingModal';
 } else if ($current_modal === 'terms') {
     $open_modal = 'termsModal';
+} else if ($view_mode === 'verify') {
+    $open_modal = 'verifyEmailModal'; // NEW: Set modal to verify email
 }
+
+// Get OTP specific errors if any
+$otp_error = $_SESSION['otp_error'] ?? '';
+unset($_SESSION['otp_error']);
 ?>
 
 <!DOCTYPE html>
@@ -31,6 +38,33 @@ if ($success_message === 'pending') {
     <link rel="stylesheet" href="../../../public/assets/css/login_register.css" />
     <link rel="stylesheet" href="../../../public/assets/css/header_footer.css" />
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
+    <style>
+        /* NEW STYLES: For OTP Input Fields */
+        .otp-input-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .otp-input {
+            width: 45px;
+            height: 55px;
+            text-align: center;
+            font-size: 24px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            transition: all 0.3s ease;
+        }
+
+        .otp-input:focus {
+            border-color: #991b1b;
+            background-color: #fff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(153, 27, 27, 0.1);
+        }
+    </style>
 </head>
 
 <body>
@@ -48,7 +82,7 @@ if ($success_message === 'pending') {
             <div class="form-section w-1/2 flex flex-col justify-center items-center">
                 <h1 class="font-extrabold">REGISTER YOUR ACCOUNT</h1>
 
-                <form action="../../../app/controllers/registerController.php" method="POST"
+                <form action="../../../app/controllers/registerController.php?action=register" method="POST"
                     enctype="multipart/form-data">
                     <div class="borrowerType">
                         <label for="borrowerType">Register as? <span>*</span></label>
@@ -260,18 +294,51 @@ if ($success_message === 'pending') {
             </div>
         </div>
     </div>
-    <!-- NEW SUCCESS MODAL -->
+
+    <div id="verifyEmailModal" class="modal <?= $open_modal == 'verifyEmailModal' ? 'open' : '' ?>">
+        <div class="modal-content text-center">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">Verify Your Email</h2>
+            <p class="mb-6 text-gray-600">
+                We have sent a verification code to your email address.<br>
+                Please enter the 6-digit code below to complete your registration.
+            </p>
+            
+            <form action="../../../app/controllers/registerController.php?action=verify_otp" method="POST">
+                <div class="otp-input-group">
+                    <input type="text" name="otp[]" class="otp-input" maxlength="1" 
+                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()" required>
+                    <input type="text" name="otp[]" class="otp-input" maxlength="1" 
+                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()" required>
+                    <input type="text" name="otp[]" class="otp-input" maxlength="1" 
+                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()" required>
+                    <input type="text" name="otp[]" class="otp-input" maxlength="1" 
+                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()" required>
+                    <input type="text" name="otp[]" class="otp-input" maxlength="1" 
+                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()" required>
+                    <input type="text" name="otp[]" class="otp-input" maxlength="1" 
+                        oninput="this.value=this.value.replace(/[^0-9]/g,'')" required>
+                </div>
+                
+                <?php if ($otp_error): ?>
+                    <p class="text-red-600 mb-4 font-bold bg-red-100 p-2 rounded"><?= $otp_error ?></p>
+                <?php endif; ?>
+
+                <button type="submit" class="bg-red-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 w-full transition-colors shadow-lg">
+                    Verify Code
+                </button>
+            </form>
+        </div>
+    </div>
+
     <div id="successPendingModal" class="modal <?= $open_modal == 'successPendingModal' ? 'open' : '' ?>">
         <div class="modal-content text-center">
-            <h2 class="text-2xl font-bold mb-4 text-green-700">Registration Successful!</h2>
+            <h2 class="text-2xl font-bold mb-4 text-green-700">Email Verified!</h2>
 
             <p class="mb-6 text-gray-700">
-                Thank you for registering. Your account is currently <strong class="text-green-600">Pending
-                    Approval</strong>.
+                Thank you for verifying your email. Your account is now <strong class="text-green-600">Pending Approval</strong>.
             </p>
             <p class="mb-6 text-gray-700 font-semibold">
-                Please wait for the administrator to confirm your registration. You can try logging in after a few
-                hours.
+                Please wait for the administrator to review your ID/Card validation. You can try logging in after a few hours.
             </p>
 
             <div class="flex justify-center mt-6">
@@ -282,6 +349,7 @@ if ($success_message === 'pending') {
             </div>
         </div>
     </div>
+
     <?php require_once(__DIR__ . '/../shared/footer.php'); ?>
 </body>
 <script src="../../../public/assets/js/header_footer.js"></script>
