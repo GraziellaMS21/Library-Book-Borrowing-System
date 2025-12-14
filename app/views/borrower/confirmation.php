@@ -22,11 +22,11 @@ $is_list_checkout = ($action === 'list_checkout' && $_SERVER["REQUEST_METHOD"] =
 
 $userID = $_SESSION["user_id"];
 $user = $userObj->fetchUser($userID);
-$userTypeID = $user["userTypeID"];
+$userTypeID = $user["borrowerTypeID"];
 
 $userName = $user ? $user["lName"] . ", " . $user["fName"] : 'Borrower Name Not Found';
 //fetch user_type infos
-$userTypeName = $user["type_name"];
+$userTypeName = $user["borrower_type"];
 $borrow_limit = (int) ($user["borrower_limit"] ?? 1);
 $borrow_period = (int) ($user["borrower_period"] ?? 7);
 

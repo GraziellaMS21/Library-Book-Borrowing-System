@@ -21,7 +21,7 @@ $source = $_GET["source"] ?? "myList.php";
 //fetch user information based on ID
 $userID = $_SESSION["user_id"];
 $user = $userObj->fetchUser($userID);
-$userTypeID = $user["userTypeID"];
+$userTypeID = $user["borrowerTypeID"];
 
 if ($action === 'add' && $bookID) {
     $book = $bookObj->fetchBook($bookID);

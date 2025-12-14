@@ -76,7 +76,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         // 2. Borrow Limit Logic
-        $userTypeID = (int) $user["userTypeID"];
+        $userTypeID = (int) $user["borrowerTypeID"];
         $borrow_limit = (int) ($user["borrower_limit"] ?? 1);
         $current_borrowed_count = $borrowObj->fetchTotalBorrowedBooks($userID); // Includes Pending
         $available_slots = $borrow_limit - $current_borrowed_count;

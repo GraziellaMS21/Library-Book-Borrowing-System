@@ -658,6 +658,18 @@ class BorrowDetails extends Database
         return 0;
     }
 
+    public function fetchPendingCopiesOnlyForBook($bookID)
+    {
+        $sql = "SELECT SUM(no_of_copies) AS total_pending FROM borrowing_details WHERE bookID = :bookID AND borrow_request_status = 'Pending'";
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(':bookID', $bookID);
+        if ($query->execute()) {
+            $record = $query->fetch();
+            return (int) ($record["total_pending"] ?? 0);
+        }
+        return 0;
+    }
+
     public function isBookBorrowed($userID, $bookID)
     {
         $sql = "SELECT COUNT(borrowID) FROM borrowing_details WHERE userID = :userID AND bookID = :bookID AND (borrow_request_status = 'Approved' OR borrow_status = 'Borrowed')";

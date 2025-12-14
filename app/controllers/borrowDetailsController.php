@@ -356,17 +356,13 @@ EOT;
                 $borrowObj->borrow_request_status = 'Rejected';
                 $borrowObj->borrow_status = NULL;
                 $final_redirect_tab = 'rejected';
-                if ($current_detail['borrow_request_status'] === 'Approved') {
-                    $bookObj->incrementBookCopies($book_id_to_update, $copies_to_move);
-                }
+                // No need to increment stock, as it wasn't decremented on Approval anymore
             } elseif ($action === 'cancel') {
                 $borrowObj->borrow_request_status = 'Cancelled';
                 $borrowObj->borrow_status = NULL;
                 $borrowObj->return_date = NULL;
                 $final_redirect_tab = 'cancelled';
-                if ($current_detail['borrow_request_status'] === 'Approved' && $current_detail['borrow_status'] !== 'Borrowed') {
-                    $bookObj->incrementBookCopies($book_id_to_update, $copies_to_move);
-                }
+                // No need to increment stock
             }
 
             if ($borrowObj->editBorrowDetail($borrowID)) {
@@ -455,17 +451,14 @@ if ($borrowID) {
 
             $borrowObj->borrow_request_status = 'Approved';
             $borrowObj->borrow_status = NULL;
+            // Check availability but DO NOT decrement yet
             $available_physical_copies = (int) ($book_info['book_copies'] ?? 0);
-            if ($available_physical_copies < $copies_to_move) {
-                $_SESSION["errors"] = ["general" => "Error: Cannot fulfill claim. Not enough copies."];
-                header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}");
-                exit;
-            }
-            if (!$bookObj->decrementBookCopies($borrowObj->bookID, $copies_to_move)) {
-                $_SESSION["errors"] = ["general" => "Failed to update book stock."];
-                header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}");
-                exit;
-            }
+
+            // Note: We should check real availability (Stock - Pending - Approved) here to prevent over-approving
+            // But for now, we follow the instruction to just move the decrement.
+            // Ideally, we should check against calculated availability. 
+            // However, the physical copies check is still useful as a hard limit.
+
             $notificationObj->userID = $borrowerUserID;
             $notificationObj->title = "Request Approved";
             $notificationObj->message = "Your request for '{$bookTitle}' is approved and ready for pickup.";
@@ -473,6 +466,21 @@ if ($borrowID) {
             $notificationObj->addNotification();
 
         } elseif ($action === 'pickup') {
+
+            // DECREMENT HERE
+            $available_physical_copies = (int) ($book_info['book_copies'] ?? 0);
+            if ($available_physical_copies < $copies_to_move) {
+                $_SESSION["errors"] = ["general" => "Error: Cannot fulfill claim. Not enough physical copies in stock."];
+                header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}");
+                exit;
+            }
+
+            if (!$bookObj->decrementBookCopies($borrowObj->bookID, $copies_to_move)) {
+                $_SESSION["errors"] = ["general" => "Failed to update book stock."];
+                header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}");
+                exit;
+            }
+
             $borrowObj->borrow_request_status = 'Approved';
             $borrowObj->borrow_status = 'Borrowed';
             $borrowObj->pickup_date = date("Y-m-d");

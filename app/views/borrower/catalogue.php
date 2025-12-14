@@ -22,7 +22,11 @@ $userTypeID = 0; // 0 indicates Guest/Not Logged In
 
 if ($userID) {
   $user = $userObj->fetchUser($userID);
-  $userTypeID = $user["userTypeID"];
+  if ($user) {
+    $userTypeID = $user["borrowerTypeID"];
+  } else {
+    $userTypeID = 0;
+  }
 }
 
 // --- MODAL/STATUS LOGIC ---
@@ -141,9 +145,9 @@ foreach ($books_data as $book) {
     </header>
 
     <?php if (empty($booksByCategory)) { ?>
-        <div class="text-center py-16 bg-white rounded-xl shadow-lg">
-          <p class="text-xl text-gray-500">The library catalogue is currently empty. Check back soon!</p>
-        </div>
+      <div class="text-center py-16 bg-white rounded-xl shadow-lg">
+        <p class="text-xl text-gray-500">The library catalogue is currently empty. Check back soon!</p>
+      </div>
     <?php } ?>
 
     <form method="GET" class="search">
@@ -151,9 +155,9 @@ foreach ($books_data as $book) {
       <select name="view_category" id="category">
         <option value="">All Categories</option>
         <?php foreach ($categories as $cat): ?>
-            <option value="<?= $cat["categoryID"] ?>" <?= $categoryID == $cat["categoryID"] ? 'selected' : '' ?>>
-              <?= $cat["category_name"] ?>
-            </option>
+          <option value="<?= $cat["categoryID"] ?>" <?= $categoryID == $cat["categoryID"] ? 'selected' : '' ?>>
+            <?= $cat["category_name"] ?>
+          </option>
         <?php endforeach; ?>
       </select>
       <button type="submit" class="bg-red-800 text-white rounded-lg px-4 py-2">Search</button>
@@ -161,170 +165,172 @@ foreach ($books_data as $book) {
 
 
     <?php foreach ($booksByCategory as $categoryGroup) { ?>
-        <div class="mb-12 bg-white p-6 rounded-xl shadow-lg">
-          <div class="flex justify-between items-center border-b-2 border-red-700 pb-3 mb-6">
-            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">
-              <?= htmlspecialchars($categoryGroup['category_name']) ?>
-            </h2>
+      <div class="mb-12 bg-white p-6 rounded-xl shadow-lg">
+        <div class="flex justify-between items-center border-b-2 border-red-700 pb-3 mb-6">
+          <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">
+            <?= htmlspecialchars($categoryGroup['category_name']) ?>
+          </h2>
 
-            <?php if ($categoryGroup['full_view'] ?? false) { ?>
-                <a href="catalogue.php"
-                  class="text-red-700 hover:text-red-900 font-semibold transition duration-150 flex items-center">
-                  &larr; Back to Catalogue
-                </a>
-            <?php } else { ?>
-                <a href="catalogue.php?view_category=<?= $categoryGroup['categoryID'] ?>"
-                  class="<?= $categoryGroup['show_view_all'] ? '' : 'hidden' ?> text-red-700 viewAll font-semibold">
-                  View All (<?= $categoryGroup['total_view'] ?? '' ?>) &rarr;
-                </a>
-            <?php } ?>
-          </div>
+          <?php if ($categoryGroup['full_view'] ?? false) { ?>
+            <a href="catalogue.php"
+              class="text-red-700 hover:text-red-900 font-semibold transition duration-150 flex items-center">
+              &larr; Back to Catalogue
+            </a>
+          <?php } else { ?>
+            <a href="catalogue.php?view_category=<?= $categoryGroup['categoryID'] ?>"
+              class="<?= $categoryGroup['show_view_all'] ? '' : 'hidden' ?> text-red-700 viewAll font-semibold">
+              View All (<?= $categoryGroup['total_view'] ?? '' ?>) &rarr;
+            </a>
+          <?php } ?>
+        </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <?php foreach ($categoryGroup['books'] as $book) {
-              $has_active_pending = false;
-              $has_active_borrowed = false;
-              ?>
-                <div class="book-card-base" data-book-id="<?= $book['bookID'] ?>">
-                  <div class="flex items-start p-4">
-                    <div
-                      class="flex-shrink-0 w-20 h-32 mr-4 shadow-lg rounded-md overflow-hidden bg-gray-200 border-2 border-gray-100">
-                      <?php
-                      $book_cover_dir = $book['book_cover_dir'] ?? null;
-                      if ($book_cover_dir) { ?>
-                          <img src="<?= "../../../" . $book_cover_dir ?>" alt="<?= $book['book_title'] ?> Cover"
-                            class="w-full h-full object-cover">
-                      <?php } else { ?>
-                          <div class="book-cover-placeholder">
-                            No Cover Available
-                          </div>
-                      <?php } ?>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <?php foreach ($categoryGroup['books'] as $book) {
+            $has_active_pending = false;
+            $has_active_borrowed = false;
+            ?>
+            <div class="book-card-base" data-book-id="<?= $book['bookID'] ?>">
+              <div class="flex items-start p-4">
+                <div
+                  class="flex-shrink-0 w-20 h-32 mr-4 shadow-lg rounded-md overflow-hidden bg-gray-200 border-2 border-gray-100">
+                  <?php
+                  $book_cover_dir = $book['book_cover_dir'] ?? null;
+                  if ($book_cover_dir) { ?>
+                    <img src="<?= "../../../" . $book_cover_dir ?>" alt="<?= $book['book_title'] ?> Cover"
+                      class="w-full h-full object-cover">
+                  <?php } else { ?>
+                    <div class="book-cover-placeholder">
+                      No Cover Available
                     </div>
+                  <?php } ?>
+                </div>
 
-                    <div class="flex-grow leading-tight">
-                      <h3 class="text-xl font-bold text-red-800 mb-1 break-words book-title"><a
-                          href="viewBook.php?bookID=<?= $book["bookID"] ?>"><?= $book['book_title'] ?></a></h3>
-                      <p class="text-sm text-gray-700 break-words"><strong>Author:</strong>
-                        <?= htmlspecialchars($book['author_names'] ?? 'N/A') ?></p>
-                      <p class="text-sm text-gray-700"><strong>Year:</strong>
-                        <?= $book['publication_year'] ?></p>
+                <div class="flex-grow leading-tight">
+                  <h3 class="text-xl font-bold text-red-800 mb-1 break-words book-title"><a
+                      href="viewBook.php?bookID=<?= $book["bookID"] ?>"><?= $book['book_title'] ?></a></h3>
+                  <p class="text-sm text-gray-700 break-words"><strong>Author:</strong>
+                    <?= htmlspecialchars($book['author_names'] ?? 'N/A') ?></p>
+                  <p class="text-sm text-gray-700"><strong>Year:</strong>
+                    <?= $book['publication_year'] ?></p>
 
-                      <p class="text-sm text-gray-600 mt-2"><strong>Stock:</strong>
-                        <?= $book['book_copies'] ?></p>
-                      <p class="text-sm text-gray-600"><strong>Condition:</strong>
-                        <?= $book['book_condition'] ?></p>
-                    </div>
-                  </div>
+                  <p class="text-sm text-gray-600 mt-2"><strong>Stock:</strong>
+                    <?= $book['book_copies'] ?></p>
+                  <p class="text-sm text-gray-600"><strong>Condition:</strong>
+                    <?= $book['book_condition'] ?></p>
+                </div>
+              </div>
 
-                  <div class="mt-auto p-4 border-t border-gray-100 flex justify-between items-center">
-                    <?php
-                    $copies = $book['book_copies'] ?? 0;
-                    $status = "Available";
-                    $status_color = 'text-green-600 bg-green-100';
-                    $button_disabled = false;
-                    $bookTitle = htmlspecialchars($book["book_title"]);
-                    $bookID = $book["bookID"];
+              <div class="mt-auto p-4 border-t border-gray-100 flex justify-between items-center">
+                <?php
+                $copies = $book['book_copies'] ?? 0;
+                $status = "Available";
+                $status_color = 'text-green-600 bg-green-100';
+                $button_disabled = false;
+                $bookTitle = htmlspecialchars($book["book_title"]);
+                $bookID = $book["bookID"];
 
-                    $pending_copies_count = $borrowDetailsObj->fetchPendingAndApprovedCopiesForBook($bookID);
-                    $available_for_request = max(0, $copies - $pending_copies_count);
+                $pending_copies_count = $borrowDetailsObj->fetchPendingAndApprovedCopiesForBook($bookID);
+                $available_for_request = max(0, $copies - $pending_copies_count);
 
-                    $current_borrowed_count = 0;
-                    $borrow_limit = 0;
-                    $final_copies = $available_for_request;
-                    $borrow_denied = false;
-                    $error_message_code = '';
-                    $max_available = $available_for_request;
+                $current_borrowed_count = 0;
+                $borrow_limit = 0;
+                $final_copies = $available_for_request;
+                $borrow_denied = false;
+                $error_message_code = '';
+                $max_available = $available_for_request;
 
-                    // --- UPDATED: Borrow Logic ---
-                    if ($userID) {
-                      if ($userTypeID != 2) {
-                        // Logged-in Non-staff
-                        $borrow_limit = $userObj->fetchUserLimit($userTypeID);
-                        $current_borrowed_count = $borrowDetailsObj->fetchTotalBorrowedBooks($userID);
+                // --- UPDATED: Borrow Logic ---
+                if ($userID) {
+                  if ($userTypeID != 2) {
+                    // Logged-in Non-staff
+                    $borrow_limit = $userObj->fetchUserLimit($userTypeID);
+                    $current_borrowed_count = $borrowDetailsObj->fetchTotalBorrowedBooks($userID);
 
-                        $has_active_pending = $borrowDetailsObj->fetchPendingBooks($userID, $bookID);
-                        $has_active_borrowed = $borrowDetailsObj->fetchBorrowedBooks($userID, $bookID);
+                    $has_active_pending = $borrowDetailsObj->fetchPendingBooks($userID, $bookID);
+                    $has_active_borrowed = $borrowDetailsObj->fetchBorrowedBooks($userID, $bookID);
 
-                        if ($has_active_pending || $has_active_borrowed) {
-                          $button_disabled = true;
-                          $status = $has_active_pending ? "Request Pending" : "Borrowed";
-                          $status_color = 'text-yellow-600 bg-yellow-100';
+                    if ($has_active_pending || $has_active_borrowed) {
+                      $button_disabled = true;
+                      $status = $has_active_pending ? "Request Pending" : "Borrowed";
+                      $status_color = 'text-yellow-600 bg-yellow-100';
+                    } else {
+                      $max_available_to_borrow = $borrow_limit - $current_borrowed_count;
+                      $final_copies = min($available_for_request, $max_available_to_borrow);
+
+                      if ($final_copies <= 0) {
+                        $borrow_denied = true;
+                        $button_disabled = true;
+                        if ($available_for_request <= 0) {
+                          $error_message_code = 'unavailable';
+                          $status = "Unavailable";
+                          $status_color = 'text-red-600 bg-red-100';
                         } else {
-                          $max_available_to_borrow = $borrow_limit - $current_borrowed_count;
-                          $final_copies = min($available_for_request, $max_available_to_borrow);
-
-                          if ($final_copies <= 0) {
-                            $borrow_denied = true;
-                            $button_disabled = true;
-                            if ($available_for_request <= 0) {
-                              $error_message_code = 'unavailable';
-                            } else {
-                              $error_message_code = 'limit';
-                            }
-                            $status = "Unavailable";
-                            $status_color = 'text-red-600 bg-red-100';
-                          }
+                          $error_message_code = 'limit';
+                          $status = "Limit Reached";
+                          $status_color = 'text-orange-600 bg-orange-100';
                         }
                       }
-                    } else {
-                      // Not Logged In (Guest)
-                      // They can see "Available" status but cannot borrow
-                      if ($available_for_request <= 0) {
-                        $status = "Fully Reserved";
-                        $status_color = 'text-blue-600 bg-blue-100';
-                        $button_disabled = true;
-                      }
                     }
+                  }
+                } else {
+                  // Not Logged In (Guest)
+                  // They can see "Available" status but cannot borrow
+                  if ($available_for_request <= 0) {
+                    $status = "Fully Reserved";
+                    $status_color = 'text-blue-600 bg-blue-100';
+                    $button_disabled = true;
+                  }
+                }
 
-                    // Status for reserved
-                    if ($available_for_request <= 0 && !$borrow_denied && !$button_disabled) {
-                      $status = "Fully Reserved";
-                      $status_color = 'text-blue-600 bg-blue-100';
-                      $button_disabled = true;
-                    }
+                // Status for reserved
+                if ($available_for_request <= 0 && !$borrow_denied && !$button_disabled) {
+                  $status = "Fully Reserved";
+                  $status_color = 'text-blue-600 bg-blue-100';
+                  $button_disabled = true;
+                }
 
-                    $borrow_action = '';
-                    $add_to_list_action = '';
+                $borrow_action = '';
+                $add_to_list_action = '';
 
-                    if ($userID) {
-                      // Logged In Logic
-                      if ($userTypeID == 2) {
-                        $borrow_action = "href='catalogue.php?modal=borrow&bookID={$bookID}'";
-                        $add_to_list_action = "href='catalogue.php?modal=list&bookID={$bookID}'";
-                      } elseif (!$borrow_denied) {
-                        $borrow_action = "href='confirmation.php?bookID={$book['bookID']}&copies=1'";
-                        $add_to_list_action = "onclick=\"event.preventDefault(); addToList({$book['bookID']})\"";
-                      } else {
-                        $borrow_action = "href='catalogue.php?status=borrow_denied&bookID={$bookID}&error_code={$error_message_code}&count={$current_borrowed_count}&limit={$borrow_limit}'";
-                      }
-                    } else {
-                      // Guest Logic: Redirect to Login
-                      $borrow_action = "href='login.php'";
-                      $add_to_list_action = "href='login.php'";
-                    }
-                    ?>
+                if ($userID) {
+                  // Logged In Logic
+                  if ($userTypeID == 2) {
+                    $borrow_action = "href='catalogue.php?modal=borrow&bookID={$bookID}'";
+                    $add_to_list_action = "href='catalogue.php?modal=list&bookID={$bookID}'";
+                  } elseif (!$borrow_denied) {
+                    $borrow_action = "href='confirmation.php?bookID={$book['bookID']}&copies=1'";
+                    $add_to_list_action = "onclick=\"event.preventDefault(); addToList({$book['bookID']})\"";
+                  } else {
+                    $borrow_action = "href='catalogue.php?status=borrow_denied&bookID={$bookID}&error_code={$error_message_code}&count={$current_borrowed_count}&limit={$borrow_limit}'";
+                  }
+                } else {
+                  // Guest Logic: Redirect to Login
+                  $borrow_action = "href='login.php'";
+                  $add_to_list_action = "href='login.php'";
+                }
+                ?>
 
 
-                    <span class="px-3 py-1 text-xs font-semibold rounded-full <?= $status_color ?>">
-                      <?= $status ?>
-                    </span>
+                <span class="px-3 py-1 text-xs font-semibold rounded-full <?= $status_color ?>">
+                  <?= $status ?>
+                </span>
 
-                    <a <?= $borrow_action ?>
-                      class="text-sm font-medium cursor-pointer px-4 py-2 rounded-full <?= $button_disabled ? 'bg-gray-300 text-gray-600 cursor-not-allowed pointer-events-none' : 'bg-red-800 borrow-button text-white shadow-md' ?>">
-                      <?= $button_disabled ? (($has_active_borrowed || $has_active_pending) ? 'Limit 1 Copy' : 'Unavailable') : ($userID ? '+ Borrow Now' : 'Login to Borrow') ?>
-                    </a>
+                <a <?= $borrow_action ?>
+                  class="text-sm font-medium cursor-pointer px-4 py-2 rounded-full <?= $button_disabled ? 'bg-gray-300 text-gray-600 cursor-not-allowed pointer-events-none' : 'bg-red-800 borrow-button text-white shadow-md' ?>">
+                  <?= $button_disabled ? (($has_active_borrowed || $has_active_pending) ? 'Limit 1 Copy' : 'Unavailable') : ($userID ? '+ Borrow Now' : 'Login to Borrow') ?>
+                </a>
 
-                    <?php if ($userID && !$button_disabled): ?>
-                        <a <?= $add_to_list_action ?>
-                          class="text-sm font-medium borrow-button cursor-pointer px-4 py-2 rounded-full bg-red-800 text-white shadow-md">
-                          + Add To List
-                        </a>
-                    <?php endif; ?>
-                  </div>
-                </div>
-            <?php } ?>
-          </div>
+                <?php if ($userID && !$button_disabled): ?>
+                  <a <?= $add_to_list_action ?>
+                    class="text-sm font-medium borrow-button cursor-pointer px-4 py-2 rounded-full bg-red-800 text-white shadow-md">
+                    + Add To List
+                  </a>
+                <?php endif; ?>
+              </div>
+            </div>
+          <?php } ?>
         </div>
+      </div>
     <?php } ?>
   </div>
 

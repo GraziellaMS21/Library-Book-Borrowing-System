@@ -19,7 +19,7 @@ $userTypeID = 0; // Default to 0 (Guest)
 if ($userID) {
     $user = $userObj->fetchUser($userID);
     if ($user) {
-        $userTypeID = $user["userTypeID"];
+        $userTypeID = $user["borrowerTypeID"];
     }
 }
 
