@@ -205,7 +205,7 @@ class User extends Database
     // UPDATED: Now fetches the Admin Name who performed the action
     public function fetchLatestUserReasons($userID)
     {
-        $sqlHistory = "SELECT h.historyID, h.additional_remarks, h.created_at, 
+        $sqlHistory = "SELECT h.userHistoryID, h.additional_remarks, h.created_at, 
                               CONCAT(admin.fName, ' ', admin.lName) as admin_name
                        FROM user_status_history h
                        LEFT JOIN users admin ON h.performed_by = admin.userID
@@ -224,7 +224,7 @@ class User extends Database
                        JOIN ref_status_reasons r ON e.reasonID = r.reasonID 
                        WHERE e.historyID = :historyID";
         $queryReasons = $this->connect()->prepare($sqlReasons);
-        $queryReasons->bindParam(':historyID', $history['historyID']);
+        $queryReasons->bindParam(':historyID', $history['userHistoryID']);
         $queryReasons->execute();
 
         return [

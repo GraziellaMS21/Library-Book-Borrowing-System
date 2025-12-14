@@ -73,7 +73,7 @@ class BorrowDetails extends Database
 
     public function fetchLatestBorrowReasons($borrowID)
     {
-        $sqlHistory = "SELECT h.historyID, h.action_type, h.additional_remarks, h.created_at, 
+        $sqlHistory = "SELECT h.borrowHistoryID, h.action_type, h.additional_remarks, h.created_at, 
                               CONCAT(u.fName, ' ', u.lName) as admin_name
                        FROM borrowing_status_history h
                        LEFT JOIN users u ON h.performed_by = u.userID
@@ -92,7 +92,7 @@ class BorrowDetails extends Database
                        JOIN ref_status_reasons r ON e.reasonID = r.reasonID 
                        WHERE e.historyID = :historyID";
         $queryReasons = $this->connect()->prepare($sqlReasons);
-        $queryReasons->bindParam(':historyID', $history['historyID']);
+        $queryReasons->bindParam(':historyID', $history['borrowHistoryID']);
         $queryReasons->execute();
 
         return [
@@ -229,7 +229,7 @@ class BorrowDetails extends Database
                 (
                     SELECT GROUP_CONCAT(COALESCE(rs.reason_text, '') SEPARATOR '; ')
                     FROM borrowing_status_history bsh
-                    LEFT JOIN borrowing_status_event_reasons bser ON bsh.historyID = bser.historyID
+                    LEFT JOIN borrowing_status_event_reasons bser ON bsh.borrowHistoryID = bser.historyID
                     LEFT JOIN ref_status_reasons rs ON bser.reasonID = rs.reasonID
                     WHERE bsh.borrowID = bd.borrowID
                     ORDER BY bsh.created_at DESC
@@ -416,7 +416,7 @@ class BorrowDetails extends Database
                 (
                     SELECT GROUP_CONCAT(COALESCE(rs.reason_text, '') SEPARATOR '; ')
                     FROM borrowing_status_history bsh
-                    LEFT JOIN borrowing_status_event_reasons bser ON bsh.historyID = bser.historyID
+                    LEFT JOIN borrowing_status_event_reasons bser ON bsh.borrowHistoryID = bser.historyID
                     LEFT JOIN ref_status_reasons rs ON bser.reasonID = rs.reasonID
                     WHERE bsh.borrowID = bd.borrowID
                     ORDER BY bsh.created_at DESC LIMIT 1
