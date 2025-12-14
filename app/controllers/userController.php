@@ -26,16 +26,33 @@ $currentAdminName = ($_SESSION['fName'] ?? 'Admin') . ' ' . ($_SESSION['lName'] 
 // --- 3NF LOGIC: Capture Reason IDs and Custom Remarks ---
 $remarks = NULL;
 $reasonIDs = [];
+$isOtherSelected = false;
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Capture the checkbox IDs (Array of Integers)
     if (isset($_POST['reason_presets']) && is_array($_POST['reason_presets'])) {
-        $reasonIDs = $_POST['reason_presets']; 
+        foreach ($_POST['reason_presets'] as $id) {
+            if ($id === 'other') {
+                $isOtherSelected = true;
+            } elseif (is_numeric($id)) {
+                $reasonIDs[] = $id;
+            }
+        }
     }
     
     // Capture the typed custom note
     if (!empty($_POST['reason_custom'])) {
         $remarks = htmlspecialchars(trim($_POST['reason_custom']));
+    }
+
+    // Append "Others - " if checkbox selected
+    if ($isOtherSelected) {
+        $prefix = "Others - ";
+        if ($remarks) {
+            $remarks = $prefix . $remarks;
+        } else {
+            $remarks = "Others (No details provided)";
+        }
     }
 }
 

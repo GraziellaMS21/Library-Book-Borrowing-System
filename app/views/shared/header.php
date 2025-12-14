@@ -1,6 +1,6 @@
 <!-- includes/header.php -->
 <header>
-    <nav class="navbar flex justify-between items-center bg-white fixed top-0 left-0 w-full z-[9999]">
+    <nav class="navbar flex justify-between items-center bg-white fixed top-0 left-0 w-full z-[1000]">
         <div class="logo-section flex items-center gap-3">
             <img src="../../../public/assets/images/logo.png" alt="Logo" class="logo">
              <h2 class="website-name">WMSU LIBRARY</h2>

@@ -30,15 +30,32 @@ $currentAdminName = ($_SESSION['fName'] ?? 'Admin') . ' ' . ($_SESSION['lName'] 
 // --- 3NF INPUT HANDLING ---
 $reasonIDs = [];
 $remarks = NULL;
+$isOtherSelected = false;
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Capture Checkbox IDs
     if (isset($_POST['reason_presets']) && is_array($_POST['reason_presets'])) {
-        $reasonIDs = $_POST['reason_presets']; 
+        foreach ($_POST['reason_presets'] as $id) {
+            if ($id === 'other') {
+                $isOtherSelected = true;
+            } elseif (is_numeric($id)) {
+                $reasonIDs[] = $id;
+            }
+        }
     }
     // Capture Custom Remark
     if (!empty($_POST['reason_custom'])) {
         $remarks = htmlspecialchars(trim($_POST['reason_custom']));
+    }
+
+    // Append "Others - " if checkbox selected
+    if ($isOtherSelected) {
+        $prefix = "Others - ";
+        if ($remarks) {
+            $remarks = $prefix . $remarks;
+        } else {
+            $remarks = "Others (No details provided)";
+        }
     }
 }
 
@@ -421,7 +438,14 @@ if ($borrowID) {
         $bookTitle = $book_info['book_title'] ?? 'Book';
         $copies_to_move = (int) $borrowObj->no_of_copies;
 
+        // --- NEW CHECK: PREVENT SELF-APPROVAL ---
         if ($action === 'accept') {
+            if ($borrowerUserID == $_SESSION['user_id']) {
+                $_SESSION["errors"] = ["general" => "Permission Denied: You cannot approve your own borrow request."];
+                header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}");
+                exit;
+            }
+
             $borrowObj->borrow_request_status = 'Approved';
             $borrowObj->borrow_status = NULL;
             $available_physical_copies = (int) ($book_info['book_copies'] ?? 0);

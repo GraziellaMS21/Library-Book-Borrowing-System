@@ -16,6 +16,16 @@ $bookObj = new Book();
 $userID = $_SESSION["user_id"];
 $user = $userObj->fetchUser($userID);
 
+// Fetch reasons for cancellation
+$cancel_reasons_all = $borrowObj->fetchReasonRefs('BorrowCancel');
+$admin_reasons = [
+    'Book not found on shelf', 
+    'System Error / Duplication', 
+    'Administrative Decision', 
+    'Unclaimed by deadline',
+    'User requested cancellation' 
+];
+
 $active_tab = $_GET['tab'] ?? 'pending';
 
 $borrowed_books_raw = [];
@@ -335,10 +345,12 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
 
                                                             <td class="py-4 px-4">
                                                                 <?php if ($book['borrow_request_status'] == 'Pending' || $book['borrow_request_status'] == 'Approved'): ?>
-                                                                        <a class="px-2 py-1 rounded text-white bg-red-800 hover:bg-red-900 text-sm font-medium"
-                                                                            href="../../../app/controllers/borrowBookController.php?action=cancel&id=<?= $book['borrowID'] ?>">
+                                                                        <button type="button" 
+                                                                                class="px-2 py-1 rounded text-white bg-red-800 hover:bg-red-900 text-sm font-medium openCancelModal" 
+                                                                                data-id="<?= $book['borrowID'] ?>" 
+                                                                                data-title="<?= htmlspecialchars($book['book_title']) ?>">
                                                                             Cancel
-                                                                        </a>
+                                                                        </button>
                                                                 <?php else: ?>
                                                                         <span class="text-gray-400 text-sm">N/A</span>
                                                                 <?php endif; ?>
@@ -435,8 +447,79 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
         </div>
     </div>
 
+    <div id="cancelModal" class="modal" style="display:none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+        <div class="modal-content max-w-sm mx-auto my-20 bg-white p-5 rounded-lg shadow-lg relative">
+            <span class="close close-times absolute top-2 right-4 text-2xl font-bold cursor-pointer" data-modal="cancelModal">&times;</span>
+            <h2 class="text-xl font-bold mb-4 text-red-700">Cancel Request</h2>
+            <form action="../../../app/controllers/borrowBookController.php?action=cancel" method="POST">
+                <input type="hidden" name="borrowID" id="cancel_borrowID">
+                <p class="mb-4 text-gray-700">Are you sure you want to cancel your request for <span id="cancel_book_title" class="font-bold"></span>?</p>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-bold mb-2">Reason(s) for Cancellation:</label>
+                    <div class="max-h-32 overflow-y-auto border rounded p-2 mb-2 bg-gray-50">
+                        <?php foreach($cancel_reasons_all as $reason): ?>
+                            <?php if(!in_array($reason['reason_text'], $admin_reasons)): ?>
+                                <div class="flex items-center mb-1">
+                                    <input type="checkbox" name="reasonIDs[]" id="reason_<?= $reason['reasonID'] ?>" value="<?= $reason['reasonID'] ?>" class="mr-2">
+                                    <label for="reason_<?= $reason['reasonID'] ?>" class="text-sm cursor-pointer"><?= htmlspecialchars($reason['reason_text']) ?></label>
+                                </div>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                        
+                        <div class="flex items-center mb-1 border-t pt-2 mt-1">
+                            <input type="checkbox" name="reasonIDs[]" id="reason_other" value="other" class="mr-2">
+                            <label for="reason_other" class="text-sm cursor-pointer font-semibold text-red-700">Others (Please specify below)</label>
+                        </div>
+                    </div>
+
+                    <label for="cancellation_reason" class="block text-gray-700 font-bold mb-2">Remarks / Additional Info:</label>
+                    <textarea name="cancellation_reason" id="cancellation_reason" rows="2" class="w-full border rounded p-2" placeholder="e.g. I found a better copy elsewhere..."></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2">
+                    <button type="button" class="close bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 cursor-pointer" data-modal="cancelModal">Keep Request</button>
+                    <button type="submit" class="bg-red-800 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-900 cursor-pointer">Confirm Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <?php require_once(__DIR__ . '/../shared/footer.php'); ?>
     <script src="../../../public/assets/js/borrower.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const cancelModal = document.getElementById("cancelModal");
+            const cancelBtns = document.querySelectorAll(".openCancelModal");
+            const cancelInput = document.getElementById("cancel_borrowID");
+            const cancelTitle = document.getElementById("cancel_book_title");
+            const closeElements = document.querySelectorAll('[data-modal="cancelModal"]');
+
+            cancelBtns.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const id = btn.getAttribute("data-id");
+                    const title = btn.getAttribute("data-title");
+                    cancelInput.value = id;
+                    cancelTitle.textContent = title;
+                    
+                    cancelModal.style.display = "block";
+                });
+            });
+
+            closeElements.forEach(el => {
+                el.addEventListener("click", () => {
+                    cancelModal.style.display = "none";
+                });
+            });
+
+            window.addEventListener("click", (e) => {
+                if (e.target === cancelModal) {
+                    cancelModal.style.display = "none";
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

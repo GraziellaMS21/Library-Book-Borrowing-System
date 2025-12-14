@@ -213,37 +213,54 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $errors["general"] = "Failed to edit detail due to a database error.";
             }
         }
-    }
-
-    if (!empty($errors)) {
-        $_SESSION["errors"] = $errors;
-
-        if ($action === 'add_multiple') {
-            header("Location: ../../app/views/borrower/myList.php?status=error&message=checkout_failed");
-            exit;
-        }
-
-        $_SESSION["old"] = $detail ?? [];
-
-        if ($action === 'edit') {
-            $_SESSION['open_modal'] = 'editBorrowDetailModal';
-            $_SESSION['edit_borrow_id'] = $borrowID;
-            header("Location: ../../app/views/librarian/borrowDetailsSection.php");
-            exit;
-        } elseif ($action === 'add') {
-            $bookID_post = $_POST['bookID'] ?? '';
-            $no_of_copies = $_POST['no_of_copies'] ?? 1;
-            header("Location: ../../app/views/borrower/confirmation.php?bookID={$bookID_post}&copies={$no_of_copies}");
-            exit;
-        }
-    }
-
-} else {
-
-    if ($action === 'cancel' && $borrowID) {
-
+    } elseif ($action === 'cancel' && $borrowID) {
         $detail = $borrowObj->fetchBorrowDetail($borrowID);
         $current_tab = $_GET['tab'] ?? 'pending';
+        
+        // Capture Reason IDs (Array) and Remarks
+        $rawReasonIDs = $_POST['reasonIDs'] ?? [];
+        $remarks = trim($_POST['cancellation_reason'] ?? '');
+        
+        // Separate 'other' from valid DB IDs
+        $validReasonIDs = [];
+        $isOtherSelected = false;
+
+        if (is_array($rawReasonIDs)) {
+            foreach ($rawReasonIDs as $id) {
+                if ($id === 'other') {
+                    $isOtherSelected = true;
+                } elseif (is_numeric($id)) {
+                    $validReasonIDs[] = $id;
+                }
+            }
+        }
+
+        // Construct display string for email/notification
+        $reasonParts = [];
+        
+        // 1. Fetch text for valid numeric IDs
+        if (!empty($validReasonIDs)) {
+            $reasonTexts = $borrowObj->getReasonTexts($validReasonIDs);
+            if (!empty($reasonTexts)) {
+                $reasonParts = array_merge($reasonParts, $reasonTexts);
+            }
+        }
+
+        // 2. Add "Others" label if selected
+        if ($isOtherSelected) {
+            $reasonParts[] = "Others";
+        }
+
+        $reasonTextString = implode(", ", $reasonParts);
+        
+        // 3. Append Remarks
+        $displayReason = $reasonTextString;
+        if (!empty($remarks)) {
+            $displayReason .= (!empty($displayReason) ? " - " : "") . $remarks;
+        }
+        if (empty($displayReason)) {
+            $displayReason = "Self-cancelled by user";
+        }
 
         if ($detail && ($detail['borrow_request_status'] === 'Pending' || $detail['borrow_request_status'] === 'Approved')) {
 
@@ -254,26 +271,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if ($borrowObj->updateBorrowDetails($borrowID, $borrow_status, $borrow_request_status, $return_date)) {
                 
                 // --- 3NF UPDATE: LOG HISTORY ---
-                // We pass the User ID ($detail['userID'] or $_SESSION['user_id']) as the performer
                 $currentUserID = $_SESSION['user_id'] ?? $detail['userID'];
-                $borrowObj->addBorrowStatusHistory($borrowID, 'Cancel', 'Self-cancelled by user', [], $currentUserID);
+                
+                // Pass ONLY valid numeric IDs to database model (foreign key constraint)
+                $borrowObj->addBorrowStatusHistory($borrowID, 'Cancel', $remarks, $validReasonIDs, $currentUserID);
                 // -------------------------------
 
                 if ($detail['borrow_request_status'] === 'Approved') {
                     $book_id_to_update = $detail['bookID'];
                     $copies_to_move = $detail['no_of_copies'];
-
                     $bookObj->incrementBookCopies($book_id_to_update, $copies_to_move);
                 }
 
                 $adminUserID = 1;
                 $borrowerName = $detail["fName"] . ' ' . $detail["lName"]  ?? 'A user'; 
                 $bookTitle = $detail["book_title"] ?? 'a book'; 
-                $userEmail = $detail["email"] ?? '';
-
+                
                 $notificationObj->userID = $adminUserID;
                 $notificationObj->title = "Request Cancelled by User";
-                $notificationObj->message = "{$borrowerName} cancelled their request for '{$bookTitle}'.";
+                $notificationObj->message = "{$borrowerName} cancelled request for '{$bookTitle}'. Reason: {$displayReason}";
                 $notificationObj->link = "../../app/views/librarian/borrowDetailsSection.php?tab=cancelled";
                 $notificationObj->addNotification();
 
@@ -315,14 +331,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                             <td style="padding-bottom: 5px; color: #2D3748;">{$bookTitle}</td>
                                         </tr>
                                         <tr>
-                                            <td style="color: #4A5568; font-weight: bold; font-size: 14px;">Date:</td>
-                                            <td style="color: #2D3748;">{$detail['request_date']}</td>
+                                            <td style="color: #4A5568; font-weight: bold; font-size: 14px;">Reason:</td>
+                                            <td style="color: #2D3748;">{$displayReason}</td>
                                         </tr>
                                     </table>
                                 </div>
-                                <p style="line-height: 1.6; margin-bottom: 25px;">
-                                    The request status has been updated to <strong>Cancelled</strong> and book stock has been adjusted if necessary.
-                                </p>
                                 <div style="text-align: center; margin-bottom: 10px;">
                                     <a href="#" style="background-color: #718096; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; display: inline-block;">View Dashboard</a>
                                 </div>
@@ -347,6 +360,32 @@ EOT;
             exit;
         }
     }
+
+    if (!empty($errors)) {
+        $_SESSION["errors"] = $errors;
+
+        if ($action === 'add_multiple') {
+            header("Location: ../../app/views/borrower/myList.php?status=error&message=checkout_failed");
+            exit;
+        }
+
+        $_SESSION["old"] = $detail ?? [];
+
+        if ($action === 'edit') {
+            $_SESSION['open_modal'] = 'editBorrowDetailModal';
+            $_SESSION['edit_borrow_id'] = $borrowID;
+            header("Location: ../../app/views/librarian/borrowDetailsSection.php");
+            exit;
+        } elseif ($action === 'add') {
+            $bookID_post = $_POST['bookID'] ?? '';
+            $no_of_copies = $_POST['no_of_copies'] ?? 1;
+            header("Location: ../../app/views/borrower/confirmation.php?bookID={$bookID_post}&copies={$no_of_copies}");
+            exit;
+        }
+    }
+
+} else {
+    // GET requests
     if (in_array($action, ['delete', 'accept', 'reject', 'pickup', 'return']) && $borrowID) {
         header("Location: borrowDetailsController.php?action={$action}&id={$borrowID}");
         exit;

@@ -16,6 +16,8 @@ $open_modal = '';
 
 if ($success_message === 'pending') {
     $open_modal = 'successPendingModal';
+} else if ($current_modal === 'terms') {
+    $open_modal = 'termsModal';
 }
 ?>
 
@@ -29,51 +31,6 @@ if ($success_message === 'pending') {
     <link rel="stylesheet" href="../../../public/assets/css/login_register.css" />
     <link rel="stylesheet" href="../../../public/assets/css/header_footer.css" />
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
-    <style>
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 100;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.4);
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal.open {
-            display: flex;
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 400px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            position: relative;
-        }
-
-        .close-btn {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .close-btn:hover,
-        .close-btn:focus {
-            color: #000;
-            text-decoration: none;
-            cursor: pointer;
-        }
-    </style>
 </head>
 
 <body>
@@ -100,10 +57,10 @@ if ($success_message === 'pending') {
                             <?php
                             foreach ($userTypes as $type) {
                                 ?>
-                                    <option value="<?= $type["userTypeID"] ?>" <?= isset($register["userTypeID"]) && $register["userTypeID"] == $type["userTypeID"] ? "selected" : "" ?>>
-                                        <?= $type["type_name"] ?>
-                                    </option>
-                                    <?php
+                                <option value="<?= $type["userTypeID"] ?>" <?= isset($register["userTypeID"]) && $register["userTypeID"] == $type["userTypeID"] ? "selected" : "" ?>>
+                                    <?= $type["type_name"] ?>
+                                </option>
+                                <?php
                             }
                             ?>
                         </select>
@@ -143,14 +100,14 @@ if ($success_message === 'pending') {
                             <?php
                             foreach ($departments as $dept) {
                                 ?>
-                                    <option value="<?= $dept["departmentID"] ?>" <?= isset($register["departmentID"]) && $register["departmentID"] == $dept["departmentID"] ? "selected" : "" ?>>
-                                        <?= $dept["department_name"] ?>
-                                    </option>
-                                    <?php
+                                <option value="<?= $dept["departmentID"] ?>" <?= isset($register["departmentID"]) && $register["departmentID"] == $dept["departmentID"] ? "selected" : "" ?>>
+                                    <?= $dept["department_name"] ?>
+                                </option>
+                                <?php
                             }
                             ?>
                         </select>
-                        
+
                         <p class="errors"><?= $errors["departmentID"] ?? "" ?></p>
                     </div>
                     <div class="input" id="imageID">
@@ -189,7 +146,7 @@ if ($success_message === 'pending') {
 
                     <div class="agreement pt-5">
                         <input type="checkbox" name="agreement" id="agreement" value="<?= isset($register["agreement"]) ? "checked" : "" ?>>
-                        <label for="agreement"> I agree to the</label>
+                        <label for=" agreement"> I agree to the</label>
                         <button type="button" data-modal-target="termsModal" data-modal-toggle="termsModal"
                             id="openModal" class="terms-and-con text-xs text-blue-600 underline">Terms and
                             Conditions</button>
@@ -209,77 +166,100 @@ if ($success_message === 'pending') {
         </div>
     </main>
 
-    <div class="modal-bg fixed inset-0 hidden bg-black bg-opacity-50 flex justify-center items-center z-50"
-        id="termsModal">
-        <div
-            class="modal-content bg-white rounded-lg w-11/12 md:w-2/3 lg:w-1/2 max-h-[80vh] overflow-y-auto p-6 relative shadow-lg">
-            <button id="closeModal"
-                class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl">&times;</button>
+    <div class="modal <?= $open_modal == 'termsModal' ? 'open' : '' ?>" id="termsModal">
+        
+        <div class="modal-content bg-white rounded-xl shadow-2xl w-11/12 md:w-3/4 lg:w-1/2 max-h-[90vh] flex flex-col transform transition-all scale-100">
+            
+            <div class="flex justify-between items-center p-5 border-b border-gray-200 bg-gray-50 rounded-t-xl sticky top-0 z-10">
+                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <svg class="w-6 h-6 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Terms and Conditions
+                </h2>
+                <button id="closeModal" class="text-gray-400 hover:text-red-600 transition-colors focus:outline-none p-1 rounded-full hover:bg-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
 
-            <h2 class="text-xl font-semibold mb-4 p-6 flex text-gray-800 justify-center">TERMS AND CONDITIONS</h2>
-            <div class="pb-6">
-                <ol class="numbered-list list-decimal pl-5 space-y-4">
-                    <li>Acceptance of Terms</li>
-                    <p>By registering an account in the Library Book Borrowing System, you agree to comply with and be
-                        bound by these Terms and Conditions. If you do not agree with any part of these terms, please do
-                        not create an account or use the system.</p>
-                    <li>Account Registration</li>
-                    <ul>
+            <div class="p-6 overflow-y-auto text-gray-700 space-y-6 leading-relaxed">
+                <p class="text-sm text-gray-500 italic border-l-4 border-red-800 pl-3">
+                    Please read these terms carefully before creating an account.
+                </p>
+
+                <section>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">1. Acceptance of Terms</h3>
+                    <p class="text-sm text-gray-600">
+                        By registering an account in the Library Book Borrowing System, you agree to comply with and be bound by these Terms and Conditions. If you do not agree with any part of these terms, please do not create an account or use the system.
+                    </p>
+                </section>
+
+                <section>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">2. Account Registration</h3>
+                    <ul class="list-disc list-outside pl-5 space-y-1 text-sm text-gray-600 marker:text-red-800">
                         <li>You must provide accurate, complete, and up-to-date information during registration.</li>
-                        <li>You agree not to use false information, another person’s identity, or unauthorized
-                            credentials.</li>
-                        <li>Each user is allowed to create only one account. Duplicate or fraudulent accounts will be
-                            removed or suspended.</li>
+                        <li>You agree not to use false information, another person’s identity, or unauthorized credentials.</li>
+                        <li>Each user is allowed to create only one account. Duplicate or fraudulent accounts will be removed or suspended.</li>
                     </ul>
-                    <li>Use of the System</li>
-                    <ul>
+                </section>
+
+                <section>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">3. Use of the System</h3>
+                    <ul class="list-disc list-outside pl-5 space-y-1 text-sm text-gray-600 marker:text-red-800">
                         <li>The system is intended solely for borrowing and returning library books.</li>
                         <li>You agree not to use the system for illegal, fraudulent, or abusive activities.</li>
-                        <li>Any attempt to manipulate data, bypass system security, or misuse privileges may result in
-                            account suspension or legal action.</li>
+                        <li>Any attempt to manipulate data, bypass system security, or misuse privileges may result in account suspension or legal action.</li>
                     </ul>
-                    <li>Account Responsibility</li>
-                    <ul>
-                        <li>Any attempt to manipulate data, bypass system security, or misuse privileges may result in
-                            account suspension or legal action.</li>
+                </section>
+
+                <section>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">4. Account Responsibility</h3>
+                    <ul class="list-disc list-outside pl-5 space-y-1 text-sm text-gray-600 marker:text-red-800">
+                        <li>You are responsible for maintaining the confidentiality of your account credentials.</li>
                         <li>If you suspect unauthorized access, you must immediately notify library staff.</li>
-                        <li>Any attempt to manipulate data, bypass system security, or misuse privileges may result in
-                            account suspension or legal action.</li>
+                        <li>You are liable for any activity that occurs under your account until reported.</li>
                     </ul>
-                    <li>Privacy and Data Protection</li>
-                    <ul>
-                        <li>The library respects your privacy and protects your personal information in accordance with
-                            the Data Privacy Act of 2012 (RA 10173).</li>
-                        <li>Information collected (such as name, ID number, email address, and borrowing history) will
-                            only be used for official library transactions.</li>
-                        <li>Your data will not be shared or disclosed without your consent, except as required by law or
-                            internal policy compliance.</li>
+                </section>
+
+                <section>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">5. Privacy and Data Protection</h3>
+                    <ul class="list-disc list-outside pl-5 space-y-1 text-sm text-gray-600 marker:text-red-800">
+                        <li>The library respects your privacy and protects your personal information in accordance with the Data Privacy Act of 2012 (RA 10173).</li>
+                        <li>Information collected (such as name, ID number, email address, and borrowing history) will only be used for official library transactions.</li>
+                        <li>Your data will not be shared or disclosed without your consent, except as required by law or internal policy compliance.</li>
                     </ul>
-                    <li>Violation and Suspension</li>
-                    <ul>
-                        <li>Violation of any part of these Terms may result in temporary or permanent suspension of your
-                            account.</li>
-                        <li>The library reserves the right to take disciplinary or legal action for serious offenses,
-                            such as system tampering or misuse of borrowed materials.</li>
+                </section>
+
+                <section>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">6. Violation and Suspension</h3>
+                    <ul class="list-disc list-outside pl-5 space-y-1 text-sm text-gray-600 marker:text-red-800">
+                        <li>Violation of any part of these Terms may result in temporary or permanent suspension of your account.</li>
+                        <li>The library reserves the right to take disciplinary or legal action for serious offenses, such as system tampering or misuse of borrowed materials.</li>
                     </ul>
-                    <li>Contact Information</li>
-                    <ul>
-                        <li class="font-bold">For inquiries or assistance regarding your account or these terms, please
-                            contact:</li>
-                        <li class="font-bold">Library Administrator</li>
-                        <li class="list-none"><span class="font-bold">Email: </span>library@wmsu.edu.ph</li>
-                        <li class="list-none"><span class="font-bold">Address: </span>WMSU Main Campus Library, Normal
-                            Road, Zamboanga City</li>
-                    </ul>
-                </ol>
+                </section>
+
+                <section class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h3 class="text-lg font-bold text-gray-900 mb-3">7. Contact Information</h3>
+                    <p class="text-sm text-gray-600 mb-2">For inquiries or assistance regarding your account or these terms, please contact:</p>
+                    <div class="text-sm">
+                        <p class="font-bold text-gray-800">Library Administrator</p>
+                        <p class="flex items-center gap-2 mt-1">
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                            <span class="text-blue-600">library@wmsu.edu.ph</span>
+                        </p>
+                        <p class="flex items-start gap-2 mt-1">
+                            <svg class="w-4 h-4 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <span class="text-gray-600">WMSU Main Campus Library, Normal Road, Zamboanga City</span>
+                        </p>
+                    </div>
+                </section>
             </div>
-            <button id="closeBtn" class="px-4 py-2 bg-red-800 text-white rounded transition-all hover:bg-red-600">
-                Close
-            </button>
+
+            <div class="p-5 border-t border-gray-200 bg-gray-50 rounded-b-xl flex justify-end gap-3 sticky bottom-0 z-10">
+                <button id="closeBtn" class="px-6 py-2.5 bg-red-800 hover:bg-red-900 text-white font-semibold rounded-lg shadow-md transition-all duration-200 transform hover:scale-105 focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                    I Understand & Close
+                </button>
+            </div>
         </div>
-
     </div>
-
     <!-- NEW SUCCESS MODAL -->
     <div id="successPendingModal" class="modal <?= $open_modal == 'successPendingModal' ? 'open' : '' ?>">
         <div class="modal-content text-center">
@@ -366,20 +346,22 @@ if ($success_message === 'pending') {
     const closeBtn = document.getElementById("closeBtn");
     const modal = document.getElementById("termsModal");
     openModal.addEventListener("click", () => {
-        modal.classList.remove('hidden');
+        modal.classList.add("open");
+
     })
 
     closeModal.addEventListener("click", () => {
-        modal.classList.add('hidden');
+        modal.classList.remove("open");
+
     })
 
     closeBtn.addEventListener("click", () => {
-        modal.classList.add('hidden');
+        modal.classList.remove("open");
     })
 
     modal.addEventListener("click", (e) => {
         if (e.target === modal) {
-            modal.classList.add("hidden");
+            modal.classList.remove("open");
         }
     });
 </script>

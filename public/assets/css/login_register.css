@@ -202,3 +202,46 @@ input[type="submit"]:hover {
 .login-register span:hover {
   color: var(--wmsu-gold-hover);
 }
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.open {
+  display: flex;
+}
+
+.modal-content {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.close-times {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  color: #aaa;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close-times:hover,
+.close-times:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+

@@ -163,7 +163,13 @@ unset($detail);
                                 <?php if ($current_tab == 'pending'): ?>
                                     <td><?= $detail["no_of_copies"] ?></td><td><?= $detail["book_condition"] ?></td><td><?= $detail["request_date"] ?></td><td><?= $detail["pickup_date"] ?></td><td><?= $detail["expected_return_date"] ?></td>
                                     <td class="action text-center">
-                                        <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1" href="../../../app/controllers/borrowDetailsController.php?tab=<?= $current_tab ?>&action=accept&id=<?= $borrowID ?>">Accept</a>
+                                        
+                                        <?php if ($detail['userID'] == $_SESSION['user_id']): ?>
+                                            <span class="text-xs text-gray-500 font-bold block mb-1 cursor-not-allowed opacity-50 border border-gray-300 rounded px-2 py-1" title="You cannot approve your own request">Accept (Restricted)</span>
+                                        <?php else: ?>
+                                            <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1" href="../../../app/controllers/borrowDetailsController.php?tab=<?= $current_tab ?>&action=accept&id=<?= $borrowID ?>">Accept</a>
+                                        <?php endif; ?>
+
                                         <button class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1 cursor-pointer open-modal-btn" data-target="rejectRequestModal" data-id="<?= $borrowID ?>" data-title="<?= $bookTitle ?>">Reject</button>
                                         <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1" href="borrowDetailsSection.php?modal=edit&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Edit</a>
                                         <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1" href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">View</a>
@@ -249,6 +255,11 @@ unset($detail);
                             </label>
                         <?php endforeach; ?>
                     <?php endif; ?>
+
+                    <div class="flex items-center mb-1 border-t pt-2 mt-1">
+                        <input type="checkbox" name="reason_presets[]" value="other" class="mr-2">
+                        <label class="text-sm cursor-pointer font-semibold text-red-700">Others (Please specify below)</label>
+                    </div>
                 </div>
 
                 <label class="font-semibold block mb-1">Other Reason:</label>
@@ -280,6 +291,11 @@ unset($detail);
                             </label>
                         <?php endforeach; ?>
                     <?php endif; ?>
+
+                    <div class="flex items-center mb-1 border-t pt-2 mt-1">
+                        <input type="checkbox" name="reason_presets[]" value="other" class="mr-2">
+                        <label class="text-sm cursor-pointer font-semibold text-amber-700">Others (Please specify below)</label>
+                    </div>
                 </div>
 
                 <label class="font-semibold block mb-1">Other Reason:</label>
@@ -311,6 +327,11 @@ unset($detail);
                             </label>
                         <?php endforeach; ?>
                     <?php endif; ?>
+
+                    <div class="flex items-center mb-1 border-t pt-2 mt-1">
+                        <input type="checkbox" name="reason_presets[]" value="other" class="mr-2">
+                        <label class="text-sm cursor-pointer font-semibold text-green-700">Others (Please specify below)</label>
+                    </div>
                 </div>
 
                 <div class="flex justify-center flex-col">
@@ -344,6 +365,11 @@ unset($detail);
                             </label>
                         <?php endforeach; ?>
                     <?php endif; ?>
+
+                    <div class="flex items-center mb-1 border-t pt-2 mt-1">
+                        <input type="checkbox" name="reason_presets[]" value="other" class="mr-2">
+                        <label class="text-sm cursor-pointer font-semibold text-yellow-700">Others (Please specify below)</label>
+                    </div>
                 </div>
 
                 <div class="flex justify-center flex-col">

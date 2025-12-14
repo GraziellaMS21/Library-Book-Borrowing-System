@@ -297,7 +297,7 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
             </h2>
 
             <form action="print.php" method="GET" target="_blank">
-                <div class="grid grid-cols-2 gap-4 text-gray-700">
+                <div class="grid grid-cols-2 gap-4 text-gray-700 w-full">
                     <div class="col-span-2 border-b pb-2 mb-2">
                         <h3 class="font-semibold text-lg text-red-700">Select Document Type</h3>
                     </div>
@@ -341,11 +341,11 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                     </div>
                 </div>
 
-                <div class="flex justify-end mt-6 gap-2">
-                    <button type="button" class="close viewBtn bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 close-modal" data-modal="printReportModal">
+                <div class="flex justify-end mt-6 gap-2 w-full">
+                    <button type="button" class="w-1/2 close viewBtn bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 close-modal" data-modal="printReportModal">
                         Close
                     </button>
-                    <button type="submit" class="bg-red-800 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 shadow-md">
+                    <button type="submit" class="w-1/2 bg-red-800 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 shadow-md">
                         <i class="fas fa-print mr-2"></i> Print Selected
                     </button>
                 </div>

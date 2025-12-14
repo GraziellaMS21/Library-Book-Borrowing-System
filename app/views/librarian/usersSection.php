@@ -284,9 +284,14 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                             </label>
                         <?php endforeach; ?>
                     <?php endif; ?>
+
+                    <div class="flex items-center mb-1 border-t pt-2 mt-1">
+                        <input type="checkbox" name="reason_presets[]" value="other" class="mr-2">
+                        <label class="text-sm cursor-pointer font-semibold text-red-700">Others (Please specify below)</label>
+                    </div>
                 </div>
 
-                <label class="font-semibold block mb-1">Other Reason:</label>
+                <label class="font-semibold block mb-1">Other Reason / Remarks:</label>
                 <textarea name="reason_custom" rows="3" class="w-full border rounded p-2" placeholder="Type specific details..."></textarea>
 
                 <input type="submit" value="Confirm Reject" class="mt-4 bg-red-700 text-white font-bold py-2 px-4 rounded w-full cursor-pointer hover:bg-red-800">
@@ -318,6 +323,11 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                             </label>
                         <?php endforeach; ?>
                     <?php endif; ?>
+
+                    <div class="flex items-center mb-1 border-t pt-2 mt-1">
+                        <input type="checkbox" name="reason_presets[]" value="other" class="mr-2">
+                        <label class="text-sm cursor-pointer font-semibold text-yellow-700">Others (Please specify below)</label>
+                    </div>
                 </div>
 
                 <div class="flex justify-center flex-col w-full">
@@ -354,6 +364,11 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                             </label>
                         <?php endforeach; ?>
                     <?php endif; ?>
+
+                    <div class="flex items-center mb-1 border-t pt-2 mt-1">
+                        <input type="checkbox" name="reason_presets[]" value="other" class="mr-2">
+                        <label class="text-sm cursor-pointer font-semibold text-green-700">Others (Please specify below)</label>
+                    </div>
                 </div>
                 
                 <div class="flex justify-center flex-col w-full">

@@ -91,11 +91,18 @@ switch ($currentFile) {
                     <i class="fas fa-chart-pie"></i> <span class="text-white pl-4">Reports</span>
                 </a>
             </li>
-            <li class="links mt-auto">
-                <a href="../../controllers/logout.php">
-                    <i class="fas fa-sign-out-alt"></i> <span class="text-white pl-4">Logout</span>
-                </a>
-            </li>
+            <div class="mt-auto">
+                <li class="links">
+                    <a href="../../../app/views/borrower/catalogue.php">
+                        <i class="fa-solid fa-book"></i> <span class="text-white pl-4">Brose Catalogue</span>
+                    </a>
+                </li>
+                <li class="links">
+                    <a href="../../controllers/logout.php">
+                        <i class="fas fa-sign-out-alt"></i> <span class="text-white pl-4">Logout</span>
+                    </a>
+                </li>
+            </div>
         </ul>
     </aside>
 
