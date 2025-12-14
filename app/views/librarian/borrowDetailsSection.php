@@ -32,8 +32,9 @@ if ($current_modal === 'edit') {
 } elseif ($current_modal === 'delete') {
     $open_modal = 'deleteConfirmModal';
 } elseif ($current_modal === 'block') {
-    // This is for the GET fallback or error redirection, though we use JS triggers now
     $open_modal = 'blockUserModal';
+} elseif ($current_modal === 'unblock') {
+    $open_modal = 'unblockUserModal';
 } elseif ($current_modal === 'view') {
     $open_modal = 'viewFullDetailsModal';
 } elseif ($current_modal === 'return') {
@@ -49,7 +50,7 @@ if (!empty($open_modal)) {
         // Use fresh details as a base, then merge old/failed inputs
         $fresh_detail = $borrowObj->fetchBorrowDetail($borrow_id) ?: [];
         $modal_borrow_details = array_merge($fresh_detail, $old);
-    } elseif (($open_modal == 'returnBookModal' || $open_modal == 'deleteConfirmModal' || $open_modal == 'blockUserModal' || $open_modal == 'paidConfirmModal') && !empty($old)) {
+    } elseif (($open_modal == 'returnBookModal' || $open_modal == 'deleteConfirmModal' || $open_modal == 'blockUserModal' || $open_modal == 'unblockUserModal' || $open_modal == 'paidConfirmModal') && !empty($old)) {
         $fresh_detail = $borrowObj->fetchBorrowDetail($borrow_id) ?: [];
         $modal_borrow_details = array_merge($fresh_detail, $old);
     } else {
@@ -307,14 +308,29 @@ unset($detail);
                                         <?= ($detail["calculated_fine"] > 0 && $detail["fine_status"] === 'Unpaid') ? "Unpaid" : "N/A" ?>
                                     </td>
                                     <td class="action text-center">
-                                        <div class="w-full">
-                                            <a href="borrowDetailsSection.php?tab=unpaid"
-                                                class="block w-full text-center px-2 py-1 text-md bg-red-100 text-red-700 font-extrabold rounded">
-                                                Fined
-                                            </a>
-                                        </div>
-                                    </td>
+                                        <?php if ($detail["calculated_fine"] > 0) { ?>
+                                            <div class="w-full">
+                                                <a href="borrowDetailsSection.php?tab=unpaid"
+                                                    class="block w-full text-center px-2 py-1 text-md bg-red-100 text-red-700 font-extrabold rounded">
+                                                    Fined
+                                                </a>
+                                            </div>
+                                        </td>
 
+                                    <?php } else { ?>
+
+                                        <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1"
+                                            href="borrowDetailsSection.php?modal=return&id=<?= $borrowID ?>&tab=<?= $current_tab ?>"
+                                            data-borrow-id="<?= $borrowID ?>"
+                                            data-original-condition="<?= htmlspecialchars($detail["book_condition"] ?? $detail["book_condition"]) ?>">
+                                            Returned
+                                        </a>
+                                        <a class="actionBtn editBtn bg-blue-500 hover:bg-blue-600 text-sm inline-block mb-1"
+                                            href="borrowDetailsSection.php?modal=edit&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Edit</a>
+                                        <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1"
+                                            href="borrowDetailsSection.php?modal=view&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">View</a>
+                                        </td>
+                                    <?php } ?>
                                 <?php elseif ($current_tab == 'unpaid'): ?>
                                     <td><?= $detail["no_of_copies"] ?></td>
                                     <td><?= $detail["expected_return_date"] ?></td>
@@ -332,12 +348,19 @@ unset($detail);
                                             <a class="actionBtn bg-green-600 hover:bg-green-700 text-sm inline-block mb-1"
                                                 href="borrowDetailsSection.php?modal=paid&id=<?= $borrowID ?>&tab=<?= $current_tab ?>">Paid</a>
 
-                                            <button
-                                                class="actionBtn bg-yellow-600 hover:bg-yellow-700 text-sm inline-block mb-1 cursor-pointer open-modal-btn"
-                                                data-target="blockUserModal" data-id="<?= $borrowID ?>" data-user="<?= $fullName ?>">
-                                                Block User
-                                            </button>
-
+                                            <?php if ($detail['account_status'] === 'Blocked') { ?>
+                                                <button
+                                                    class="actionBtn bg-yellow-600 hover:bg-green-700 text-sm inline-block mb-1 cursor-pointer open-modal-btn"
+                                                    data-target="unblockUserModal" data-id="<?= $borrowID ?>" data-user="<?= $fullName ?>">
+                                                    Unblock
+                                                </button>
+                                            <?php } else { ?>
+                                                <button
+                                                    class="actionBtn bg-yellow-600 hover:bg-yellow-700 text-sm inline-block mb-1 cursor-pointer open-modal-btn"
+                                                    data-target="blockUserModal" data-id="<?= $borrowID ?>" data-user="<?= $fullName ?>">
+                                                    Block User
+                                                </button>
+                                            <?php } ?>
                                         <?php } else { ?>
                                             <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1"
                                                 href="borrowDetailsSection.php?modal=return&id=<?= $borrowID ?>&tab=<?= $current_tab ?>"
@@ -492,6 +515,52 @@ unset($detail);
 
                 <input type="submit" value="Confirm Cancel"
                     class="mt-4 bg-amber-600 text-white font-bold py-2 px-4 rounded w-full cursor-pointer hover:bg-amber-700">
+            </form>
+        </div>
+    </div>
+
+    <div id="unblockUserModal" class="modal">
+        <div class="modal-content max-w-md">
+            <span class="close close-modal text-3xl cursor-pointer float-right">&times;</span>
+            <h2 class="text-2xl font-bold mb-4 text-green-700">Unblock User</h2>
+            <form action="../../../app/controllers/borrowDetailsController.php" method="POST">
+                <input type="hidden" name="action" value="unblockUser">
+                <input type="hidden" name="current_tab" value="<?= $current_tab ?>">
+                <input type="hidden" name="borrowID" id="unblock_borrowID">
+
+                <p class="mb-4 text-gray-700">
+                    Select reason for restoring access to <span class="font-bold user-name-span"></span>:
+                </p>
+
+                <div class="bg-gray-100 p-4 rounded mb-4 text-sm">
+                    <label class="flex items-center mb-2 cursor-pointer">
+                        <input type="checkbox" name="reason_presets[]" value="Fines Paid" class="mr-2">
+                        All Fines Paid
+                    </label>
+                    <label class="flex items-center mb-2 cursor-pointer">
+                        <input type="checkbox" name="reason_presets[]" value="Books Returned" class="mr-2">
+                        Overdue Books Returned
+                    </label>
+                    <label class="flex items-center mb-2 cursor-pointer">
+                        <input type="checkbox" name="reason_presets[]" value="Identity Verified" class="mr-2">
+                        Identity Verified
+                    </label>
+                    <label class="flex items-center mb-2 cursor-pointer">
+                        <input type="checkbox" name="reason_presets[]" value="Appeal Granted" class="mr-2">
+                        Appeal Granted
+                    </label>
+                    <label class="flex items-center mb-2 cursor-pointer">
+                        <input type="checkbox" name="reason_presets[]" value="Administrative Decision" class="mr-2">
+                        Administrative Decision
+                    </label>
+                </div>
+
+                <label class="font-semibold block mb-1">Additional Details:</label>
+                <textarea name="reason_custom" rows="3" class="w-full border rounded p-2"
+                    placeholder="Type specific details here..."></textarea>
+
+                <input type="submit" value="Confirm Unblock"
+                    class="mt-4 bg-green-600 text-white font-bold py-2 px-4 rounded w-full cursor-pointer hover:bg-green-700">
             </form>
         </div>
     </div>
@@ -890,6 +959,7 @@ unset($detail);
                     if (targetId === 'rejectRequestModal') document.getElementById('reject_borrowID').value = borrowId;
                     if (targetId === 'cancelRequestModal') document.getElementById('cancel_borrowID').value = borrowId;
                     if (targetId === 'blockUserModal') document.getElementById('block_borrowID').value = borrowId;
+                    if (targetId === 'unblockUserModal') document.getElementById('unblock_borrowID').value = borrowId;
 
                     // Pass Dynamic Text (Book Title / User Name)
                     const title = this.getAttribute('data-title');

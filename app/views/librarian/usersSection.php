@@ -9,7 +9,6 @@ require_once(__DIR__ . "/../../models/manageUsers.php");
 $userObj = new User();
 $userTypes = $userObj->fetchUserTypes();
 
-// [3NF Update] Fetch departments for the dropdown list
 $departments = $userObj->fetchDepartments(); 
 
 $old = $_SESSION["old"] ?? [];
@@ -27,15 +26,12 @@ if ($success_modal) {
 
 unset($_SESSION["old"], $_SESSION["errors"]);
 
-// Determines the current Modal
 $current_modal = $_GET['modal'] ?? '';
 $user_id = (int) ($_GET['id'] ?? 0);
 $open_modal = '';
 
-// Determines the current tab
 $current_tab = $_GET['tab'] ?? 'pending';
 
-// Load User Data for Modals
 $modal_user = [];
 if ($current_modal === 'edit') {
     $open_modal = 'editUserModal';
@@ -48,7 +44,7 @@ if ($current_modal === 'edit') {
 if (!empty($open_modal)) {
     if ($open_modal == 'editUserModal' && !empty($old)) {
         $modal_user = $old;
-    } else { //view or clean edit
+    } else { 
         $modal_user = $userObj->fetchUser($user_id) ?: [];
     }
     if ($open_modal != 'viewDetailsUserModal') { 
@@ -84,10 +80,8 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
 
         <main class="overflow-y-auto">
                 <div class="section manage_users">
-                    <div class="title flex w-full items-center justify-between mb-4">
+                    <div class="title flex w-full items-center mb-4">
                         <h1 class="text-red-800 font-bold text-4xl">MANAGE USERS</h1>
-
-                        <a href="userList.php" target="_blank" class="addBtn">Print User List</a>
                     </div>
 
                     <div class="tabs flex border-b border-gray-200 mb-6">
@@ -137,7 +131,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
 
                             <?php
                             $no = 1;
-                            $colspan = 9; // Updated colspan
+                            $colspan = 9;
 
                             if (empty($users)): ?>
                                 <tr>
@@ -150,27 +144,21 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                                     $image_url = !empty($user["imageID_dir"]) ? "../../../" . $user["imageID_dir"] : null;
                                     $fullName = htmlspecialchars($user["fName"] . ' ' . $user["lName"]);
 
-                                    // --- 1. IDENTIFY ROLES ---
                                     $myRole = $_SESSION['role'] ?? 'Borrower';
                                     $targetRole = $user['role'] ?? 'Borrower';
                                     
-                                    // --- 2. PERMISSION LOGIC ---
                                     $canEdit = false;
                                     $canDelete = false;
 
                                     if ($myRole === 'Super Admin') {
-                                        // Super Admin can edit/delete ANYONE (including other Super Admins)
                                         $canEdit = true;
                                         $canDelete = true;
                                     } elseif ($myRole === 'Admin') {
-                                        // Standard Admin can ONLY edit/delete Borrowers
-                                        // If target is Admin or Super Admin, these stay false
                                         if ($targetRole === 'Borrower') {
                                             $canEdit = true;
                                             $canDelete = true;
                                         }
                                     }
-                                    // -----------------------------
                                     ?>
                                     <tr>
                                         <td><?= $no++ ?></td>
@@ -225,7 +213,12 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                                             <?php elseif ($current_tab == 'blocked'): ?>
                                                 
                                                 <?php if ($canEdit): ?>
-                                                    <a class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1" href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=unblock&id=<?= $user['userID'] ?>">Unblock</a>
+                                                    <button class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1 cursor-pointer open-modal-btn"
+                                                            data-target="unblockUserModal"
+                                                            data-id="<?= $user['userID'] ?>"
+                                                            data-name="<?= $fullName ?>">
+                                                        Unblock
+                                                    </button>
                                                 <?php endif; ?>
 
                                                 <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">View</a>
@@ -234,7 +227,7 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                                                     <a class="actionBtn bg-red-500 hover:bg-red-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=delete&id=<?= $user['userID'] ?>">Delete</a>
                                                 <?php endif; ?>
 
-                                            <?php else: // Rejected/Others ?>
+                                            <?php else: ?>
                                                 <a href="../../../app/controllers/userController.php?tab=<?= $current_tab ?>&action=approve&id=<?= $user['userID'] ?>" class="actionBtn bg-green-500 hover:bg-green-600 text-sm inline-block mb-1">Approve</a>
                                                 <a class="actionBtn bg-gray-500 hover:bg-gray-600 text-sm inline-block mb-1" href="usersSection.php?tab=<?= $current_tab ?>&modal=view&id=<?= $user['userID'] ?>">View</a>
                                                 
@@ -327,6 +320,42 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
         </div>
     </div>
 
+    <div id="unblockUserModal" class="modal">
+        <div class="modal-content max-w-md">
+            <span class="close close-modal text-3xl cursor-pointer float-right">&times;</span>
+            <h2 class="text-2xl font-bold mb-4 text-green-700">Unblock User Account</h2>
+            <form action="../../../app/controllers/userController.php" method="POST">
+                <input type="hidden" name="action" value="unblock">
+                <input type="hidden" name="tab" value="<?= $current_tab ?>">
+                <input type="hidden" name="userID" id="unblock_userID">
+
+                <p class="mb-4 text-gray-700">
+                    Reason for unblocking <span class="font-bold user-name-span"></span>:
+                </p>
+
+                <div class="bg-gray-100 p-4 rounded mb-4 text-sm">
+                    <label class="flex items-center mb-2 cursor-pointer">
+                        <input type="checkbox" name="reason_presets[]" value="Appeal Granted" class="mr-2"> Appeal Granted
+                    </label>
+                    <label class="flex items-center mb-2 cursor-pointer">
+                        <input type="checkbox" name="reason_presets[]" value="Fines Paid" class="mr-2"> Fines Paid
+                    </label>
+                    <label class="flex items-center mb-2 cursor-pointer">
+                        <input type="checkbox" name="reason_presets[]" value="Books Returned" class="mr-2"> Books Returned
+                    </label>
+                    <label class="flex items-center mb-2 cursor-pointer">
+                        <input type="checkbox" name="reason_presets[]" value="Identity Verified" class="mr-2"> Identity Verified
+                    </label>
+                </div>
+
+                <label class="font-semibold block mb-1">Additional Details:</label>
+                <textarea name="reason_custom" rows="3" class="w-full border rounded p-2" placeholder="Type specific details..."></textarea>
+
+                <input type="submit" value="Confirm Unblock" class="mt-4 bg-green-600 text-white font-bold py-2 px-4 rounded w-full cursor-pointer hover:bg-green-700">
+            </form>
+        </div>
+    </div>
+
     <div id="editUserModal" class="modal <?= $open_modal == 'editUserModal' ? 'open' : '' ?>">
         <div class="modal-content">
             <span class="close close-times" data-modal="editUserModal" data-tab="<?= $current_tab ?>">&times;</span>
@@ -373,7 +402,6 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                     <select name="departmentID" id="edit_departmentID" class="input-field">
                         <option value="">---Select Department---</option>
                         <?php foreach ($departments as $dept) {
-                            // Check if this department matches the user's current departmentID
                             $selected = (($modal_user['departmentID'] ?? '') == $dept['departmentID']) ? 'selected' : '';
                             echo "<option value='{$dept['departmentID']}' {$selected}>{$dept['department_name']}</option>";
                         } ?>
@@ -500,7 +528,6 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
 <script src="../../../public/assets/js/modal.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        // Image Enlarge Logic
         const closeImage = document.getElementById("closeImage");
         const imageEnlargeModal = document.getElementById("imageEnlargeModal");
         const openImage = document.getElementById("openImage");
@@ -519,7 +546,6 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
             });
         }
 
-        // Open Modals & Pass Data (Reject, Block)
         document.querySelectorAll('.open-modal-btn').forEach(button => {
             button.addEventListener('click', function() {
                 const targetId = this.getAttribute('data-target');
@@ -531,11 +557,10 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                     modal.style.display = 'block';
                     modal.classList.add('open');
 
-                    // Pass ID to hidden input
                     if (targetId === 'rejectUserModal') document.getElementById('reject_userID').value = userId;
                     if (targetId === 'blockUserModal') document.getElementById('block_userID').value = userId;
+                    if (targetId === 'unblockUserModal') document.getElementById('unblock_userID').value = userId;
 
-                    // Pass User Name to display span
                     if (userName) {
                         const nameSpan = modal.querySelector('.user-name-span');
                         if (nameSpan) nameSpan.textContent = userName;
@@ -544,7 +569,6 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
             });
         });
 
-        // Generic Close for New Modals
         document.querySelectorAll('.close-modal').forEach(span => {
             span.addEventListener('click', function() {
                 const modal = this.closest('.modal');

@@ -100,13 +100,10 @@ $books = $bookObj->viewBook($search, $categoryID);
 
     <main class="overflow-y-auto">
         <div class="section">
-            <div class="title flex w-full my-8 items-center justify-between">
+            <div class="title flex w-full my-8 items-center">
                 <h1 class="text-red-800 font-bold text-4xl">MANAGE BOOKS</h1>
-                <div class="">
-                    <a href="bookList.php" target="_blank" class="addBtn">Print
-                        Book List</a>
-                    <a id="openAddBookModalBtn" class="addBtn" href="booksSection.php?modal=add" ?>+ Add Book</a>
-                </div>
+                <a id="openAddBookModalBtn" class="addBtn" href="booksSection.php?modal=add" ?>+ Add Book</a>
+
             </div>
 
             <form method="GET" class="search">
@@ -115,7 +112,8 @@ $books = $bookObj->viewBook($search, $categoryID);
                     <option value="">All Categories</option>
                     <?php foreach ($category as $cat): ?>
                         <option value="<?= $cat["categoryID"] ?>" <?= $categoryID == $cat["categoryID"] ? 'selected' : '' ?>>
-                            <?= $cat["category_name"] ?> </option>
+                            <?= $cat["category_name"] ?>
+                        </option>
                     <?php endforeach; ?>
                 </select>
                 <button type="submit" class="bg-red-800 text-white rounded-lg px-4 py-2">Search</button>

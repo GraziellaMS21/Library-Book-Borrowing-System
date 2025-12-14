@@ -159,7 +159,7 @@ if ($is_list_checkout) {
                 'listID' => 0,
                 'bookID' => $bookID,
                 'book_title' => $book['book_title'],
-                'author' => $book['author'],
+                'author' => $book['author_names'],
                 'book_condition' => $book['book_condition'],
                 'book_cover_dir' => $book['book_cover_dir'],
                 'copies_requested' => $final_copies,

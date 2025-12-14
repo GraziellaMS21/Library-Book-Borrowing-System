@@ -1,11 +1,12 @@
 <?php
 session_start();
 require_once(__DIR__ . '/../models/userLogin.php');
+require_once(__DIR__ . '/../models/manageBorrowDetails.php'); // Required for the check
+require_once(__DIR__ . '/../models/manageUsers.php');
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-//required files
 require_once __DIR__ . '/../libraries/phpmailer/src/Exception.php';
 require_once __DIR__ . '/../libraries/phpmailer/src/PHPMailer.php';
 require_once __DIR__ . '/../libraries/phpmailer/src/SMTP.php';
@@ -14,7 +15,7 @@ $loginObj = new Login();
 
 $login = [];
 $errors = [];
-$action = $_GET["action"];
+$action = $_GET["action"] ?? '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $login["email"] = trim(htmlspecialchars($_POST["email"] ?? ""));
@@ -32,7 +33,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $result = $loginObj->userLogIn($login["email"], $login["password"]);
 
         if (is_array($result)) {
-            // User found and password correct. Now check status.
+            // User found. Check status.
             if ($result["registration_status"] === "Pending") {
                 header("Location: ../../app/views/borrower/login.php?status=pending");
                 exit;
@@ -40,14 +41,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 header("Location: ../../app/views/borrower/login.php?status=rejected");
                 exit;
             } elseif ($result["account_status"] === "Blocked") {
-                // PASS THE USER ID VIA URL FOR THE LOGIN PAGE TO LOOK UP THE FINE STATUS
-                header("Location: ../../app/views/borrower/login.php?status=blocked&userID=" . $result['userID']);
-                exit;
-            } elseif ($result["account_status"] === "Blocked") {
-                // PASS THE USER ID VIA URL FOR THE LOGIN PAGE TO LOOK UP THE FINE STATUS
+                // User is already blocked
                 header("Location: ../../app/views/borrower/login.php?status=blocked&userID=" . $result['userID']);
                 exit;
             } elseif ($result["registration_status"] === "Approved") {
+                
+                // --- AUTOMATIC BAN CHECK ---
+                $borrowObj = new BorrowDetails();
+                
+                // This method calculates fines AND automatically bans the user if needed.
+                $isNowBlocked = $borrowObj->checkAndApplyFines($result['userID']);
+
+                if ($isNowBlocked) {
+                    // Redirect immediately to the blocked view
+                    header("Location: ../../app/views/borrower/login.php?status=blocked&userID=" . $result['userID']);
+                    exit;
+                }
+                // ---------------------------
+
+                // Login successful
                 $_SESSION["user_id"] = $result["userID"];
                 $_SESSION["email"] = $result["email"];
                 $_SESSION["lName"] = $result["lName"];
@@ -59,14 +71,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     header("Location: ../../app/views/borrower/catalogue.php");
                     exit;
                 } elseif ($result["role"] === "Admin" || $result["role"] === "Super Admin") {
-                    // UPDATED: Allow Super Admin to enter dashboard too
                     header("Location: ../../app/views/librarian/dashboard.php");
                     exit;
                 }
             }
 
         } else {
-            // Error from logIn (Password invalid, Email not found, or DB error)
             $errors["invalid"] = $result;
         }
     }
