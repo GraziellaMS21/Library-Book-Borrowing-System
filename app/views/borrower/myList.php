@@ -15,7 +15,7 @@ $userObj = new User();
 // fetch user information based on ID
 $userID = $_SESSION["user_id"];
 $user = $userObj->fetchUser($userID);
-$userTypeID = (int) ($user["userTypeID"] ?? 0);
+$borrowerTypeID = (int) ($user["borrowerTypeID"] ?? 0);
 
 //fetch borrower limit and period
 $borrow_limit = (int) ($user["borrower_limit"] ?? 1);
@@ -77,7 +77,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'remove' && isset($_GET['listI
                             <th class="py-3 px-4">Book</th>
                             <th class="py-3 px-4 hidden sm:table-cell">Author</th>
                             <th class="py-3 px-4 hidden sm:table-cell">Condition</th>
-                            <?php if ($userTypeID != 2) { ?>
+                            <?php if ($borrowerTypeID != 2) { ?>
                                 <th class="py-3 px-4 w-40">Copies Requested <br><span class="hidden sm:table-cell">(Max:
                                         1)</span></th>
                             <?php } else { ?>
@@ -101,7 +101,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'remove' && isset($_GET['listI
                                 $copiesRequested = $list['no_of_copies'];
                                 $copiesAvailable = $list['book_copies'];
 
-                                $maxDisplay = ($userTypeID == 2) ? $copiesAvailable : 1;
+                                $maxDisplay = ($borrowerTypeID == 2) ? $copiesAvailable : 1;
 
                                 ?>
                                 <tr class="border-b hover:bg-gray-50" data-list-id="<?= $listID ?>"
@@ -136,13 +136,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'remove' && isset($_GET['listI
                                                 <span class="font-extrabold text-xl text-red-800 copies-display">
                                                     <?= $copiesRequested ?>
                                                 </span>
-                                                <?php if ($userTypeID == 2) { ?>
+                                                <?php if ($borrowerTypeID == 2) { ?>
                                                     <p>(Stock : <?= $maxDisplay ?>)</p>
                                                 <?php } ?>
 
                                             </div>
 
-                                            <?php if (!empty($userTypeID == 2)): ?>
+                                            <?php if (!empty($borrowerTypeID == 2)): ?>
                                                 <button type="button" onclick="showEditCopiesModal(<?= $listID ?>, '<?= $list['book_title'] ?>', <?= $copiesRequested ?>, <?= $copiesAvailable ?>
                 )" class="text-sm text-blue-600 hover:text-blue-800 font-medium p-1 rounded transition duration-150">
                                                     Edit Copies
