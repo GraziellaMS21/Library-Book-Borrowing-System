@@ -7,11 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMSU Library - Home</title>
 
-    <link rel="stylesheet" href="../../public/assets/fontawesome-free-7.1.0-web/css/all.min.css">
-    <script src="../../public/assets/js/tailwind.3.4.17.js"></script>
+    <link rel="stylesheet" href="public/assets/fontawesome-free-7.1.0-web/css/all.min.css">
+    <script src="public/assets/js/tailwind.3.4.17.js"></script>
 
-    <link rel="stylesheet" href="../../public/assets/css/styles.css">
-    <link rel="stylesheet" href="../../public/assets/css/header_footer.css">
+    <link rel="stylesheet" href="public/assets/css/styles.css">
+    <link rel="stylesheet" href="public/assets/css/header_footer.css">
 </head>
 
 <body>
@@ -19,22 +19,22 @@
     <header class="m-0">
         <nav class="navbar flex justify-between items-center bg-white fixed top-0 left-0 w-full z-[9999]">
             <div class="logo-section flex items-center gap-3">
-                <img src="../../public/assets/images/logo.png" alt="Logo" class="logo">
+                <img src="public/assets/images/logo.png" alt="Logo" class="logo">
                 <h2 class="title font-extrabold text-2xl text-red-900">WMSU LIBRARY</h2>
             </div>
 
             <div class="flex justify-center items-center">
                 <ul class="nav-links flex gap-6 list-none items-center">
                     <li><a href="index.php">Home</a></li>
-                    <li><a href="borrower/about.php">About</a></li>
-                    <li><a href="borrower/catalogue.php">Catalogue</a></li>
-                    <li><a href="borrower/contact.php">Contact</a></li>
+                    <li><a href="app/views/borrower/about.php">About</a></li>
+                    <li><a href="app/views/borrower/catalogue.php">Catalogue</a></li>
+                    <li><a href="app/views/borrower/contact.php">Contact</a></li>
 
                 </ul>
                 <div class="flex gap-3 ml-4">
                     <ul class="flex gap-6 list-none items-center">
-                        <li><a href="borrower/login.php" class="nav-btn btn-login">Login</a></li>
-                        <li><a href="borrower/register.php" class="nav-btn btn-register">Register</a></li>
+                        <li><a href="app/views/borrower/login.php" class="nav-btn btn-login">Login</a></li>
+                        <li><a href="app/views/borrower/register.php" class="nav-btn btn-register">Register</a></li>
                     </ul>
                 </div>
             </div>
@@ -53,7 +53,7 @@
             <h1 class="hero-title">WMSU Library</h1>
             <p class="hero-subtitle">Book Borrowing System</p>
 
-            <form action="borrower/catalogue.php" method="GET" class="search-container">
+            <form action="app/views/borrower/catalogue.php" method="GET" class="search-container">
                 <input type="text" name="search" class="search-input"
                     placeholder="Search for books, authors, or ISBN...">
                 <button type="submit" class="search-btn">
@@ -111,9 +111,9 @@
                 or visit us in person to access other resources.</p>
 
             <div class="mt-8">
-                <a href="borrower/catalogue.php" class="cta-btn">Browse Catalogue</a>
+                <a href="app/views/borrower/catalogue.php" class="cta-btn">Browse Catalogue</a>
                 <?php if (!isset($_SESSION['user_id'])): ?>
-                    <a href="borrower/login.php" class="cta-btn-outline">Login</a>
+                    <a href="app/views/borrower/login.php" class="cta-btn-outline">Login</a>
                 <?php endif; ?>
             </div>
         </div>
@@ -135,9 +135,9 @@
                     Quick Links</h4>
                 <div class="flex flex-col gap-3 text-sm font-medium">
                     <a href="index.php" class="hover:text-yellow-300 transition-colors">Home</a>
-                    <a href="borrower/about.php" class="hover:text-yellow-300 transition-colors">About Us</a>
-                    <a href="borrower/catalogue.php" class="hover:text-yellow-300 transition-colors">Library Catalog</a>
-                    <a href="borrower/contact.php" class="hover:text-yellow-300 transition-colors">Contact Support</a>
+                    <a href="app/views/borrower/about.php" class="hover:text-yellow-300 transition-colors">About Us</a>
+                    <a href="app/views/borrower/catalogue.php" class="hover:text-yellow-300 transition-colors">Library Catalog</a>
+                    <a href="app/views/borrower/contact.php" class="hover:text-yellow-300 transition-colors">Contact Support</a>
                 </div>
             </div>
 

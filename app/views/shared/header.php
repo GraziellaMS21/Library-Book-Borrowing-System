@@ -3,12 +3,12 @@
     <nav class="navbar flex justify-between items-center bg-white fixed top-0 left-0 w-full z-[1000]">
         <div class="logo-section flex items-center gap-3">
             <img src="../../../public/assets/images/logo.png" alt="Logo" class="logo">
-             <h2 class="website-name">WMSU LIBRARY</h2>
+            <h2 class="website-name">WMSU LIBRARY</h2>
         </div>
 
         <div class="flex justify-center items-center">
             <ul class="nav-links flex gap-6 list-none items-center">
-                <li><a href="../index.php">Home</a></li>
+                <li><a href="../../../index.php">Home</a></li>
                 <li><a href="about.php">About</a></li>
                 <li><a href="catalogue.php">Catalogue</a></li>
                 <li><a href="contact.php">Contact</a></li>
