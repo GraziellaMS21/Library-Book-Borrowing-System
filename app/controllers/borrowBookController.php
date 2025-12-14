@@ -8,7 +8,6 @@ require_once(__DIR__ . "/../models/manageNotifications.php");
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-//required files
 require_once __DIR__ . '/../libraries/phpmailer/src/Exception.php';
 require_once __DIR__ . '/../libraries/phpmailer/src/PHPMailer.php';
 require_once __DIR__ . '/../libraries/phpmailer/src/SMTP.php';
@@ -219,9 +218,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (!empty($errors)) {
         $_SESSION["errors"] = $errors;
 
-        // Redirect logic to handle different failure cases
         if ($action === 'add_multiple') {
-            // Redirect user back to the list on failure
             header("Location: ../../app/views/borrower/myList.php?status=error&message=checkout_failed");
             exit;
         }
@@ -255,6 +252,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $return_date = NULL;
 
             if ($borrowObj->updateBorrowDetails($borrowID, $borrow_status, $borrow_request_status, $return_date)) {
+                
+                // --- 3NF UPDATE: LOG HISTORY ---
+                // We pass the User ID ($detail['userID'] or $_SESSION['user_id']) as the performer
+                $currentUserID = $_SESSION['user_id'] ?? $detail['userID'];
+                $borrowObj->addBorrowStatusHistory($borrowID, 'Cancel', 'Self-cancelled by user', [], $currentUserID);
+                // -------------------------------
+
                 if ($detail['borrow_request_status'] === 'Approved') {
                     $book_id_to_update = $detail['bookID'];
                     $copies_to_move = $detail['no_of_copies'];
@@ -262,21 +266,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $bookObj->incrementBookCopies($book_id_to_update, $copies_to_move);
                 }
 
-                // --- NOTIFICATION & EMAIL LOGIC ---
                 $adminUserID = 1;
                 $borrowerName = $detail["fName"] . ' ' . $detail["lName"]  ?? 'A user'; 
                 $bookTitle = $detail["book_title"] ?? 'a book'; 
                 $userEmail = $detail["email"] ?? '';
 
-                // 1. In-App Notification for Admin
                 $notificationObj->userID = $adminUserID;
                 $notificationObj->title = "Request Cancelled by User";
                 $notificationObj->message = "{$borrowerName} cancelled their request for '{$bookTitle}'.";
                 $notificationObj->link = "../../app/views/librarian/borrowDetailsSection.php?tab=cancelled";
                 $notificationObj->addNotification();
 
-                // 2. Email Notification for Admin
-                // Note: Sending email to the ADMIN about the cancellation
                 try {
                     $mail = new PHPMailer(true);
                     $mail->isSMTP();
@@ -288,7 +288,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $mail->Port = 465;
 
                     $mail->setFrom('graziellamssaavedra06@gmail.com', 'Library System Alert');
-                    // Send to Admin (or yourself for now)
                     $mail->addAddress('graziellamssaavedra06@gmail.com'); 
 
                     $mail->isHTML(true);
@@ -333,7 +332,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 EOT;
                     $mail->send();
                 } catch (Exception $e) {
-                    // Log error silently so it doesn't break the redirect
                 }
 
                 header("Location: ../../app/views/borrower/myBorrowedBooks.php?tab=pending&success=cancelled");

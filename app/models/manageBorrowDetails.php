@@ -1,7 +1,6 @@
 <?php
 require_once(__DIR__ . "/../../config/database.php");
 require_once(__DIR__ . "/manageBook.php");
-// NEW: Import User model to handle automatic banning
 require_once(__DIR__ . "/manageUsers.php");
 
 $bookObj = new Book();
@@ -25,10 +24,88 @@ class BorrowDetails extends Database
 
     protected $db;
 
+    public function fetchReasonRefs($category)
+    {
+        $sql = "SELECT * FROM ref_status_reasons WHERE category = :category";
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(':category', $category);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function addBorrowStatusHistory($borrowID, $actionType, $remarks, $reasonIDs = [], $adminID = null)
+    {
+        $this->db = $this->connect();
+        try {
+            $sqlHist = "INSERT INTO borrowing_status_history (borrowID, action_type, additional_remarks, performed_by) VALUES (:bid, :action, :remarks, :adminID)";
+            $stmtHist = $this->db->prepare($sqlHist);
+            $stmtHist->execute([
+                ':bid' => $borrowID, 
+                ':action' => $actionType, 
+                ':remarks' => $remarks,
+                ':adminID' => $adminID
+            ]);
+            $historyID = $this->db->lastInsertId();
+
+            if (!empty($reasonIDs)) {
+                $sqlEvent = "INSERT INTO borrowing_status_event_reasons (historyID, reasonID) VALUES (:hid, :rid)";
+                $stmtEvent = $this->db->prepare($sqlEvent);
+                foreach ($reasonIDs as $rid) {
+                    $stmtEvent->execute([':hid' => $historyID, ':rid' => $rid]);
+                }
+            }
+            return true;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    public function getReasonTexts($reasonIDs)
+    {
+        if (empty($reasonIDs)) return [];
+        $placeholders = implode(',', array_fill(0, count($reasonIDs), '?'));
+        $sql = "SELECT reason_text FROM ref_status_reasons WHERE reasonID IN ($placeholders)";
+        $stmt = $this->connect()->prepare($sql);
+        $stmt->execute($reasonIDs);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    public function fetchLatestBorrowReasons($borrowID)
+    {
+        $sqlHistory = "SELECT h.historyID, h.action_type, h.additional_remarks, h.created_at, 
+                              CONCAT(u.fName, ' ', u.lName) as admin_name
+                       FROM borrowing_status_history h
+                       LEFT JOIN users u ON h.performed_by = u.userID
+                       WHERE h.borrowID = :borrowID 
+                       ORDER BY h.created_at DESC LIMIT 1";
+
+        $qHist = $this->connect()->prepare($sqlHistory);
+        $qHist->bindParam(':borrowID', $borrowID);
+        $qHist->execute();
+        $history = $qHist->fetch(PDO::FETCH_ASSOC);
+
+        if (!$history) return ['action_type' => '', 'remarks' => '', 'reasons' => [], 'admin_name' => 'System', 'date' => ''];
+
+        $sqlReasons = "SELECT r.reason_text FROM borrowing_status_event_reasons e 
+                       JOIN ref_status_reasons r ON e.reasonID = r.reasonID 
+                       WHERE e.historyID = :historyID";
+        $qReas = $this->connect()->prepare($sqlReasons);
+        $qReas->bindParam(':historyID', $history['historyID']);
+        $qReas->execute();
+
+        return [
+            'action_type' => $history['action_type'],
+            'remarks' => $history['additional_remarks'],
+            'admin_name' => $history['admin_name'] ?? 'System',
+            'date' => $history['created_at'],
+            'reasons' => $qReas->fetchAll(PDO::FETCH_COLUMN)
+        ];
+    }
+
     public function addBorrowDetail()
     {
-        $sql = "INSERT INTO borrowing_details (userID, bookID, no_of_copies, request_date, pickup_date, return_date, expected_return_date, returned_condition, borrow_request_status, borrow_status, fine_amount, fine_reason, fine_status, status_reason)
-                VALUES (:userID, :bookID, :no_of_copies, :request_date, :pickup_date, :return_date, :expected_return_date, :returned_condition, :borrow_request_status, :borrow_status, :fine_amount, :fine_reason, :fine_status, :status_reason)";
+        $sql = "INSERT INTO borrowing_details (userID, bookID, no_of_copies, request_date, pickup_date, return_date, expected_return_date, returned_condition, borrow_request_status, borrow_status, fine_amount, fine_reason, fine_status)
+                VALUES (:userID, :bookID, :no_of_copies, :request_date, :pickup_date, :return_date, :expected_return_date, :returned_condition, :borrow_request_status, :borrow_status, :fine_amount, :fine_reason, :fine_status)";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":userID", $this->userID);
         $query->bindParam(":bookID", $this->bookID);
@@ -43,7 +120,6 @@ class BorrowDetails extends Database
         $query->bindParam(":fine_amount", $this->fine_amount);
         $query->bindParam(":fine_reason", $this->fine_reason);
         $query->bindParam(":fine_status", $this->fine_status);
-        $query->bindParam(":status_reason", $this->status_reason);
         return $query->execute();
     }
 
@@ -63,8 +139,7 @@ class BorrowDetails extends Database
                     borrow_status = :borrow_status,
                     fine_amount = :fine_amount,
                     fine_reason = :fine_reason,
-                    fine_status = :fine_status,
-                    status_reason = :status_reason
+                    fine_status = :fine_status
                 WHERE borrowID = :borrowID";
 
         $query = $this->connect()->prepare($sql);
@@ -83,17 +158,12 @@ class BorrowDetails extends Database
         $query->bindParam(":fine_amount", $this->fine_amount);
         $query->bindParam(":fine_reason", $this->fine_reason);
         $query->bindParam(":fine_status", $this->fine_status);
-        $query->bindParam(":status_reason", $this->status_reason);
 
         return $query->execute();
     }
 
-    // =========================================================
-    // NEW METHOD: Check Fines & Automatically Ban User
-    // =========================================================
     public function checkAndApplyFines($userID)
     {
-        // 1. Fetch active borrows (Borrowed) OR records that are already Unpaid
         $sql = "SELECT * FROM borrowing_details 
                 WHERE userID = :userID 
                 AND (borrow_status = 'Borrowed' OR fine_status = 'Unpaid')";
@@ -104,15 +174,12 @@ class BorrowDetails extends Database
         $records = $query->fetchAll(PDO::FETCH_ASSOC);
 
         $hasUnpaid = false;
-        // Instantiate Book model for replacement cost calculation
         $bookObj = new Book(); 
 
         foreach ($records as $detail) {
             
-            // Only recalculate fines for books currently 'Borrowed'
             if ($detail['borrow_status'] === 'Borrowed' && $detail['return_date'] === null) {
                 
-                // Calculate fine based on Today
                 $fine_results = $this->calculateFinalFine(
                     $detail['expected_return_date'],
                     date("Y-m-d"), 
@@ -120,7 +187,6 @@ class BorrowDetails extends Database
                     $detail['bookID']
                 );
 
-                // If the new calculation is higher than what's in DB (or new fine), update DB
                 if ($fine_results['fine_amount'] > $detail['fine_amount']) {
                     $this->updateFineDetails(
                         $detail['borrowID'],
@@ -129,33 +195,29 @@ class BorrowDetails extends Database
                         $fine_results['fine_status']
                     );
                     
-                    // Update local variable to check status below
                     $detail['fine_status'] = $fine_results['fine_status'];
                     $detail['fine_amount'] = $fine_results['fine_amount'];
                 }
             }
 
-            // Check if this record is Unpaid
             if ($detail['fine_status'] === 'Unpaid' && $detail['fine_amount'] > 0) {
                 $hasUnpaid = true;
             }
         }
 
-        // 2. AUTOMATIC BAN LOGIC
         if ($hasUnpaid) {
             $userObj = new User();
-            // Automatically update user status to Blocked
             $userObj->updateUserStatus(
                 $userID, 
-                "", // No change to registration status
+                "", 
                 "Blocked", 
+                "Block",
                 "System Blocked: Unpaid Fines Detected"
             );
         }
 
         return $hasUnpaid;
     }
-    // =========================================================
 
     public function fetchUserBorrowDetails($userID, $status_filter)
     {
@@ -163,7 +225,23 @@ class BorrowDetails extends Database
                 bd.*, 
                 b.book_title,
                 b.book_cover_dir,
-                GROUP_CONCAT(a.author_name SEPARATOR ', ') as author
+                GROUP_CONCAT(DISTINCT a.author_name SEPARATOR ', ') as author,
+                (
+                    SELECT GROUP_CONCAT(COALESCE(rs.reason_text, '') SEPARATOR '; ')
+                    FROM borrowing_status_history bsh
+                    LEFT JOIN borrowing_status_event_reasons bser ON bsh.historyID = bser.historyID
+                    LEFT JOIN ref_status_reasons rs ON bser.reasonID = rs.reasonID
+                    WHERE bsh.borrowID = bd.borrowID
+                    ORDER BY bsh.created_at DESC
+                    LIMIT 1
+                ) as history_reasons,
+                (
+                    SELECT additional_remarks 
+                    FROM borrowing_status_history bsh
+                    WHERE bsh.borrowID = bd.borrowID
+                    ORDER BY bsh.created_at DESC
+                    LIMIT 1
+                ) as history_remarks
             FROM borrowing_details bd
             JOIN books b ON bd.bookID = b.bookID
             LEFT JOIN book_authors ba ON b.bookID = ba.bookID
@@ -196,8 +274,16 @@ class BorrowDetails extends Database
 
         $query = $this->connect()->prepare($sql);
         $query->execute($exec_params);
+        $results = $query->fetchAll(PDO::FETCH_ASSOC);
 
-        return $query->fetchAll();
+        foreach ($results as &$row) {
+            $parts = [];
+            if (!empty($row['history_reasons'])) $parts[] = $row['history_reasons'];
+            if (!empty($row['history_remarks'])) $parts[] = $row['history_remarks'];
+            $row['status_reason'] = implode(" - ", $parts);
+        }
+
+        return $results;
     }
 
     public function getTopBorrowedBooks($limit = 5)
@@ -315,11 +401,38 @@ class BorrowDetails extends Database
     }
 
     public function fetchBorrowDetail($borrowID) {
-        $sql = "SELECT bd.*, u.fName, u.lName, u.email, b.book_title, b.book_condition, b.replacement_cost
-                FROM borrowing_details bd JOIN users u ON bd.userID = u.userID JOIN books b ON bd.bookID = b.bookID WHERE bd.borrowID = :borrowID";
+        $sql = "SELECT bd.*, u.fName, u.lName, u.email, b.book_title, b.book_condition, b.replacement_cost,
+                (
+                    SELECT GROUP_CONCAT(COALESCE(rs.reason_text, '') SEPARATOR '; ')
+                    FROM borrowing_status_history bsh
+                    LEFT JOIN borrowing_status_event_reasons bser ON bsh.historyID = bser.historyID
+                    LEFT JOIN ref_status_reasons rs ON bser.reasonID = rs.reasonID
+                    WHERE bsh.borrowID = bd.borrowID
+                    ORDER BY bsh.created_at DESC LIMIT 1
+                ) as history_reasons,
+                (
+                    SELECT additional_remarks FROM borrowing_status_history bsh
+                    WHERE bsh.borrowID = bd.borrowID
+                    ORDER BY bsh.created_at DESC LIMIT 1
+                ) as history_remarks
+                FROM borrowing_details bd 
+                JOIN users u ON bd.userID = u.userID 
+                JOIN books b ON bd.bookID = b.bookID 
+                WHERE bd.borrowID = :borrowID";
+        
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":borrowID", $borrowID);
-        if ($query->execute()) return $query->fetch(); else return null;
+        if ($query->execute()) {
+            $row = $query->fetch(PDO::FETCH_ASSOC);
+            if ($row) {
+                $parts = [];
+                if (!empty($row['history_reasons'])) $parts[] = $row['history_reasons'];
+                if (!empty($row['history_remarks'])) $parts[] = $row['history_remarks'];
+                $row['status_reason'] = implode(" - ", $parts);
+            }
+            return $row;
+        } 
+        return null;
     }
 
     public function updateFineDetails($borrowID, $fine_amount, $fine_reason, $fine_status) {
@@ -342,29 +455,19 @@ class BorrowDetails extends Database
             $interval = $expected->diff($comparison);
             $days_late = $interval->days;
             
-            // Configuration
             $MAX_LATE_WEEKS = 10;
-            $MAX_LATE_DAYS = $MAX_LATE_WEEKS * 7; // 70 days
+            $MAX_LATE_DAYS = $MAX_LATE_WEEKS * 7; 
             $DAILY_FINE = 5.00;
             
             if ($days_late >= $MAX_LATE_DAYS) {
-                // Status: LOST (Overdue > 10 Weeks)
                 $results['is_lost'] = true;
-                
-                // Calculate max accumulated fine
                 $max_accumulated_fine = $MAX_LATE_DAYS * $DAILY_FINE;
-                
-                // Fetch replacement cost
                 $replacement_cost = $bookObj->fetchBookReplacementCost($bookID);
-                
-                // Final calculation: Max Fine + Replacement Cost
                 $results['fine_amount'] = $max_accumulated_fine + $replacement_cost;
                 $results['fine_reason'] = 'Lost'; 
                 $results['fine_status'] = 'Unpaid';
             } else {
-                // Status: LATE (Daily calculation)
                 $late_fine_amount = $days_late * $DAILY_FINE;
-                
                 $results['fine_amount'] = $late_fine_amount;
                 $results['fine_reason'] = 'Late';
                 $results['fine_status'] = 'Unpaid';

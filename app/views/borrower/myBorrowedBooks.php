@@ -13,7 +13,6 @@ $borrowObj = new BorrowDetails();
 $userObj = new User();
 $bookObj = new Book();
 
-//fetch user
 $userID = $_SESSION["user_id"];
 $user = $userObj->fetchUser($userID);
 
@@ -36,17 +35,14 @@ if ($active_tab === 'returned') {
     $borrowed_books_raw = $borrowObj->fetchUserBorrowDetails($userID, 'Pending');
 
     $pending_requests = array_filter($borrowed_books_raw, fn($borrow) => $borrow['borrow_request_status'] === 'Pending');
-    //Approved requests that have NOT been borrowed yet
     $approved_requests = array_filter($borrowed_books_raw, fn($borrow) => $borrow['borrow_request_status'] === 'Approved' && $borrow['borrow_status'] !== 'Borrowed');
 
     $borrowed_books = array_merge($pending_requests, $approved_requests);
 
 } elseif ($active_tab === 'unpaid') {
-    // Fetch books with unpaid fines
     $borrowed_books_raw = $borrowObj->fetchUserBorrowDetails($userID, 'unpaid');
     $borrowed_books = $borrowed_books_raw;
 } else {
-    // For 'borrowed' tab
     $borrowed_books_raw = $borrowObj->fetchUserBorrowDetails($userID, $active_tab);
     $borrowed_books = $borrowed_books_raw;
 }
@@ -58,20 +54,17 @@ if (in_array($active_tab, $tabs_for_fine_check) && !empty($borrowed_books)) {
     foreach ($borrowed_books as $detail) {
         $db_update_required = false;
 
-        // Only check for overdue fine calculation on 'Borrowed' loans that haven't been returned
         if ($detail['borrow_status'] === 'Borrowed' && $detail['return_date'] === null) {
 
             $full_detail = $borrowObj->fetchBorrowDetail($detail['borrowID']);
 
-            // Calculate fine based on today's date
             $fine_results = $borrowObj->calculateFinalFine(
                 $detail['expected_return_date'],
-                date("Y-m-d"), // Today's date for comparison
+                date("Y-m-d"), 
                 $bookObj,
                 $detail['bookID']
             );
 
-            // Check if a new or higher fine is calculated
             if ($fine_results['fine_amount'] > $detail['fine_amount']) {
                 $detail['fine_amount'] = $fine_results['fine_amount'];
                 $detail['fine_reason'] = $fine_results['fine_reason'];
@@ -81,7 +74,6 @@ if (in_array($active_tab, $tabs_for_fine_check) && !empty($borrowed_books)) {
             }
         }
 
-        // If a higher fine was calculated or if the fine_status changed due to lateness, update the DB
         if ($db_update_required) {
             $borrowObj->updateFineDetails(
                 $detail['borrowID'],
@@ -89,15 +81,12 @@ if (in_array($active_tab, $tabs_for_fine_check) && !empty($borrowed_books)) {
                 $detail['fine_reason'],
                 $detail['fine_status']
             );
-            // If we're on the unpaid tab, and we just updated the fine, re-filter it later
         }
         $borrowed_books_with_fines[] = $detail;
     }
-    // Replace the raw list with the one potentially updated with new fines
     $borrowed_books = $borrowed_books_with_fines;
 }
 
-// If we are on the unpaid tab, filter out any loans that were updated but whose fine_status is no longer 'Unpaid'
 if ($active_tab === 'unpaid') {
     $borrowed_books = array_filter($borrowed_books, fn($book) => $book['fine_status'] === 'Unpaid');
 }
@@ -110,8 +99,8 @@ function getStatusClass($status)
         'Borrowed' => 'bg-green-100 text-green-800',
         'Rejected', 'Cancelled' => 'bg-red-100 text-red-800',
         'Returned' => 'bg-blue-100 text-blue-800',
-        'Unpaid' => 'bg-red-200 text-red-800 font-bold', // New for Fine Status
-        'Paid' => 'bg-green-200 text-green-800', // New for Fine Status
+        'Unpaid' => 'bg-red-200 text-red-800 font-bold',
+        'Paid' => 'bg-green-200 text-green-800',
         default => 'bg-gray-100 text-gray-800',
     };
 }
@@ -122,13 +111,13 @@ function getTabTitle($tab)
         'pending' => 'Pending & Approved Requests',
         'borrowed' => 'Currently Borrowed Books',
         'returned' => 'Book Loan History',
-        'unpaid' => 'Unpaid Fines', // New tab title
+        'unpaid' => 'Unpaid Fines',
         default => 'Loan Status',
     };
 }
 
 $borrow_limit = (int) ($user["borrower_limit"] ?? 1);
-$current_borrowed_count = $borrowObj->fetchTotalBorrowedBooks($userID); //fetch how many books were processed/borrowed
+$current_borrowed_count = $borrowObj->fetchTotalBorrowedBooks($userID);
 $available_slots = $borrow_limit - $current_borrowed_count;
 
 $success_message = '';
@@ -182,13 +171,11 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
             </p>
 
             <?php
-            // Check if we are on the 'returned' tab AND if the combined data is empty
             $is_returned_empty = $active_tab === 'returned' &&
                 empty($borrowed_books['Returned']) &&
                 empty($borrowed_books['Rejected']) &&
                 empty($borrowed_books['Cancelled']);
 
-            // Check if any other tab data is empty
             $is_other_tab_empty = $active_tab !== 'returned' && empty($borrowed_books);
 
             if ($is_returned_empty || $is_other_tab_empty): ?>
@@ -199,27 +186,22 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                     <div class="overflow-x-auto list-container">
 
                         <?php
-                        // New logic for sub-tabs within 'returned'
-                        $active_sub_tab = $_GET['subtab'] ?? 'Returned'; // Default to 'Returned'
+                        $active_sub_tab = $_GET['subtab'] ?? 'Returned'; 
                         $history_sections = ['Returned', 'Rejected', 'Cancelled'];
 
                         if ($active_tab === 'returned') {
-                            // Ensure a valid sub-tab is selected
                             if (!in_array($active_sub_tab, $history_sections)) {
-                                $active_sub_tab = 'Returned'; // Fallback
+                                $active_sub_tab = 'Returned'; 
                             }
-                            // For the returned tab, we only loop through the active sub-tab
                             $sections_to_display = [$active_sub_tab];
-                            $loop_data = $borrowed_books; // History data is already grouped
+                            $loop_data = $borrowed_books; 
                         } else {
-                            // Original logic for non-history tabs
                             $sections_to_display = ['_single_'];
-                            // For non-history tabs, wrap the single list in a structure that the loop below can use
                             $loop_data = ['_single_' => $borrowed_books];
                         }
                         ?>
 
-                        <?php if ($active_tab === 'returned'): // New Sub-Tab Navigation Bar ?>
+                        <?php if ($active_tab === 'returned'): ?>
                                 <div class="sub-tabs border-b border-gray-200 mb-6 -mt-2">
                                     <nav class="mb-px flex space-x-6 font-semibold text-gray-600" aria-label="Sub-Tabs">
                                         <?php foreach ($history_sections as $sub_tab): ?>
@@ -242,7 +224,6 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                             ?>
 
                                 <?php
-                                // Check if the currently active sub-tab has no data
                                 if ($is_history_section && empty($section_books)): ?>
                                         <div class="py-10 text-center bg-gray-100 rounded-lg">
                                             <p class="text-lg text-gray-500">No <?= htmlspecialchars(strtolower($section_name)) ?> items found
@@ -287,6 +268,7 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                                     <?php else: ?>
                                                             <th class="py-3 px-4 hidden md:table-cell">Request Date</th>
                                                             <th class="py-3 px-4">Status</th>
+                                                            <th class="py-3 px-4">Reason</th>
                                                     <?php endif; ?>
 
                                                     <th class="py-3 px-4 w-20">Details</th>
@@ -422,7 +404,7 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                                                             <?= htmlspecialchars($book['fine_status'] ?? 'N/A') ?>
                                                                         </span>
                                                                     </td>
-                                                            <?php else: // Rejected or Cancelled ?>
+                                                            <?php else: ?>
                                                                     <td class="py-4 px-4 hidden md:table-cell text-sm">
                                                                         <?= date('M d, Y', strtotime($book['request_date'])) ?>
                                                                     </td>
@@ -431,6 +413,9 @@ if (isset($_GET['success']) && $_GET['success'] === 'cancelled') {
                                                                             class="px-3 py-1 text-xs font-semibold rounded-full <?= getStatusClass($book['borrow_request_status']) ?>">
                                                                             <?= htmlspecialchars($book['borrow_request_status']) ?>
                                                                         </span>
+                                                                    </td>
+                                                                    <td class="py-4 px-4 text-sm text-gray-600 max-w-xs whitespace-normal">
+                                                                        <?= htmlspecialchars($book['status_reason'] ?? 'No reason provided') ?>
                                                                     </td>
                                                             <?php endif; ?>
                                                             <td class="py-4 px-4">

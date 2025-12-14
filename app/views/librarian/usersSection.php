@@ -11,6 +11,11 @@ $userTypes = $userObj->fetchUserTypes();
 
 $departments = $userObj->fetchDepartments(); 
 
+// --- 3NF FETCH: Get Reason Lists for Dropdowns/Checkboxes ---
+$blockReasons = $userObj->fetchReasonRefs('Block');
+$rejectReasons = $userObj->fetchReasonRefs('Reject');
+$unblockReasons = $userObj->fetchReasonRefs('Unblock');
+
 $old = $_SESSION["old"] ?? [];
 $errors = $_SESSION["errors"] ?? [];
 $success_modal = $_GET['success'] ?? false;
@@ -33,6 +38,8 @@ $open_modal = '';
 $current_tab = $_GET['tab'] ?? 'pending';
 
 $modal_user = [];
+$latestStatus = []; // Holds the 3NF Reason details
+
 if ($current_modal === 'edit') {
     $open_modal = 'editUserModal';
 } elseif ($current_modal === 'view') {
@@ -49,6 +56,11 @@ if (!empty($open_modal)) {
     }
     if ($open_modal != 'viewDetailsUserModal') { 
         $modal_user['userID'] = $user_id;
+    }
+    
+    // --- 3NF FETCH: Get specific details for this user if viewing ---
+    if ($open_modal == 'viewDetailsUserModal' && $user_id) {
+        $latestStatus = $userObj->fetchLatestUserReasons($user_id);
     }
 }
 
@@ -261,19 +273,17 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                     Reason for rejecting <span class="font-bold user-name-span"></span>:
                 </p>
 
-                <div class="bg-gray-100 p-4 rounded mb-4 text-sm">
-                    <label class="flex items-center mb-2 cursor-pointer">
-                        <input type="checkbox" name="reason_presets[]" value="Invalid ID Image / Unclear" class="mr-2"> Invalid / Unclear ID
-                    </label>
-                    <label class="flex items-center mb-2 cursor-pointer">
-                        <input type="checkbox" name="reason_presets[]" value="Incomplete Information" class="mr-2"> Incomplete Information
-                    </label>
-                    <label class="flex items-center mb-2 cursor-pointer">
-                        <input type="checkbox" name="reason_presets[]" value="Not a verified student" class="mr-2"> Not a verified student/faculty
-                    </label>
-                    <label class="flex items-center mb-2 cursor-pointer">
-                        <input type="checkbox" name="reason_presets[]" value="Duplicate Account" class="mr-2"> Duplicate Account
-                    </label>
+                <div class="bg-gray-100 p-4 rounded mb-4 text-sm h-32 overflow-y-auto">
+                    <?php if(empty($rejectReasons)): ?>
+                        <p class="text-gray-500 italic">No preset reasons available.</p>
+                    <?php else: ?>
+                        <?php foreach($rejectReasons as $reason): ?>
+                            <label class="flex items-center mb-2 cursor-pointer">
+                                <input type="checkbox" name="reason_presets[]" value="<?= $reason['reasonID'] ?>" class="mr-2"> 
+                                <?= htmlspecialchars($reason['reason_text']) ?>
+                            </label>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
 
                 <label class="font-semibold block mb-1">Other Reason:</label>
@@ -297,19 +307,17 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                     Reason for blocking <span class="font-bold user-name-span"></span>:
                 </p>
 
-                <div class="bg-gray-100 p-4 rounded mb-4 text-sm">
-                    <label class="flex items-center mb-2 cursor-pointer">
-                        <input type="checkbox" name="reason_presets[]" value="Unpaid Overdue Fines" class="mr-2"> Unpaid Overdue Fines
-                    </label>
-                    <label class="flex items-center mb-2 cursor-pointer">
-                        <input type="checkbox" name="reason_presets[]" value="Lost Books" class="mr-2"> Lost Books
-                    </label>
-                    <label class="flex items-center mb-2 cursor-pointer">
-                        <input type="checkbox" name="reason_presets[]" value="Library Policy Violation" class="mr-2"> Policy Violation (Noise/Conduct)
-                    </label>
-                    <label class="flex items-center mb-2 cursor-pointer">
-                        <input type="checkbox" name="reason_presets[]" value="Identity Theft Suspicion" class="mr-2"> Identity Theft Suspicion
-                    </label>
+                <div class="bg-gray-100 p-4 rounded mb-4 text-sm h-32 overflow-y-auto">
+                    <?php if(empty($blockReasons)): ?>
+                        <p class="text-gray-500 italic">No preset reasons available.</p>
+                    <?php else: ?>
+                        <?php foreach($blockReasons as $reason): ?>
+                            <label class="flex items-center mb-2 cursor-pointer">
+                                <input type="checkbox" name="reason_presets[]" value="<?= $reason['reasonID'] ?>" class="mr-2"> 
+                                <?= htmlspecialchars($reason['reason_text']) ?>
+                            </label>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
 
                 <label class="font-semibold block mb-1">Additional Details:</label>
@@ -333,19 +341,17 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                     Reason for unblocking <span class="font-bold user-name-span"></span>:
                 </p>
 
-                <div class="bg-gray-100 p-4 rounded mb-4 text-sm">
-                    <label class="flex items-center mb-2 cursor-pointer">
-                        <input type="checkbox" name="reason_presets[]" value="Appeal Granted" class="mr-2"> Appeal Granted
-                    </label>
-                    <label class="flex items-center mb-2 cursor-pointer">
-                        <input type="checkbox" name="reason_presets[]" value="Fines Paid" class="mr-2"> Fines Paid
-                    </label>
-                    <label class="flex items-center mb-2 cursor-pointer">
-                        <input type="checkbox" name="reason_presets[]" value="Books Returned" class="mr-2"> Books Returned
-                    </label>
-                    <label class="flex items-center mb-2 cursor-pointer">
-                        <input type="checkbox" name="reason_presets[]" value="Identity Verified" class="mr-2"> Identity Verified
-                    </label>
+                <div class="bg-gray-100 p-4 rounded mb-4 text-sm h-32 overflow-y-auto">
+                    <?php if(empty($unblockReasons)): ?>
+                        <p class="text-gray-500 italic">No preset reasons available.</p>
+                    <?php else: ?>
+                        <?php foreach($unblockReasons as $reason): ?>
+                            <label class="flex items-center mb-2 cursor-pointer">
+                                <input type="checkbox" name="reason_presets[]" value="<?= $reason['reasonID'] ?>" class="mr-2"> 
+                                <?= htmlspecialchars($reason['reason_text']) ?>
+                            </label>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
 
                 <label class="font-semibold block mb-1">Additional Details:</label>
@@ -476,9 +482,32 @@ $users = $userObj->viewUser($search, $userTypeID, $current_tab);
                 
                 <p><strong>Account Status:</strong> <span class="font-bold text-red-800"><?= $modal_user['account_status'] ?? 'N/A' ?></span></p>
                 <p><strong>Date Registered:</strong> <?= $modal_user['date_registered'] ?? 'N/A' ?></p>
-                <?php if(!empty($modal_user['status_reason'])): ?>
-                    <p class="col-span-2"><strong>Status Reason:</strong> <span class="text-red-700"><?= htmlspecialchars($modal_user['status_reason']) ?></span></p>
+                
+                <?php if(!empty($latestStatus['reasons']) || !empty($latestStatus['remarks'])): ?>
+                    <div class="col-span-2 mt-2 bg-red-50 p-3 rounded border border-red-100">
+                        <p class="font-bold text-red-800 text-sm mb-1">Status Details:</p>
+                        
+                        <?php if(!empty($latestStatus['reasons'])): ?>
+                            <ul class="list-disc list-inside text-sm text-gray-700">
+                                <?php foreach($latestStatus['reasons'] as $r): ?>
+                                    <li><?= htmlspecialchars($r) ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
+
+                        <?php if(!empty($latestStatus['remarks'])): ?>
+                            <p class="text-sm text-gray-600 mt-1 italic">"<?= htmlspecialchars($latestStatus['remarks']) ?>"</p>
+                        <?php endif; ?>
+
+                        <?php if(!empty($latestStatus['admin_name'])): ?>
+                            <p class="text-xs text-gray-500 mt-2 text-right">
+                                Action by: <span class="font-semibold"><?= htmlspecialchars($latestStatus['admin_name']) ?></span>
+                                on <?= date('M d, Y', strtotime($latestStatus['date'])) ?>
+                            </p>
+                        <?php endif; ?>
+                    </div>
                 <?php endif; ?>
+
             </div>
             <div class="mt-6 text-right">
                 <button type="button" data-modal="viewDetailsUserModal" data-tab="<?= $current_tab ?>" class="close viewBtn bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400">Close</button>

@@ -19,30 +19,34 @@ $currentTab = $_POST['tab'] ?? $_GET['tab'] ?? 'approved';
 
 $upload_dir = __DIR__ . "/../../public/uploads/id_images/";
 
-$status_reason_str = NULL;
+// --- GET CURRENT ADMIN DETAILS ---
+$currentAdminID = $_SESSION['user_id'] ?? null;
+$currentAdminName = ($_SESSION['fName'] ?? 'Admin') . ' ' . ($_SESSION['lName'] ?? '');
+
+// --- 3NF LOGIC: Capture Reason IDs and Custom Remarks ---
+$remarks = NULL;
+$reasonIDs = [];
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $reasons = [];
+    // Capture the checkbox IDs (Array of Integers)
     if (isset($_POST['reason_presets']) && is_array($_POST['reason_presets'])) {
-        foreach ($_POST['reason_presets'] as $preset) {
-            $reasons[] = htmlspecialchars($preset);
-        }
+        $reasonIDs = $_POST['reason_presets']; 
     }
+    
+    // Capture the typed custom note
     if (!empty($_POST['reason_custom'])) {
-        $reasons[] = htmlspecialchars(trim($_POST['reason_custom']));
-    }
-    if (!empty($reasons)) {
-        $status_reason_str = implode("; ", $reasons);
+        $remarks = htmlspecialchars(trim($_POST['reason_custom']));
     }
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
+    // --- EDIT USER (Unchanged) ---
     if ($action === 'edit') {
         $user["lName"] = trim(htmlspecialchars($_POST["lName"] ?? ''));
         $user["fName"] = trim(htmlspecialchars($_POST["fName"] ?? ''));
         $user["middleIn"] = trim(htmlspecialchars($_POST["middleIn"] ?? ''));
         $user["contact_no"] = trim(htmlspecialchars($_POST["contact_no"] ?? ''));
-        // CHANGED: Accept departmentID instead of string
         $user["departmentID"] = trim(htmlspecialchars($_POST["departmentID"] ?? ''));
         $user["email"] = trim(htmlspecialchars($_POST["email"] ?? ''));
         $user["userTypeID"] = trim(htmlspecialchars($_POST["userTypeID"] ?? ''));
@@ -107,7 +111,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $userObj->fName = $user["fName"];
                 $userObj->middleIn = $user["middleIn"];
                 $userObj->contact_no = $user["contact_no"];
-                // CHANGED: Set departmentID property
                 $userObj->departmentID = $user["departmentID"];
                 $userObj->email = $user["email"];
                 $userObj->userTypeID = $user["userTypeID"];
@@ -117,7 +120,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $userObj->imageID_dir = $new_image_dir;
 
                 if ($userObj->editUser($userID)) {
-                    header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}");
+                    header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}&success=edit");
                     exit;
                 } else {
                     $_SESSION["errors"] = ["db_error" => "Failed to update user due to a database error."];
@@ -138,14 +141,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
 
-    // REJECT ACTION
+    // --- REJECT ACTION (Updated) ---
     if ($action === 'reject' && $userID) {
-        $status_reason = $status_reason_str ?: "Application incomplete or does not meet criteria.";
-
-        if ($userObj->updateUserStatus($userID, "Rejected", "Inactive", $status_reason)) {
+        
+        // Pass $currentAdminID to log who rejected it
+        if ($userObj->updateUserStatus($userID, "Rejected", "Inactive", "Reject", $remarks, $reasonIDs, $currentAdminID)) {
+            
             $mail = new PHPMailer(true);
             $userData = $userObj->fetchUser($userID);
             $fullName = $userData["fName"] . ' ' . $userData["lName"];
+
+            // Fetch reasons for email
+            $statusDetails = $userObj->fetchLatestUserReasons($userID);
+            $emailReasonList = "<ul>";
+            foreach($statusDetails['reasons'] as $rText) {
+                $emailReasonList .= "<li>" . htmlspecialchars($rText) . "</li>";
+            }
+            $emailReasonList .= "</ul>";
+            if(!empty($statusDetails['remarks'])) {
+                $emailReasonList .= "<p><em>Note: " . htmlspecialchars($statusDetails['remarks']) . "</em></p>";
+            }
 
             try {
                 $mail->isSMTP();
@@ -175,8 +190,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             </p>
                             <div style="background-color: #FFF5F5; border-left: 4px solid #D9534F; padding: 15px 20px; margin: 25px 0; border-radius: 4px;">
                                 <p style="margin: 0; font-size: 12px; color: #C53030; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Reason for rejection</p>
-                                <p style="margin: 5px 0 0 0; font-size: 16px; color: #2D3748;">{$status_reason}</p>
+                                <div style="margin: 5px 0 0 0; font-size: 16px; color: #2D3748;">{$emailReasonList}</div>
                             </div>
+                            <p style="margin-top: 15px; font-size: 14px; color: #718096;">Processed by: <strong>{$currentAdminName}</strong></p>
                             <p style="line-height: 1.6; margin-bottom: 25px;">
                                 You may contact the librarian for more details regarding your application.
                             </p>
@@ -191,7 +207,7 @@ EOT;
             } catch (Exception $e) {
             }
 
-            header("Location: ../../app/views/librarian/usersSection.php?tab=rejected");
+            header("Location: ../../app/views/librarian/usersSection.php?tab=rejected&success=reject");
             exit;
         } else {
             $_SESSION["errors"] = ["db_error" => "Failed to reject user due to a database error."];
@@ -200,14 +216,26 @@ EOT;
         }
     }
 
-    // BLOCK ACTION
+    // --- BLOCK ACTION (Updated) ---
     if ($action === 'block' && $userID) {
-        $status_reason = $status_reason_str ?: "Violation of library policies.";
-
-        if ($userObj->updateUserStatus($userID, "", "Blocked", $status_reason)) {
+        
+        // Pass $currentAdminID
+        if ($userObj->updateUserStatus($userID, "", "Blocked", "Block", $remarks, $reasonIDs, $currentAdminID)) {
+            
             $mail = new PHPMailer(true);
             $userData = $userObj->fetchUser($userID);
             $fullName = $userData["fName"] . ' ' . $userData["lName"];
+
+            // Fetch reasons for email
+            $statusDetails = $userObj->fetchLatestUserReasons($userID);
+            $emailReasonList = "<ul>";
+            foreach($statusDetails['reasons'] as $rText) {
+                $emailReasonList .= "<li>" . htmlspecialchars($rText) . "</li>";
+            }
+            $emailReasonList .= "</ul>";
+            if(!empty($statusDetails['remarks'])) {
+                $emailReasonList .= "<p><em>Note: " . htmlspecialchars($statusDetails['remarks']) . "</em></p>";
+            }
 
             try {
                 $mail->isSMTP();
@@ -237,8 +265,9 @@ EOT;
                             </p>
                             <div style="background-color: #FFF5F5; border-left: 4px solid #D9534F; padding: 15px 20px; margin: 25px 0; border-radius: 4px;">
                                 <p style="margin: 0; font-size: 14px; color: #C53030; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Reason for suspension</p>
-                                <p style="margin: 5px 0 0 0; font-size: 16px; color: #2D3748;">{$status_reason}</p>
+                                <div style="margin: 5px 0 0 0; font-size: 16px; color: #2D3748;">{$emailReasonList}</div>
                             </div>
+                            <p style="margin-top: 15px; font-size: 14px; color: #718096;">Processed by: <strong>{$currentAdminName}</strong></p>
                             <p style="line-height: 1.6; margin-bottom: 25px;">
                                 To restore your access, please resolve this issue with the administration office as soon as possible.
                             </p>
@@ -257,7 +286,7 @@ EOT;
             } catch (Exception $e) {
             }
 
-            header("Location: ../../app/views/librarian/usersSection.php?tab=blocked");
+            header("Location: ../../app/views/librarian/usersSection.php?tab=blocked&success=block");
             exit;
         } else {
             $_SESSION["errors"] = ["db_error" => "Failed to block user due to a database error."];
@@ -267,11 +296,77 @@ EOT;
     }
 }
 
-// APPROVE ACTION
-if ($action === 'approve' && $userID) {
-    if ($userObj->updateUserStatus($userID, "Approved", "Active")) {
+// --- UNBLOCK ACTION (Updated) ---
+if ($action === 'unblock' && $userID) {
+    // Pass $currentAdminID
+    if ($userObj->updateUserStatus($userID, "Approved", "Active", "Unblock", $remarks, $reasonIDs, $currentAdminID)) {
+        
         $mail = new PHPMailer(true);
-        // Fixed: Use $userData to be consistent with other blocks
+        $userData = $userObj->fetchUser($userID);
+        $fullName = $userData["fName"] . ' ' . $userData["lName"];
+
+        try {
+            $mail->isSMTP();
+            $mail->Host = 'smtp.gmail.com';
+            $mail->SMTPAuth = true;
+            $mail->Username = 'graziellamssaavedra06@gmail.com';
+            $mail->Password = 'cpybynwckiipsszp';
+            $mail->SMTPSecure = 'ssl';
+            $mail->Port = 465;
+
+            $mail->setFrom('graziellamssaavedra06@gmail.com', 'Library Administration');
+            $mail->addAddress($userData["email"], $fullName);
+
+            $mail->isHTML(true);
+            $mail->Subject = "Account Update: Access Restored";
+            $mail->Body = <<<EOT
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f7; padding: 40px 20px; margin: 0;">
+                <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                    <div style="background-color: #3182ce; padding: 20px; text-align: center;">
+                        <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Welcome Back</h2>
+                    </div>
+                    <div style="padding: 30px; color: #4a5568;">
+                        <p style="font-size: 16px; margin-top: 0;">Hello <strong>{$fullName}</strong>,</p>
+                        <p style="line-height: 1.6; font-size: 16px;">
+                            We are pleased to inform you that your library account has been <strong style="color: #3182ce;">reactivated</strong>.
+                        </p>
+                        <div style="background-color: #ebf8ff; color: #2c5282; padding: 15px; margin: 20px 0; border-radius: 6px; text-align: center;">
+                            <span style="font-size: 24px; vertical-align: middle;">🔓</span>
+                            <span style="font-weight: bold; margin-left: 10px; vertical-align: middle;">Account Status: Active</span>
+                        </div>
+                        <p style="margin-top: 15px; font-size: 14px; color: #718096;">Processed by: <strong>{$currentAdminName}</strong></p>
+                        <p style="line-height: 1.6; margin-bottom: 25px;">
+                            You now have full access to borrow books, reserve titles, and view your history.
+                        </p>
+                        <div style="text-align: center; margin-bottom: 10px;">
+                            <a href="#" style="background-color: #3182ce; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; display: inline-block;">Login to Account</a>
+                        </div>
+                        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+                        <p style="font-size: 12px; color: #a0aec0; text-align: center;">
+                            If you have any questions about previous account issues, please reply to this email.
+                        </p>
+                    </div>
+                </div>
+            </div>
+EOT;
+            $mail->send();
+        } catch (Exception $e) {
+        }
+
+        header("Location: ../../app/views/librarian/usersSection.php?tab=approved&success=unblock");
+        exit;
+    } else {
+        $_SESSION["errors"] = ["db_error" => "Failed to unblock user due to a database error."];
+        header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}");
+        exit;
+    }
+}
+
+// --- APPROVE ACTION (Updated) ---
+if ($action === 'approve' && $userID) {
+    // Pass $currentAdminID (even if empty remarks/reasons)
+    if ($userObj->updateUserStatus($userID, "Approved", "Active", "Approve", "", [], $currentAdminID)) {
+        $mail = new PHPMailer(true);
         $userData = $userObj->fetchUser($userID);
         $fullName = $userData["fName"] . ' ' . $userData["lName"];
 
@@ -312,6 +407,7 @@ if ($action === 'approve' && $userID) {
                                 </tr>
                             </table>
                         </div>
+                        <p style="margin-top: 15px; font-size: 14px; color: #718096;">Processed by: <strong>{$currentAdminName}</strong></p>
                         <p style="line-height: 1.6; margin-bottom: 25px;">
                             You can now log in to browse books and manage your reservations.
                         </p>
@@ -326,7 +422,7 @@ EOT;
         } catch (Exception $e) {
         }
 
-        header("Location: ../../app/views/librarian/usersSection.php?tab=approved");
+        header("Location: ../../app/views/librarian/usersSection.php?tab=approved&success=approve");
         exit;
     } else {
         $_SESSION["errors"] = ["db_error" => "Failed to approve user due to a database error."];
@@ -335,105 +431,30 @@ EOT;
     }
 }
 
-// UNBLOCK ACTION
-if ($action === 'unblock' && $userID) {
-    if ($userObj->updateUserStatus($userID, "Approved", "Active")) {
-        $mail = new PHPMailer(true);
-        // Fixed: Use $userData to be consistent
-        $userData = $userObj->fetchUser($userID);
-        $fullName = $userData["fName"] . ' ' . $userData["lName"];
-
-        try {
-            $mail->isSMTP();
-            $mail->Host = 'smtp.gmail.com';
-            $mail->SMTPAuth = true;
-            $mail->Username = 'graziellamssaavedra06@gmail.com';
-            $mail->Password = 'cpybynwckiipsszp';
-            $mail->SMTPSecure = 'ssl';
-            $mail->Port = 465;
-
-            $mail->setFrom('graziellamssaavedra06@gmail.com', 'Library Administration');
-            $mail->addAddress($userData["email"], $fullName);
-
-            $mail->isHTML(true);
-            $mail->Subject = "Account Update: Access Restored";
-            $mail->Body = <<<EOT
-            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f7; padding: 40px 20px; margin: 0;">
-                <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                    <div style="background-color: #3182ce; padding: 20px; text-align: center;">
-                        <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Welcome Back</h2>
-                    </div>
-                    <div style="padding: 30px; color: #4a5568;">
-                        <p style="font-size: 16px; margin-top: 0;">Hello <strong>{$fullName}</strong>,</p>
-                        <p style="line-height: 1.6; font-size: 16px;">
-                            We are pleased to inform you that your library account has been <strong style="color: #3182ce;">reactivated</strong>.
-                        </p>
-                        <div style="background-color: #ebf8ff; color: #2c5282; padding: 15px; margin: 20px 0; border-radius: 6px; text-align: center;">
-                            <span style="font-size: 24px; vertical-align: middle;">🔓</span>
-                            <span style="font-weight: bold; margin-left: 10px; vertical-align: middle;">Account Status: Active</span>
-                        </div>
-                        <p style="line-height: 1.6; margin-bottom: 25px;">
-                            You now have full access to borrow books, reserve titles, and view your history.
-                        </p>
-                        <div style="text-align: center; margin-bottom: 10px;">
-                            <a href="#" style="background-color: #3182ce; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; display: inline-block;">Login to Account</a>
-                        </div>
-                        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
-                        <p style="font-size: 12px; color: #a0aec0; text-align: center;">
-                            If you have any questions about previous account issues, please reply to this email.
-                        </p>
-                    </div>
-                </div>
-            </div>
-EOT;
-            $mail->send();
-        } catch (Exception $e) {
-        }
-
-        header("Location: ../../app/views/librarian/usersSection.php?tab=approved");
-        exit;
-    } else {
-        $_SESSION["errors"] = ["db_error" => "Failed to unblock user due to a database error."];
-        header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}");
-        exit;
-    }
-}
-
-// In app/controllers/userController.php
-
-// DELETE ACTION
+// --- DELETE ACTION (Unchanged) ---
 if ($action === 'delete' && $userID) {
-
-    // 1. Get the Current Logged-in User's Role
     $currentUserRole = $_SESSION['role'] ?? 'Borrower';
-
-    // 2. Get the Target User's Role (The person being deleted)
     $targetUserData = $userObj->fetchUser($userID);
     $targetUserRole = $targetUserData['role'];
     $imagePath = $targetUserData['imageID_dir'] ?? null;
 
-    // 3. PERMISSION CHECK:
-
-    // Rule A: Nobody can delete a Super Admin (not even another Super Admin, to be safe)
     if ($targetUserRole === 'Super Admin') {
         $_SESSION["errors"] = ["permission" => "System Error: Cannot delete the Main Super Admin account."];
         header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}");
         exit;
     }
 
-    // Rule B: Standard Admins cannot delete other Admins
     if ($currentUserRole !== 'Super Admin' && $targetUserRole === 'Admin') {
         $_SESSION["errors"] = ["permission" => "Permission Denied: Only a Super Admin can delete other Librarians."];
         header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}");
         exit;
     }
 
-    // 4. Proceed to Delete
     if ($userObj->deleteUser($userID)) {
         if ($imagePath && file_exists(__DIR__ . "/../../" . $imagePath)) {
             unlink(__DIR__ . "/../../" . $imagePath);
         }
-        header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}");
+        header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}&success=delete");
         exit;
     } else {
         $_SESSION["errors"] = ["db_error" => "Failed to delete user."];
