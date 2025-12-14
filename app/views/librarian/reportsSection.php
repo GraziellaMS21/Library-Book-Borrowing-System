@@ -8,12 +8,21 @@ if (!isset($_SESSION["user_id"])) {
 require_once(__DIR__ . "/../../models/manageReports.php");
 require_once(__DIR__ . '/../../models/manageBook.php');
 require_once(__DIR__ . '/../../models/manageBorrowDetails.php');
+require_once(__DIR__ . '/../../models/manageUsers.php');
+require_once(__DIR__ . '/../../models/manageCategory.php');
 
 // Initialize models
 $bookObj = new Book();
 $borrowObj = new BorrowDetails();
 $reportsObj = new Reports();
+$userObj = new User();
+$categoryObj = new Category();
 $user_id = $_SESSION['user_id'];
+
+// Fetch Year Filter
+$selected_year = isset($_GET['year']) ? $_GET['year'] : date('Y');
+$current_year = date('Y');
+$years = range($current_year, $current_year - 4); // Last 5 years
 
 // --- 1. DATA FOR CARDS ---
 $total_book_copies = $bookObj->countTotalBookCopies();
@@ -35,20 +44,20 @@ $summary_total_categories = $reportsObj->getSummaryTotalCategories();
 $avg_borrowing_per_user = ($total_borrowers > 0) ? ($summary_total_borrows_ever / $total_borrowers) : 0;
 
 // --- 4. DATA FOR CHARTS ---
-$monthly_borrow_return_trend = $reportsObj->getMonthlyBorrowReturnTrend();
+$monthly_borrow_return_trend = $reportsObj->getMonthlyBorrowReturnTrend($selected_year);
 $top_5_books = $reportsObj->getTopBorrowedBooks(5);
 $borrowing_by_department = $reportsObj->getBorrowingByDepartment();
-$monthly_fine_collection_trend = $reportsObj->getMonthlyFineCollectionTrend();
+$monthly_fine_collection_trend = $reportsObj->getMonthlyFineCollectionTrend($selected_year);
 $top_5_unpaid_fines = $reportsObj->getTopUnpaidFinesUsers(5);
 $top_5_borrowers = $reportsObj->getTopActiveBorrowers(5);
-$monthly_user_reg_trend = $reportsObj->getMonthlyUserRegistrationTrend();
+$monthly_user_reg_trend = $reportsObj->getMonthlyUserRegistrationTrend($selected_year);
 $borrower_type_breakdown = $reportsObj->getBorrowerTypeBreakdown();
 $book_status_overview = $reportsObj->getBookStatusOverview();
 $books_per_category = $reportsObj->getBooksPerCategory();
 $avg_borrow_duration = $reportsObj->getAverageBorrowDurationByCategory();
 $overdue_books_summary = $reportsObj->getOverdueBooksSummary();
 $lost_books_summary = $reportsObj->getLostBooksDetails();
-$late_returns_trend = $reportsObj->getLateReturnsTrend();
+$late_returns_trend = $reportsObj->getLateReturnsTrend($selected_year);
 ?>
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
@@ -157,6 +166,26 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
 
                 <div id="user-activity">
                     <h2 class="font-bold text-3xl pl-8 pt-16 text-red-900">USER & BORROWING ACTIVITY</h2>
+                    <!-- Header Actions -->
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                        <form method="GET" class="flex items-center gap-2">
+                            <label for="reportYear" class="font-semibold text-gray-700">Year:</label>
+                            <input type="number" id="reportYear" name="year" value="<?= $selected_year ?>" min="2000" max="<?= date('Y') ?>" class="border rounded px-3 py-1 bg-white text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-900 w-24">
+                            <button type="submit" class="bg-red-900 text-white px-3 py-1 rounded hover:bg-red-800 transition font-medium">Go</button>
+                        </form>
+
+                        <div class="flex gap-2">
+                            <a href="print.php?report_type=general&year=<?= $selected_year ?>" target="_blank"
+                                class="bg-red-900 text-white px-4 py-2 rounded shadow hover:bg-red-800 transition flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                </svg>
+                                Print General Report
+                            </a>
+                        </div>
+                    </div>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
                         <div class="report-chart-container">
                             <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">1. Monthly Borrowing Trend</h2>

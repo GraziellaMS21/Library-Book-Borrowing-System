@@ -25,7 +25,7 @@ $userTypeID = $user["userTypeID"];
 
 if ($action === 'add' && $bookID) {
     $book = $bookObj->fetchBook($bookID);
-    
+
     // --- START NEW LOGIC: Calculate Available-for-Request ---
     $pending_copies_count = $borrowDetailsObj->fetchPendingAndApprovedCopiesForBook($bookID);
     $available_for_request = max(0, $book['book_copies'] - $pending_copies_count);
@@ -48,7 +48,7 @@ if ($action === 'add' && $bookID) {
         // Staff can add more copies
         if ($userTypeID == 2) {
             $new_copies = $existing['no_of_copies'] + $copies;
-            
+
             // Limit staff to the remaining available copies
             if ($new_copies > $available_for_request) { // Check against the new count
                 $new_copies = $available_for_request;

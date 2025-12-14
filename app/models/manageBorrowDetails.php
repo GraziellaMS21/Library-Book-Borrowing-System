@@ -38,8 +38,8 @@ class BorrowDetails extends Database
         $this->db = $this->connect();
         try {
             $sqlHist = "INSERT INTO borrowing_status_history (borrowID, action_type, additional_remarks, performed_by) VALUES (:bid, :action, :remarks, :adminID)";
-            $stmtHist = $this->db->prepare($sqlHist);
-            $stmtHist->execute([
+            $query = $this->db->prepare($sqlHist);
+            $query->execute([
                 ':bid' => $borrowID,
                 ':action' => $actionType,
                 ':remarks' => $remarks,
@@ -49,9 +49,9 @@ class BorrowDetails extends Database
 
             if (!empty($reasonIDs)) {
                 $sqlEvent = "INSERT INTO borrowing_status_event_reasons (historyID, reasonID) VALUES (:hid, :rid)";
-                $stmtEvent = $this->db->prepare($sqlEvent);
+                $queryEvent = $this->db->prepare($sqlEvent);
                 foreach ($reasonIDs as $rid) {
-                    $stmtEvent->execute([':hid' => $historyID, ':rid' => $rid]);
+                    $queryEvent->execute([':hid' => $historyID, ':rid' => $rid]);
                 }
             }
             return true;
@@ -66,9 +66,9 @@ class BorrowDetails extends Database
             return [];
         $placeholders = implode(',', array_fill(0, count($reasonIDs), '?'));
         $sql = "SELECT reason_text FROM ref_status_reasons WHERE reasonID IN ($placeholders)";
-        $stmt = $this->connect()->prepare($sql);
-        $stmt->execute($reasonIDs);
-        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $query = $this->connect()->prepare($sql);
+        $query->execute($reasonIDs);
+        return $query->fetchAll(PDO::FETCH_COLUMN);
     }
 
     public function fetchLatestBorrowReasons($borrowID)
@@ -80,10 +80,10 @@ class BorrowDetails extends Database
                        WHERE h.borrowID = :borrowID 
                        ORDER BY h.created_at DESC LIMIT 1";
 
-        $qHist = $this->connect()->prepare($sqlHistory);
-        $qHist->bindParam(':borrowID', $borrowID);
-        $qHist->execute();
-        $history = $qHist->fetch(PDO::FETCH_ASSOC);
+        $queryHistory = $this->connect()->prepare($sqlHistory);
+        $queryHistory->bindParam(':borrowID', $borrowID);
+        $queryHistory->execute();
+        $history = $queryHistory->fetch(PDO::FETCH_ASSOC);
 
         if (!$history)
             return ['action_type' => '', 'remarks' => '', 'reasons' => [], 'admin_name' => 'System', 'date' => ''];
@@ -91,16 +91,16 @@ class BorrowDetails extends Database
         $sqlReasons = "SELECT r.reason_text FROM borrowing_status_event_reasons e 
                        JOIN ref_status_reasons r ON e.reasonID = r.reasonID 
                        WHERE e.historyID = :historyID";
-        $qReas = $this->connect()->prepare($sqlReasons);
-        $qReas->bindParam(':historyID', $history['historyID']);
-        $qReas->execute();
+        $queryReasons = $this->connect()->prepare($sqlReasons);
+        $queryReasons->bindParam(':historyID', $history['historyID']);
+        $queryReasons->execute();
 
         return [
             'action_type' => $history['action_type'],
             'remarks' => $history['additional_remarks'],
             'admin_name' => $history['admin_name'] ?? 'System',
             'date' => $history['created_at'],
-            'reasons' => $qReas->fetchAll(PDO::FETCH_COLUMN)
+            'reasons' => $queryReasons->fetchAll(PDO::FETCH_COLUMN)
         ];
     }
 
@@ -603,9 +603,9 @@ class BorrowDetails extends Database
     public function getBooksDueToday()
     {
         $sql = "SELECT bd.*, u.fName, u.lName, b.book_title, b.book_condition FROM borrowing_details bd JOIN users u ON bd.userID = u.userID JOIN books b ON bd.bookID = b.bookID WHERE bd.borrow_status = 'Borrowed' AND DATE(bd.expected_return_date) = CURDATE() ORDER BY u.lName, u.fName";
-        $stmt = $this->connect()->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function fetchTotalBorrowedBooks($userID)

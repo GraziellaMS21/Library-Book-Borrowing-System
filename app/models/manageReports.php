@@ -3,31 +3,38 @@ require_once(__DIR__ . "/../../config/database.php");
 
 class Reports extends Database
 {
-    public function getMonthlyBorrowReturnTrend()
+    public function getMonthlyBorrowReturnTrend($year = null)
     {
+        $yearCondition = $year ? "AND YEAR(request_date) = :year" : "AND YEAR(request_date) = YEAR(CURDATE())";
+        $yearConditionRet = $year ? "AND YEAR(return_date) = :year" : "AND YEAR(return_date) = YEAR(CURDATE())";
+
         $sql = "SELECT 
                     Months.month,
                     COALESCE(SUM(b.total_borrows), 0) AS total_borrows,
                     COALESCE(SUM(r.total_returns), 0) AS total_returns
                 FROM (
-                    SELECT DATE_FORMAT(CURDATE() - INTERVAL (n.n - 1) MONTH, '%M') AS month
+                    SELECT DATE_FORMAT(STR_TO_DATE(CONCAT('2000-', n.n, '-01'), '%Y-%m-%d'), '%M') AS month
                     FROM (SELECT 1 AS n UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10 UNION ALL SELECT 11 UNION ALL SELECT 12) AS n
                 ) AS Months
                 LEFT JOIN (
                     SELECT DATE_FORMAT(request_date, '%M') AS month, SUM(no_of_copies) AS total_borrows
                     FROM borrowing_details
-                    WHERE (borrow_request_status = 'Approved' OR borrow_status IN ('Borrowed', 'Returned'))
+                    WHERE (borrow_request_status = 'Approved' OR borrow_status IN ('Borrowed', 'Returned')) $yearCondition
                     GROUP BY DATE_FORMAT(request_date, '%M')
                 ) AS b ON Months.month = b.month
                 LEFT JOIN (
                     SELECT DATE_FORMAT(return_date, '%M') AS month, SUM(no_of_copies) AS total_returns
                     FROM borrowing_details
-                    WHERE borrow_status = 'Returned'
+                    WHERE borrow_status = 'Returned' $yearConditionRet
                     GROUP BY DATE_FORMAT(return_date, '%M')
                 ) AS r ON Months.month = r.month
                 GROUP BY Months.month
                 ORDER BY STR_TO_DATE(CONCAT('01 ', Months.month, ' 2000'), '%d %M %Y') ASC";
+
         $query = $this->connect()->prepare($sql);
+        if ($year) {
+            $query->bindValue(':year', $year);
+        }
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -67,41 +74,39 @@ class Reports extends Database
 
     public function getBorrowingByDepartment()
     {
-        $sql = "
-        SELECT 
-            d.department_name AS department,
-            COUNT(bd.borrowID) AS total_borrowed
-        FROM departments d
-        LEFT JOIN users u 
-            ON u.departmentID = d.departmentID
-        LEFT JOIN borrowing_details bd 
-            ON bd.userID = u.userID
-            AND bd.borrow_request_status = 'Approved'
-        GROUP BY d.department_name
-        ORDER BY total_borrowed DESC
-    ";
-
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $sql = "SELECT 
+                    d.department_name AS department,
+                    COUNT(bd.borrowID) AS total_borrowed
+                FROM departments d
+                LEFT JOIN users u ON u.departmentID = d.departmentID
+                LEFT JOIN borrowing_details bd ON bd.userID = u.userID AND bd.borrow_request_status = 'Approved'
+                GROUP BY d.department_name
+                ORDER BY total_borrowed DESC";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
     }
 
 
-    public function getMonthlyFineCollectionTrend()
+    public function getMonthlyFineCollectionTrend($year = null)
     {
+        $yearCondition = $year ? "AND YEAR(date_created) = :year" : "AND YEAR(date_created) = YEAR(CURDATE())";
+
         $sql = "SELECT 
                     Months.month,
                     COALESCE(SUM(f_paid.total_fines), 0) AS total_collected,
                     COALESCE(SUM(f_unpaid.total_fines), 0) AS total_uncollected
                 FROM (
-                    SELECT DATE_FORMAT(CURDATE() - INTERVAL (n.n - 1) MONTH, '%M') AS month
+                    SELECT DATE_FORMAT(STR_TO_DATE(CONCAT('2000-', n.n, '-01'), '%Y-%m-%d'), '%M') AS month
                     FROM (SELECT 1 AS n UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10 UNION ALL SELECT 11 UNION ALL SELECT 12) AS n
                 ) AS Months
-                LEFT JOIN ( SELECT DATE_FORMAT(f.date_created, '%M') AS month, SUM(f.fine_amount) AS total_fines FROM fines f WHERE f.fine_status = 'Paid' GROUP BY DATE_FORMAT(f.date_created, '%M') ) AS f_paid ON Months.month = f_paid.month
-                LEFT JOIN ( SELECT DATE_FORMAT(f.date_created, '%M') AS month, SUM(f.fine_amount) AS total_fines FROM fines f WHERE f.fine_status = 'Unpaid' GROUP BY DATE_FORMAT(f.date_created, '%M') ) AS f_unpaid ON Months.month = f_unpaid.month
+                LEFT JOIN ( SELECT DATE_FORMAT(f.date_created, '%M') AS month, SUM(f.fine_amount) AS total_fines FROM fines f WHERE f.fine_status = 'Paid' $yearCondition GROUP BY DATE_FORMAT(f.date_created, '%M') ) AS f_paid ON Months.month = f_paid.month
+                LEFT JOIN ( SELECT DATE_FORMAT(f.date_created, '%M') AS month, SUM(f.fine_amount) AS total_fines FROM fines f WHERE f.fine_status = 'Unpaid' $yearCondition GROUP BY DATE_FORMAT(f.date_created, '%M') ) AS f_unpaid ON Months.month = f_unpaid.month
                 GROUP BY Months.month ORDER BY STR_TO_DATE(CONCAT('01 ', Months.month, ' 2000'), '%d %M %Y') ASC";
         $query = $this->connect()->prepare($sql);
+        if ($year) {
+            $query->bindValue(':year', $year);
+        }
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -227,14 +232,19 @@ class Reports extends Database
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getMonthlyUserRegistrationTrend()
+    public function getMonthlyUserRegistrationTrend($year = null)
     {
+        $yearCondition = $year ? "AND YEAR(date_registered) = :year" : "AND YEAR(date_registered) = YEAR(CURDATE())";
+
         $sql = "SELECT DATE_FORMAT(date_registered, '%M') AS month, COUNT(userID) AS new_users 
                 FROM users 
-                WHERE date_registered >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH) 
+                WHERE 1=1 $yearCondition
                 GROUP BY DATE_FORMAT(date_registered, '%M') 
-                ORDER BY month ASC";
+                ORDER BY DATE_FORMAT(date_registered, '%m') ASC";
         $query = $this->connect()->prepare($sql);
+        if ($year) {
+            $query->bindValue(':year', $year);
+        }
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -323,42 +333,42 @@ class Reports extends Database
 
     public function getOverdueBooksSummary()
     {
-        $sql = "
-        SELECT 
-            b.book_title,
-            u.fName,
-            u.lName,
-            bd.expected_return_date,
-            bd.return_date,
-            f.fine_status,
-            DATEDIFF(CURDATE(), bd.expected_return_date) AS days_overdue,
-            f.fine_amount,
-            bd.borrow_status
-        FROM borrowing_details bd
-        INNER JOIN fines f ON bd.borrowID = f.borrowID
-        INNER JOIN users u ON bd.userID = u.userID
-        INNER JOIN books b ON bd.bookID = b.bookID
-        WHERE 
-            f.fine_status = 'Unpaid' OR f.fine_status = 'Paid'
-        ORDER BY days_overdue DESC
-    ";
-
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $sql = "SELECT 
+                    b.book_title,
+                    u.fName,
+                    u.lName,
+                    bd.expected_return_date,
+                    bd.return_date,
+                    f.fine_status,
+                    DATEDIFF(CURDATE(), bd.expected_return_date) AS days_overdue,
+                    f.fine_amount,
+                    bd.borrow_status
+                FROM borrowing_details bd
+                INNER JOIN fines f ON bd.borrowID = f.borrowID
+                INNER JOIN users u ON bd.userID = u.userID
+                INNER JOIN books b ON bd.bookID = b.bookID
+                WHERE f.fine_status = 'Unpaid' OR f.fine_status = 'Paid'
+                ORDER BY days_overdue DESC";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
     }
 
 
-    public function getLateReturnsTrend()
+    public function getLateReturnsTrend($year = null)
     {
+        $yearCondition = $year ? "AND YEAR(return_date) = :year" : "AND YEAR(return_date) = YEAR(CURDATE())";
+
         $sql = "SELECT DATE_FORMAT(return_date, '%M') AS month, COUNT(borrowID) AS late_returns 
                 FROM borrowing_details 
                 WHERE borrow_status = 'Returned' AND return_date > expected_return_date 
-                  AND return_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH) 
+                  $yearCondition
                 GROUP BY DATE_FORMAT(return_date, '%M') 
-                ORDER BY month ASC";
+                ORDER BY DATE_FORMAT(return_date, '%m') ASC";
         $query = $this->connect()->prepare($sql);
+        if ($year) {
+            $query->bindValue(':year', $year);
+        }
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }

@@ -75,7 +75,7 @@ class User extends Database
     {
         $whereConditions = [];
 
-        // [MODIFIED] Always filter out deleted users
+        // Always filter out deleted users
         $whereConditions[] = "u.is_removed = 0";
 
         $dbStatus = ucfirst($statusFilter);
@@ -171,7 +171,7 @@ class User extends Database
     public function isEmailExist($email, $userID = "")
     {
         if ($userID) {
-            // [MODIFIED] Check is_removed
+            // Check is_removed
             $sql = "SELECT COUNT(userID) as total_users FROM users WHERE email = :email AND userID <> :userID AND is_removed = 0";
         } else {
             $sql = "SELECT COUNT(userID) as total_users FROM users WHERE email = :email AND is_removed = 0";
@@ -212,10 +212,10 @@ class User extends Database
                        WHERE h.userID = :userID 
                        ORDER BY h.created_at DESC LIMIT 1";
 
-        $qHist = $this->connect()->prepare($sqlHistory);
-        $qHist->bindParam(':userID', $userID);
-        $qHist->execute();
-        $history = $qHist->fetch(PDO::FETCH_ASSOC);
+        $queryHistory = $this->connect()->prepare($sqlHistory);
+        $queryHistory->bindParam(':userID', $userID);
+        $queryHistory->execute();
+        $history = $queryHistory->fetch(PDO::FETCH_ASSOC);
 
         if (!$history)
             return ['remarks' => '', 'reasons' => [], 'admin_name' => 'System', 'date' => ''];
@@ -223,13 +223,13 @@ class User extends Database
         $sqlReasons = "SELECT r.reason_text FROM user_status_event_reasons e 
                        JOIN ref_status_reasons r ON e.reasonID = r.reasonID 
                        WHERE e.historyID = :historyID";
-        $qReas = $this->connect()->prepare($sqlReasons);
-        $qReas->bindParam(':historyID', $history['historyID']);
-        $qReas->execute();
+        $queryReasons = $this->connect()->prepare($sqlReasons);
+        $queryReasons->bindParam(':historyID', $history['historyID']);
+        $queryReasons->execute();
 
         return [
             'remarks' => $history['additional_remarks'],
-            'reasons' => $qReas->fetchAll(PDO::FETCH_COLUMN),
+            'reasons' => $queryReasons->fetchAll(PDO::FETCH_COLUMN),
             'admin_name' => $history['admin_name'] ?? 'System/Unknown',
             'date' => $history['created_at']
         ];
@@ -267,8 +267,8 @@ class User extends Database
 
             // 2. Insert into History with performed_by
             $sqlHist = "INSERT INTO user_status_history (userID, action_type, additional_remarks, performed_by) VALUES (:uid, :action, :remarks, :adminID)";
-            $stmtHist = $this->db->prepare($sqlHist);
-            $stmtHist->execute([
+            $queryHist = $this->db->prepare($sqlHist);
+            $queryHist->execute([
                 ':uid' => $userID,
                 ':action' => $actionType,
                 ':remarks' => $remarks,
@@ -279,9 +279,9 @@ class User extends Database
             // 3. Insert Reasons (Loop through IDs)
             if (!empty($reasonIDs)) {
                 $sqlEvent = "INSERT INTO user_status_event_reasons (historyID, reasonID) VALUES (:hid, :rid)";
-                $stmtEvent = $this->db->prepare($sqlEvent);
+                $queryEvent = $this->db->prepare($sqlEvent);
                 foreach ($reasonIDs as $rid) {
-                    $stmtEvent->execute([':hid' => $historyID, ':rid' => $rid]);
+                    $queryEvent->execute([':hid' => $historyID, ':rid' => $rid]);
                 }
             }
 
@@ -308,7 +308,7 @@ class User extends Database
             return false;
         }
 
-        // [MODIFIED] Changed DELETE to UPDATE is_removed
+        // Changed DELETE to UPDATE is_removed
         $sql = "UPDATE users SET is_removed = 1 WHERE userID = :userID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":userID", $userID);
@@ -317,7 +317,7 @@ class User extends Database
 
     public function countTotalActiveBorrowers()
     {
-        // [MODIFIED] Added is_removed filter
+        // Added is_removed filter
         $sql = "SELECT COUNT(u.userID) AS total_borrowers FROM users u JOIN user_roles ur ON u.roleID = ur.roleID WHERE ur.role_name = 'Borrower' AND u.account_status = 'Active' AND u.is_removed = 0";
         $query = $this->connect()->prepare($sql);
         $query->execute();
@@ -327,7 +327,7 @@ class User extends Database
 
     public function countPendingUsers()
     {
-        // [MODIFIED] Added is_removed filter
+        // Added is_removed filter
         $sql = "SELECT COUNT(u.userID) AS total_pending FROM users u JOIN user_roles ur ON u.roleID = ur.roleID WHERE u.registration_status = 'Pending' AND ur.role_name = 'Borrower' AND u.is_removed = 0";
         $query = $this->connect()->prepare($sql);
         $query->execute();
@@ -337,7 +337,7 @@ class User extends Database
 
     public function getUserRegistrationTrend()
     {
-        // [MODIFIED] Optional: filter removed users from statistics? Usually yes.
+        // Optional: filter removed users from statistics? Usually yes.
         $sql = "SELECT DATE(date_registered) AS reg_date, COUNT(userID) AS new_users FROM users WHERE date_registered >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND is_removed = 0 GROUP BY DATE(date_registered) ORDER BY reg_date ASC";
         $query = $this->connect()->prepare($sql);
         $query->execute();

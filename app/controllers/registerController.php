@@ -13,9 +13,8 @@ require_once __DIR__ . '/../libraries/phpmailer/src/SMTP.php';
 $registerObj = new Register();
 $errors = [];
 $register = [];
-$action = $_GET['action'] ?? 'register'; // Default to register if no action
+$action = $_GET['action'] ?? 'register';
 
-// Helper function to send email (Same format as forgotPassController)
 function sendOtpEmail($email, $name, $otp)
 {
     try {
@@ -50,10 +49,6 @@ EOT;
         return false;
     }
 }
-
-// ==========================================================
-// ACTION 1: REGISTER (Submit Form)
-// ==========================================================
 if ($action === 'register' && $_SERVER["REQUEST_METHOD"] == "POST") {
 
     $register["borrowerTypeID"] = trim(htmlspecialchars($_POST["borrowerTypeID"] ?? ''));
@@ -167,6 +162,7 @@ if ($action === 'register' && $_SERVER["REQUEST_METHOD"] == "POST") {
     $_SESSION["old"] = $register;
     header("Location: ../../app/views/borrower/register.php");
     exit;
+
 }
 
 // ==========================================================

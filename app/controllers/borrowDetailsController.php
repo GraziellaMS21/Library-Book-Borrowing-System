@@ -132,7 +132,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $errors["general"] = "Failed to edit detail due to a database error.";
             }
 
-        // --- RETURN ACTION ---
+            // --- RETURN ACTION ---
         } elseif ($action === 'return' && $borrowID) {
             if (!isset($current_detail) || !$current_detail) {
                 $errors['general'] = "Cannot find loan detail to process return.";
@@ -157,7 +157,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             }
             if (empty($errors) && $borrowObj->editBorrowDetail($borrowID)) {
-                
+
                 // ADDED: Log History
                 $borrowObj->addBorrowStatusHistory($borrowID, 'Return', "Condition: {$detail['returned_condition']}", [], $currentAdminID);
 
@@ -167,7 +167,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $errors["general"] = $errors["general"] ?? "Failed to complete book return process.";
             }
 
-        // --- PAID ACTION ---
+            // --- PAID ACTION ---
         } elseif ($action === 'paid' && $borrowID) {
             if (!isset($current_detail) || !$current_detail) {
                 $errors['general'] = "Cannot find loan detail to process payment.";
@@ -193,7 +193,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             }
             if (empty($errors) && $borrowObj->editBorrowDetail($borrowID)) {
-                
+
                 // ADDED: Log History
                 $borrowObj->addBorrowStatusHistory($borrowID, 'Paid', "Fine Paid & Returned. Condition: {$detail['returned_condition']}", [], $currentAdminID);
 
@@ -203,7 +203,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $errors["general"] = $errors["general"] ?? "Failed to complete book return process.";
             }
 
-        // --- BLOCK USER ACTION (Updated for 3NF) ---
+            // --- BLOCK USER ACTION (Updated for 3NF) ---
         } elseif ($action === 'blockUser' && $borrowID) {
             $userID_to_block = $borrowObj->userID;
 
@@ -216,8 +216,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 $reasonTexts = $borrowObj->getReasonTexts($reasonIDs);
                 $emailReasonStr = implode(', ', $reasonTexts);
-                if($remarks) $emailReasonStr .= " (" . $remarks . ")";
-                if(empty($emailReasonStr)) $emailReasonStr = "Violation of library policies.";
+                if ($remarks)
+                    $emailReasonStr .= " (" . $remarks . ")";
+                if (empty($emailReasonStr))
+                    $emailReasonStr = "Violation of library policies.";
 
                 try {
                     $mail->isSMTP();
@@ -255,7 +257,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
 EOT;
                     $mail->send();
-                } catch (Exception $e) {}
+                } catch (Exception $e) {
+                }
 
                 header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab=borrowed&success=blocked");
                 exit;
@@ -263,7 +266,7 @@ EOT;
                 $errors["general"] = "Failed to block user.";
             }
 
-        // --- UNBLOCK ACTION (Updated) ---
+            // --- UNBLOCK ACTION (Updated) ---
         } elseif ($action === 'unblockUser' && $borrowID) {
             $existing_detail = $borrowObj->fetchBorrowDetail($borrowID);
             if (!$existing_detail) {
@@ -291,10 +294,11 @@ EOT;
                     $mail = new PHPMailer(true);
                     $fullName = htmlspecialchars($existing_detail["fName"] . ' ' . $existing_detail["lName"]);
                     $userEmail = $existing_detail["email"];
-                    
+
                     $reasonTexts = $borrowObj->getReasonTexts($reasonIDs);
                     $emailReasonStr = implode(', ', $reasonTexts);
-                    if($remarks) $emailReasonStr .= " (" . $remarks . ")";
+                    if ($remarks)
+                        $emailReasonStr .= " (" . $remarks . ")";
 
                     try {
                         $mail->isSMTP();
@@ -329,7 +333,8 @@ EOT;
                     </div>
 EOT;
                         $mail->send();
-                    } catch (Exception $e) {}
+                    } catch (Exception $e) {
+                    }
                     header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}&success=unblocked");
                     exit;
                 } else {
@@ -337,7 +342,7 @@ EOT;
                 }
             }
 
-        // --- CANCEL AND REJECT ACTIONS (Updated) ---
+            // --- CANCEL AND REJECT ACTIONS (Updated) ---
         } elseif (in_array($action, ['reject', 'cancel'])) {
 
             $final_redirect_tab = $current_tab;
@@ -365,7 +370,7 @@ EOT;
             }
 
             if ($borrowObj->editBorrowDetail($borrowID)) {
-                
+
                 // Passed Admin ID
                 $actionType = ($action === 'reject') ? 'Reject' : 'Cancel';
                 $borrowObj->addBorrowStatusHistory($borrowID, $actionType, $remarks, $reasonIDs, $currentAdminID);
@@ -373,8 +378,10 @@ EOT;
                 // Build Notification String
                 $reasonTexts = $borrowObj->getReasonTexts($reasonIDs);
                 $reasonStr = implode(', ', $reasonTexts);
-                if($remarks) $reasonStr .= " (" . $remarks . ")";
-                if(empty($reasonStr)) $reasonStr = "Reason not specified.";
+                if ($remarks)
+                    $reasonStr .= " (" . $remarks . ")";
+                if (empty($reasonStr))
+                    $reasonStr = "Reason not specified.";
 
                 $notificationObj->userID = $borrowerUserID;
                 $notificationObj->title = ($action === 'reject') ? "Request Rejected" : "Request Cancelled";
@@ -478,7 +485,7 @@ if ($borrowID) {
         }
 
         if ($borrowObj->editBorrowDetail($borrowID)) {
-            
+
             // ADDED: Log History for Accept/Pickup
             $actionType = ($action === 'accept') ? 'Approve' : 'Pickup';
             $borrowObj->addBorrowStatusHistory($borrowID, $actionType, null, [], $currentAdminID);

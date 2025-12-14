@@ -5,7 +5,7 @@ class Book extends Database
 {
     public $book_title = "";
     public $categoryID = "";
-    public $publication_name = ""; 
+    public $publication_name = "";
     public $publication_year = "";
     public $ISBN = "";
     public $book_copies = "";
@@ -18,9 +18,11 @@ class Book extends Database
     protected $db;
 
     // --- HELPER FUNCTION FOR AUTHOR FORMATTING ---
-    private function formatAuthorString($author_names) {
-        if (empty($author_names)) return "";
-        
+    private function formatAuthorString($author_names)
+    {
+        if (empty($author_names))
+            return "";
+
         $authors = explode(', ', $author_names);
         $count = count($authors);
 
@@ -43,7 +45,7 @@ class Book extends Database
 
             $sql = "INSERT INTO books (book_title, publisherID, categoryID, publication_year, ISBN, book_copies, book_condition, date_added, book_cover_name, book_cover_dir, replacement_cost) 
                     VALUES (:book_title, :publisherID, :categoryID, :publication_year, :ISBN, :book_copies, :book_condition, :date_added, :book_cover_name, :book_cover_dir, :replacement_cost)";
-            
+
             $query = $pdo->prepare($sql);
             $query->bindValue(":book_title", $this->book_title);
             $query->bindValue(":publisherID", $pubID);
@@ -57,14 +59,14 @@ class Book extends Database
             $query->bindValue(":book_cover_dir", $this->book_cover_dir);
             $query->bindValue(":replacement_cost", $this->replacement_cost);
             $query->execute();
-            
+
             $newBookID = $pdo->lastInsertId();
 
             $sqlAuthor = "INSERT INTO book_authors (bookID, authorID) VALUES (:bookID, :authorID)";
             $stmtAuthor = $pdo->prepare($sqlAuthor);
 
             foreach ($authorsArray as $authorName) {
-                if(!empty(trim($authorName))) {
+                if (!empty(trim($authorName))) {
                     $authID = $this->getOrCreateAuthor($authorName);
                     $stmtAuthor->execute([':bookID' => $newBookID, ':authorID' => $authID]);
                 }
@@ -125,7 +127,7 @@ class Book extends Database
             $stmtAuthor = $pdo->prepare($sqlAuthor);
 
             foreach ($authorsArray as $authorName) {
-                if(!empty(trim($authorName))) {
+                if (!empty(trim($authorName))) {
                     $authID = $this->getOrCreateAuthor($authorName);
                     $stmtAuthor->execute([':bookID' => $pid, ':authorID' => $authID]);
                 }
@@ -150,7 +152,7 @@ class Book extends Database
             LEFT JOIN book_authors ba ON b.bookID = ba.bookID
             LEFT JOIN authors a ON ba.authorID = a.authorID";
 
-        // [MODIFIED] Added filter for soft delete
+        // Added filter for soft delete
         $conditions = ["b.is_removed = 0"];
 
         if ($search != "") {
@@ -192,13 +194,13 @@ class Book extends Database
 
     public function deleteBook($pid)
     {
-        // [MODIFIED] Changed DELETE to UPDATE is_removed
+        // Changed DELETE to UPDATE is_removed
         $sql = "UPDATE books SET is_removed = 1 WHERE bookID = :id";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":id", $pid);
         $result = $query->execute();
 
-        // [MODIFIED] Commented out file deletion so image persists if book is restored
+        // Commented out file deletion so image persists if book is restored
         /*
         $book = $this->fetchBook($pid);
         if ($result && $book && !empty($book['book_cover_dir'])) {
@@ -230,8 +232,8 @@ class Book extends Database
 
         if ($query->execute()) {
             $results = $query->fetchAll();
-             // Format author names for display
-             foreach ($results as &$row) {
+            // Format author names for display
+            foreach ($results as &$row) {
                 if (!empty($row['author_names'])) {
                     $row['author_names'] = $this->formatAuthorString($row['author_names']);
                 }
@@ -243,7 +245,8 @@ class Book extends Database
     }
 
     // Get raw array for editing
-    public function fetchBookAuthors($bookID) {
+    public function fetchBookAuthors($bookID)
+    {
         $sql = "SELECT a.author_name 
                 FROM authors a 
                 JOIN book_authors ba ON a.authorID = ba.authorID 
@@ -253,30 +256,37 @@ class Book extends Database
         return $query->fetchAll(PDO::FETCH_COLUMN);
     }
 
-    public function getOrCreatePublisher($name) {
+    public function getOrCreatePublisher($name)
+    {
         $name = trim($name);
-        $stmt = $this->connect()->prepare("SELECT publisherID FROM publishers WHERE publisher_name = :name");
-        $stmt->execute([':name' => $name]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($row) return $row['publisherID'];
-        $stmt = $this->connect()->prepare("INSERT INTO publishers (publisher_name) VALUES (:name)");
-        $stmt->execute([':name' => $name]);
+        $query = $this->connect()->prepare("SELECT publisherID FROM publishers WHERE publisher_name = :name");
+        $query->execute([':name' => $name]);
+        $row = $query->fetch(PDO::FETCH_ASSOC);
+        if ($row)
+            return $row['publisherID'];
+
+        $query = $this->connect()->prepare("INSERT INTO publishers (publisher_name) VALUES (:name)");
+        $query->execute([':name' => $name]);
         return $this->connect()->lastInsertId();
     }
 
-    public function getOrCreateAuthor($name) {
+    public function getOrCreateAuthor($name)
+    {
         $name = trim($name);
-        $stmt = $this->connect()->prepare("SELECT authorID FROM authors WHERE author_name = :name");
-        $stmt->execute([':name' => $name]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($row) return $row['authorID'];
-        $stmt = $this->connect()->prepare("INSERT INTO authors (author_name) VALUES (:name)");
-        $stmt->execute([':name' => $name]);
+        $query = $this->connect()->prepare("SELECT authorID FROM authors WHERE author_name = :name");
+        $query->execute([':name' => $name]);
+        $row = $query->fetch(PDO::FETCH_ASSOC);
+        if ($row)
+            return $row['authorID'];
+
+        $query = $this->connect()->prepare("INSERT INTO authors (author_name) VALUES (:name)");
+        $query->execute([':name' => $name]);
         return $this->connect()->lastInsertId();
     }
 
-    public function countTotalDistinctBooks() {
-        // [MODIFIED] Added is_removed filter
+    public function countTotalDistinctBooks()
+    {
+        // Added is_removed filter
         $sql = "SELECT COUNT(book_title) AS total_books FROM books WHERE is_removed = 0";
         $query = $this->connect()->prepare($sql);
         $query->execute();
@@ -284,8 +294,9 @@ class Book extends Database
         return $result['total_books'] ?? 0;
     }
 
-    public function countTotalBookCopies() {
-        // [MODIFIED] Added is_removed filter
+    public function countTotalBookCopies()
+    {
+        // Added is_removed filter
         $sql = "SELECT (SELECT SUM(book_copies) FROM books WHERE is_removed = 0) AS total_books";
         $query = $this->connect()->prepare($sql);
         $query->execute();
@@ -293,13 +304,15 @@ class Book extends Database
         return $result['total_books'] ?? 0;
     }
 
-    public function fetchCategory() {
-        // [MODIFIED] Added is_removed filter
+    public function fetchCategory()
+    {
+        // Added is_removed filter
         $sql = "SELECT * FROM category WHERE is_removed = 0";
         $query = $this->connect()->prepare($sql);
         if ($query->execute()) {
             return $query->fetchAll();
-        } else return null;
+        } else
+            return null;
     }
 
     public function fetchBook($bookID)
@@ -328,24 +341,27 @@ class Book extends Database
         return $result;
     }
 
-    public function fetchBookTitles() {
-        // [MODIFIED] Added is_removed filter
+    public function fetchBookTitles()
+    {
+        // Added is_removed filter
         $sql = "SELECT bookID, book_title FROM books WHERE is_removed = 0";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         return $query->fetchAll();
     }
 
-    public function isTitleExist($book_title, $bookID = "") {
+    public function isTitleExist($book_title, $bookID = "")
+    {
         if ($bookID) {
-            // [MODIFIED] Check is_removed so we can reuse names of deleted books
+            // Check is_removed so we can reuse names of deleted books
             $sql = "SELECT COUNT(bookID) as total_books FROM books WHERE book_title = :book_title AND bookID <> :bookID AND is_removed = 0";
         } else {
             $sql = "SELECT COUNT(bookID) as total_books FROM books WHERE book_title = :book_title AND is_removed = 0";
         }
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":book_title", $book_title);
-        if ($bookID) $query->bindParam(":bookID", $bookID);
+        if ($bookID)
+            $query->bindParam(":bookID", $bookID);
         if ($query->execute()) {
             $record = $query->fetch();
             return ($record["total_books"] > 0);
@@ -353,8 +369,8 @@ class Book extends Database
         return false;
     }
 
-    public function countBooksByCategory($categoryID) {
-        // [MODIFIED] Added is_removed filter
+    public function countBooksByCategory($categoryID)
+    {
         $sql = "SELECT COUNT(*) AS total FROM books WHERE categoryID = :categoryID AND is_removed = 0";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(':categoryID', $categoryID);
@@ -363,7 +379,8 @@ class Book extends Database
         return $result['total'] ?? 0;
     }
 
-    public function decrementBookCopies($bookID, $quantity) {
+    public function decrementBookCopies($bookID, $quantity)
+    {
         $sql = "UPDATE books SET book_copies = book_copies - :quantity WHERE bookID = :bookID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":quantity", $quantity);
@@ -371,7 +388,8 @@ class Book extends Database
         return $query->execute();
     }
 
-    public function incrementBookCopies($bookID, $quantity) {
+    public function incrementBookCopies($bookID, $quantity)
+    {
         $sql = "UPDATE books SET book_copies = book_copies + :quantity WHERE bookID = :bookID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":quantity", $quantity);
@@ -379,7 +397,8 @@ class Book extends Database
         return $query->execute();
     }
 
-    public function fetchBookReplacementCost($bookID) {
+    public function fetchBookReplacementCost($bookID)
+    {
         $sql = "SELECT replacement_cost FROM books WHERE bookID = :bookID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":bookID", $bookID, PDO::PARAM_INT);
@@ -387,7 +406,8 @@ class Book extends Database
         return (float) $query->fetchColumn(0);
     }
 
-    public function getTopPopularCategories($limit = 5) {
+    public function getTopPopularCategories($limit = 5)
+    {
         $sql = "SELECT c.category_name, COUNT(bd.borrowID) AS borrow_count
                 FROM borrowing_details bd
                 JOIN books b ON bd.bookID = b.bookID
@@ -401,7 +421,8 @@ class Book extends Database
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getTopCategoryName() {
+    public function getTopCategoryName()
+    {
         $sql = "SELECT c.category_name
                 FROM borrowing_details bd
                 JOIN books b ON bd.bookID = b.bookID

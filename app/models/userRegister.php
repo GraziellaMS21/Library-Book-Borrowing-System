@@ -44,11 +44,9 @@ class Register extends Database
         $query->bindParam(":email", $this->email);
         $query->bindParam(":password", $this->password);
 
-        // $role = 'Borrower'; // Removed in 3NF
         // Set initial status to Unverified so they can't login yet
         $this->registration_status = "Unverified";
 
-        // $query->bindParam(":role", $role); // Removed in 3NF
         $query->bindParam(":borrowerTypeID", $this->borrowerTypeID);
         $query->bindParam(":date_registered", $this->date_registered);
         $query->bindParam(":registration_status", $this->registration_status);

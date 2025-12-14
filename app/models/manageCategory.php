@@ -16,7 +16,7 @@ class Category extends Database
 
     public function viewCategory()
     {
-        // [MODIFIED] Added is_removed filter
+        // Added is_removed filter
         $sql = "SELECT * FROM category WHERE is_removed = 0 ORDER BY category_name ASC";
         $query = $this->connect()->prepare($sql);
 
@@ -39,7 +39,7 @@ class Category extends Database
 
     public function deleteCategory($cid)
     {
-        // [MODIFIED] Changed DELETE to UPDATE is_removed
+        // Changed DELETE to UPDATE is_removed
         $sql = "UPDATE category SET is_removed = 1 WHERE categoryID = :id";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":id", $cid);
@@ -60,7 +60,7 @@ class Category extends Database
     public function isCategoryExist($category_name, $categoryID = "")
     {
         if ($categoryID) {
-            // [MODIFIED] Check is_removed
+            // Check is_removed
             $sql = "SELECT COUNT(*) as total_categories FROM category WHERE category_name = :category_name AND categoryID <> :categoryID AND is_removed = 0";
         } else {
             $sql = "SELECT COUNT(*) as total_categories FROM category WHERE category_name = :category_name AND is_removed = 0";

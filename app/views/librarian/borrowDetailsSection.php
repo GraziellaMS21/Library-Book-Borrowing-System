@@ -101,7 +101,7 @@ unset($detail);
 <div class="w-full h-screen flex flex-col">
     <?php require_once(__DIR__ . '/../shared/dashboardHeader.php'); ?>
 
-    <div class="w-full h-screen flex flex-col">
+    <div class="w-full h-full flex flex-col overflow-y-auto">
         <div class="section manage_users ">
             <div class="title flex w-full items-center justify-between mb-4">
                 <h1 class="text-red-800 font-bold text-4xl">MANAGE BORROW DETAILS</h1>

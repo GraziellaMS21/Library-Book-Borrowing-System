@@ -22,7 +22,9 @@ $user_id = $_SESSION['user_id'];
 
 // --- REPORT TYPE ---
 $report_type = $_GET['report_type'] ?? 'general';
-$report_title = 'General Library Report';
+$selected_year = $_GET['year'] ?? date('Y');
+
+$report_title = 'General Library Report (' . $selected_year . ')';
 if ($report_type === 'books')
     $report_title = 'Complete Book Inventory';
 if ($report_type === 'users')
@@ -45,17 +47,17 @@ if ($report_type === 'general') {
     $avg_borrowing_per_user = ($total_borrowers > 0) ? ($summary_total_borrows_ever / $total_borrowers) : 0;
 
     // Charts Data
-    $monthly_borrow_return_trend = $reportsObj->getMonthlyBorrowReturnTrend();
+    $monthly_borrow_return_trend = $reportsObj->getMonthlyBorrowReturnTrend($selected_year);
     $top_5_books = $reportsObj->getTopBorrowedBooks(5);
     $borrowing_by_department = $reportsObj->getBorrowingByDepartment();
-    $monthly_fine_collection_trend = $reportsObj->getMonthlyFineCollectionTrend();
+    $monthly_fine_collection_trend = $reportsObj->getMonthlyFineCollectionTrend($selected_year);
     $top_5_unpaid_fines = $reportsObj->getTopUnpaidFinesUsers(5);
     $top_5_borrowers = $reportsObj->getTopActiveBorrowers(5);
-    $monthly_user_reg_trend = $reportsObj->getMonthlyUserRegistrationTrend();
+    $monthly_user_reg_trend = $reportsObj->getMonthlyUserRegistrationTrend($selected_year);
     $borrower_type_breakdown = $reportsObj->getBorrowerTypeBreakdown();
     $book_status_overview = $reportsObj->getBookStatusOverview();
     $books_per_category = $reportsObj->getBooksPerCategory();
-    $late_returns_trend = $reportsObj->getLateReturnsTrend();
+    $late_returns_trend = $reportsObj->getLateReturnsTrend($selected_year);
     $top_5_categories = $reportsObj->getTopPopularCategories(5);
     $overdue_books_summary = $reportsObj->getOverdueBooksSummary();
     $lost_books_summary = $reportsObj->getLostBooksDetails();
@@ -427,8 +429,19 @@ if ($report_type === 'categories') {
                 </div>
 
                 <div class="mt-8 page-break-inside-avoid">
-                    <h3 class="font-bold text-lg mb-2">Overdue Books Summary Table</h3>
-                    <table class="w-full text-sm">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-lg">Overdue Books Summary Table</h3>
+                        <div class="no-print spacing-x-2">
+                            <span class="text-sm font-semibold mr-2">Filter:</span>
+                            <button onclick="filterTable('overdueTable', 'all')"
+                                class="bg-gray-200 px-2 py-1 text-xs rounded hover:bg-gray-300">All</button>
+                            <button onclick="filterTable('overdueTable', 'Paid')"
+                                class="bg-gray-200 px-2 py-1 text-xs rounded hover:bg-gray-300">Paid Only</button>
+                            <button onclick="filterTable('overdueTable', 'Unpaid')"
+                                class="bg-gray-200 px-2 py-1 text-xs rounded hover:bg-gray-300">Unpaid Only</button>
+                        </div>
+                    </div>
+                    <table class="w-full text-sm" id="overdueTable">
                         <thead>
                             <tr>
                                 <th>Book Title</th>
@@ -445,12 +458,18 @@ if ($report_type === 'categories') {
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($overdue_books_summary as $item): ?>
-                                    <tr>
+                                    <tr data-status="<?= htmlspecialchars($item['fine_status']) ?>">
                                         <td><?= htmlspecialchars($item['book_title']) ?></td>
                                         <td><?= htmlspecialchars($item['fName'] . ' ' . $item['lName']) ?></td>
                                         <td><?= htmlspecialchars($item['expected_return_date']) ?></td>
                                         <td class="text-center"><?= htmlspecialchars($item['days_overdue']) ?></td>
-                                        <td class="font-bold text-right"><?= number_format($item['fine_amount'], 2) ?></td>
+                                        <td class="font-bold text-right">
+                                            <?= number_format($item['fine_amount'], 2) ?>
+                                            <span
+                                                class="text-xs ml-1 <?= $item['fine_status'] == 'Unpaid' ? 'text-red-600' : 'text-green-600' ?>">
+                                                (<?= $item['fine_status'] ?>)
+                                            </span>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -737,6 +756,24 @@ if ($report_type === 'categories') {
         </script>
     <?php endif; ?>
 
+
+    <script>
+        function filterTable(tableId, status) {
+            const table = document.getElementById(tableId);
+            const rows = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < rows.length; i++) { // Skip header
+                const row = rows[i];
+                if (row.hasAttribute('data-status')) {
+                    if (status === 'all' || row.getAttribute('data-status') === status) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            }
+        }
+    </script>
 </body>
 
 </html>
