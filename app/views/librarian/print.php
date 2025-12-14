@@ -58,6 +58,7 @@ if ($report_type === 'general') {
     $late_returns_trend = $reportsObj->getLateReturnsTrend();
     $top_5_categories = $reportsObj->getTopPopularCategories(5);
     $overdue_books_summary = $reportsObj->getOverdueBooksSummary();
+    $lost_books_summary = $reportsObj->getLostBooksDetails();
 }
 
 // 2. BOOK LIST DATA
@@ -94,7 +95,9 @@ if ($report_type === 'categories') {
         @media print {
             @page {
                 /* Use landscape for wide tables (Books/Users), Portrait for General/Categories */
-                size: <?= ($report_type == 'books' || $report_type == 'users') ? 'landscape' : 'auto' ?>;
+                size:
+                    <?= ($report_type == 'books' || $report_type == 'users') ? 'landscape' : 'auto' ?>
+                ;
                 margin: 0.5in;
             }
 
@@ -102,7 +105,7 @@ if ($report_type === 'categories') {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
                 background-color: white;
-                display: block; 
+                display: block;
             }
 
             .no-print {
@@ -120,17 +123,21 @@ if ($report_type === 'categories') {
             table {
                 width: 100%;
                 border-collapse: collapse;
-                font-size: 10pt; /* Smaller font for print to fit more columns */
+                font-size: 10pt;
+                /* Smaller font for print to fit more columns */
             }
 
-            th, td {
+            th,
+            td {
                 border: 1px solid #ddd;
-                padding: 4px 8px; /* Tighter padding for print */
+                padding: 4px 8px;
+                /* Tighter padding for print */
                 text-align: left;
             }
 
             th {
-                background-color: #f3f4f6 !important; /* Force background color */
+                background-color: #f3f4f6 !important;
+                /* Force background color */
                 color: #1f2937;
                 font-weight: bold;
             }
@@ -161,15 +168,16 @@ if ($report_type === 'categories') {
             /* FIX FOR CHART OVERFLOW */
             .chart-wrapper {
                 position: relative;
-                height: 200px !important; /* Fixed height for print */
+                height: 200px !important;
+                /* Fixed height for print */
                 width: 100% !important;
             }
-            
+
             canvas {
                 max-width: 100% !important;
                 max-height: 100% !important;
             }
-            
+
             .page-break {
                 page-break-before: always;
             }
@@ -182,7 +190,8 @@ if ($report_type === 'categories') {
             margin-top: 1rem;
         }
 
-        th, td {
+        th,
+        td {
             border: 1px solid #e5e7eb;
             padding: 0.75rem;
             text-align: left;
@@ -205,10 +214,11 @@ if ($report_type === 'categories') {
             margin-top: 2rem;
             margin-bottom: 1rem;
         }
-        
+
         .chart-wrapper {
             position: relative;
-            height: 300px; /* View height on screen */
+            height: 300px;
+            /* View height on screen */
             width: 100%;
         }
     </style>
@@ -221,7 +231,7 @@ if ($report_type === 'categories') {
     </div>
 
     <div class="container mx-auto p-4">
-        
+
         <div class="flex flex-col items-center justify-center mb-6 border-b-2 border-red-900 pb-4">
             <h1 class="text-red-900 font-bold text-3xl uppercase text-center tracking-wide">
                 <?= htmlspecialchars($report_title) ?>
@@ -230,7 +240,7 @@ if ($report_type === 'categories') {
         </div>
 
         <?php if ($report_type === 'general'): ?>
-            
+
             <div id="overview">
                 <h2 class="report-section-header">1. EXECUTIVE SUMMARY</h2>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-6">
@@ -248,7 +258,8 @@ if ($report_type === 'categories') {
                     </div>
                     <div class="p-4 border rounded bg-gray-50">
                         <p class="text-gray-500 text-xs uppercase font-bold">Total Fines Collected</p>
-                        <p class="text-xl font-bold text-red-800">₱<?= number_format($fine_collection_summary['total_collected'] ?? 0, 2) ?></p>
+                        <p class="text-xl font-bold text-red-800">
+                            ₱<?= number_format($fine_collection_summary['total_collected'] ?? 0, 2) ?></p>
                     </div>
                     <div class="p-4 border rounded bg-gray-50">
                         <p class="text-gray-500 text-xs uppercase font-bold">Borrowed Books</p>
@@ -260,7 +271,9 @@ if ($report_type === 'categories') {
                     </div>
                     <div class="p-4 border rounded bg-gray-50">
                         <p class="text-gray-500 text-xs uppercase font-bold">Total Categories</p>
-                        <p class="text-xl font-bold"><?= htmlspecialchars($summary_total_categories['total_categories'] ?? 0) ?></p>
+                        <p class="text-xl font-bold">
+                            <?= htmlspecialchars($summary_total_categories['total_categories'] ?? 0) ?>
+                        </p>
                     </div>
                     <div class="p-4 border rounded bg-gray-50">
                         <p class="text-gray-500 text-xs uppercase font-bold">On-Time Return Rate</p>
@@ -269,7 +282,7 @@ if ($report_type === 'categories') {
                 </div>
             </div>
 
-            <div id="user-activity" >
+            <div id="user-activity">
                 <h2 class="report-section-header">2. USER & BORROWING ACTIVITY</h2>
                 <div class="grid grid-cols-2 gap-6">
                     <div class="report-chart-container">
@@ -290,22 +303,42 @@ if ($report_type === 'categories') {
                             <canvas id="topBorrowersChart"></canvas>
                         </div>
                     </div>
-                    <div class="report-chart-container">
-                        <h3 class="font-bold text-center mb-2">Borrowing by Department</h3>
+                    <div class="report-chart-container lg:col-span-2">
+                        <h3 class="font-bold text-center mb-2">Borrower Type Breakdown</h3>
                         <div class="chart-wrapper">
-                            <canvas id="borrowByDeptChart"></canvas>
+                            <canvas id="borrowerTypeChart"></canvas>
                         </div>
                     </div>
                 </div>
-                <div class="report-chart-container mt-4">
-                    <h3 class="font-bold text-center mb-2">Borrower Type Breakdown</h3>
-                    <div class="chart-wrapper" style="height: 350px;">
-                        <canvas id="borrowerTypeChart"></canvas>
-                    </div>
+                <div class="mt-4">
+                    <h3 class="font-bold text-center mb-2">Borrowing Activity by Department</h3>
+                    <table class="w-full text-sm text-center">
+                        <thead>
+                            <tr class="bg-gray-100 border-b">
+                                <th class="py-1 px-2 font-semibold text-gray-700">Department Name</th>
+                                <th class="py-1 px-2 font-semibold text-gray-700">Total Borrowed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($borrowing_by_department)): ?>
+                                <tr>
+                                    <td colspan="2" class="py-2 text-gray-500">No data available.</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($borrowing_by_department as $dept): ?>
+                                    <tr class="border-b">
+                                        <td class="py-1 px-2"><?= htmlspecialchars($dept['department']) ?></td>
+                                        <td class="py-1 px-2 font-bold"><?= htmlspecialchars($dept['total_borrowed']) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <div></div> <div id="collection-inventory">
+            <div></div>
+            <div id="collection-inventory">
                 <h2 class="report-section-header">3. COLLECTION & INVENTORY</h2>
                 <div class="grid grid-cols-2 gap-6">
                     <div class="report-chart-container">
@@ -333,9 +366,38 @@ if ($report_type === 'categories') {
                         </div>
                     </div>
                 </div>
+                <div class="mt-8 page-break-inside-avoid">
+                    <h3 class="font-bold text-lg mb-2">Lost Books Summary Table</h3>
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th>Book Title</th>
+                                <th>Borrower</th>
+                                <th>Date Borrowed</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($lost_books_summary)): ?>
+                                <tr>
+                                    <td colspan="4" class="text-center text-gray-500 py-4">No lost books found.</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($lost_books_summary as $item): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($item['book_title']) ?></td>
+                                        <td><?= htmlspecialchars($item['fName'] . ' ' . $item['lName']) ?></td>
+                                        <td><?= htmlspecialchars($item['borrow_date']) ?></td>
+                                        <td class="font-bold text-red-600"><?= $item['borrow_status'] ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <div id="fines-compliance">
+            <div id="fines-compliance page-break">
                 <h2 class="report-section-header">4. FINES & COMPLIANCE</h2>
                 <div class="grid grid-cols-2 gap-6">
                     <div class="report-chart-container">
@@ -556,18 +618,7 @@ if ($report_type === 'categories') {
                     options: horizontalBarOptions
                 });
 
-                // 4. Dept
-                const deptData = <?= json_encode($borrowing_by_department) ?>;
-                createChart('borrowByDeptChart', {
-                    type: 'pie',
-                    data: {
-                        labels: deptData.map(d => d.department),
-                        datasets: [{ data: deptData.map(d => d.total_borrowed), backgroundColor: palette }]
-                    },
-                    options: chartOptions
-                });
-
-                // 5. Borrower Type
+                // 5. Borrower Type (Index 0 in Palette now)
                 const borrowerTypeData = <?= json_encode($borrower_type_breakdown) ?>;
                 createChart('borrowerTypeChart', {
                     type: 'pie',
@@ -577,6 +628,8 @@ if ($report_type === 'categories') {
                     },
                     options: chartOptions
                 });
+
+
 
                 // 6. Top Books
                 const topBooks = <?= json_encode($top_5_books) ?>;

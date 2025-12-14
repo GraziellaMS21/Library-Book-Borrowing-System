@@ -50,7 +50,7 @@ switch ($currentFile) {
             <?php if (isset($userDashboard)) {
                 echo htmlspecialchars($userDashboard["fName"] . " " . $userDashboard["lName"]);
             } else {
-                echo "Admin User";
+                echo "Librarian";
             } ?>
         </h2>
     </div>
@@ -106,12 +106,12 @@ switch ($currentFile) {
         </ul>
     </aside>
 
-   
-<script>
-    const sidebar = document.querySelector(".sidebar");
-    const toggleBtn = document.querySelector(".toggle-btn");
 
-    toggleBtn.addEventListener("click", () => {
-        sidebar.classList.toggle("narrow");
-    });
-</script>
+    <script>
+        const sidebar = document.querySelector(".sidebar");
+        const toggleBtn = document.querySelector(".toggle-btn");
+
+        toggleBtn.addEventListener("click", () => {
+            sidebar.classList.toggle("narrow");
+        });
+    </script>

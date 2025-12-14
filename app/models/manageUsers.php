@@ -12,7 +12,7 @@ class User extends Database
     public $imageID_dir = "";
     public $email = "";
     public $password = "";
-    public $userTypeID = "";
+    public $borrowerTypeID = "";
     public $date_registered = "";
     public $role = "";
     public $registration_status = "";
@@ -42,8 +42,7 @@ class User extends Database
                     departmentID = :departmentID, 
                     id_number = :id_number,  
                     email = :email, 
-                    userTypeID = :userTypeID, 
-                    role = :role,
+                    borrowerTypeID = :borrowerTypeID, 
                     imageID_name = :imageID_name, 
                     imageID_dir = :imageID_dir
                 WHERE userID = :userID";
@@ -65,8 +64,8 @@ class User extends Database
         $query->bindParam(":imageID_name", $this->imageID_name);
         $query->bindParam(":imageID_dir", $this->imageID_dir);
         $query->bindParam(":email", $this->email);
-        $query->bindParam(":userTypeID", $this->userTypeID);
-        $query->bindParam(":role", $this->role);
+        $query->bindParam(":borrowerTypeID", $this->borrowerTypeID);
+        // $query->bindParam(":role", $this->role); // Removed in 3NF
         $query->bindParam(":userID", $userID);
 
         return $query->execute();
@@ -81,9 +80,10 @@ class User extends Database
 
         $dbStatus = ucfirst($statusFilter);
 
-        $sql = "SELECT u.*, ut.type_name, d.department_name
+        $sql = "SELECT u.*, bt.borrower_type, ur.role_name as role, d.department_name
         FROM users u
-        JOIN user_type ut ON u.userTypeID = ut.userTypeID
+        JOIN user_roles ur ON u.roleID = ur.roleID
+        JOIN borrower_types bt ON u.borrowerTypeID = bt.borrowerTypeID
         LEFT JOIN departments d ON u.departmentID = d.departmentID";
 
         if ($statusFilter != "") {
@@ -133,7 +133,7 @@ class User extends Database
 
     public function fetchUser($userID)
     {
-        $sql = "SELECT u.*, ut.*, u.userTypeID AS status FROM users u JOIN user_type ut ON u.userTypeID = ut.userTypeID WHERE u.userID = :userID";
+        $sql = "SELECT u.*, bt.borrower_type, ur.role_name as role, bt.borrower_limit, u.borrowerTypeID AS status FROM users u JOIN user_roles ur ON u.roleID = ur.roleID JOIN borrower_types bt ON u.borrowerTypeID = bt.borrowerTypeID WHERE u.userID = :userID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(':userID', $userID);
         $query->execute();
@@ -152,17 +152,17 @@ class User extends Database
 
     public function fetchUserTypes()
     {
-        $sql = "SELECT * FROM user_type";
+        $sql = "SELECT * FROM borrower_types";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         return $query->fetchAll();
     }
 
-    public function fetchUserLimit($userTypeID)
+    public function fetchUserLimit($borrowerTypeID)
     {
-        $sql = "SELECT borrower_limit FROM user_type WHERE userTypeID = :userTypeID LIMIT 1";
+        $sql = "SELECT borrower_limit FROM borrower_types WHERE borrowerTypeID = :borrowerTypeID LIMIT 1";
         $query = $this->connect()->prepare($sql);
-        $query->bindParam(':userTypeID', $userTypeID);
+        $query->bindParam(':borrowerTypeID', $borrowerTypeID);
         $query->execute();
         $result = $query->fetch(PDO::FETCH_ASSOC);
         return $result['borrower_limit'] ?? 0;
@@ -298,13 +298,13 @@ class User extends Database
 
     public function deleteUser($userID)
     {
-        $checkSql = "SELECT role FROM users WHERE userID = :userID";
+        $checkSql = "SELECT ur.role_name as role FROM users u JOIN user_roles ur ON u.roleID = ur.roleID WHERE u.userID = :userID";
         $checkQuery = $this->connect()->prepare($checkSql);
         $checkQuery->bindParam(":userID", $userID);
         $checkQuery->execute();
         $targetUser = $checkQuery->fetch(PDO::FETCH_ASSOC);
 
-        if ($targetUser && $targetUser['role'] === 'Super Admin') {
+        if ($targetUser && $targetUser['role'] === 'Admin') {
             return false;
         }
 
@@ -318,7 +318,7 @@ class User extends Database
     public function countTotalActiveBorrowers()
     {
         // [MODIFIED] Added is_removed filter
-        $sql = "SELECT COUNT(userID) AS total_borrowers FROM users WHERE role = 'Borrower' AND account_status = 'Active' AND is_removed = 0";
+        $sql = "SELECT COUNT(u.userID) AS total_borrowers FROM users u JOIN user_roles ur ON u.roleID = ur.roleID WHERE ur.role_name = 'Borrower' AND u.account_status = 'Active' AND u.is_removed = 0";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         $result = $query->fetch(PDO::FETCH_ASSOC);
@@ -328,7 +328,7 @@ class User extends Database
     public function countPendingUsers()
     {
         // [MODIFIED] Added is_removed filter
-        $sql = "SELECT COUNT(userID) AS total_pending FROM users WHERE registration_status = 'Pending' AND role = 'Borrower' AND is_removed = 0";
+        $sql = "SELECT COUNT(u.userID) AS total_pending FROM users u JOIN user_roles ur ON u.roleID = ur.roleID WHERE u.registration_status = 'Pending' AND ur.role_name = 'Borrower' AND u.is_removed = 0";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         $result = $query->fetch(PDO::FETCH_ASSOC);

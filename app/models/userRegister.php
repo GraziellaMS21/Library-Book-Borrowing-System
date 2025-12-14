@@ -8,16 +8,17 @@ class Register extends Database
     public $middleIn = "";
     public $contact_no = "";
     public $id_number = "";
-    public $departmentID = ""; 
+    public $departmentID = "";
     public $imageID_name = "";
     public $imageID_dir = "";
     public $email = "";
     public $password = "";
-    public $userTypeID = "";
+    public $userTypeID = ""; // Renaming this might break frontend forms if they use name="userTypeID", keeping property name but changing SQL binding OR updating frontend too. Let's update frontend too.
+    public $borrowerTypeID = "";
     public $date_registered = "";
     public $role = "";
     public $registration_status = "Pending";
-    
+
     // Added for Email Verification
     public $verification_code = "";
     public $verification_expiry = "";
@@ -27,8 +28,8 @@ class Register extends Database
     public function addUser()
     {
         // CHANGED: Added verification_code, verification_expiry and set status to 'Unverified'
-        $sql = "INSERT INTO users (lName, fName, middleIn, id_number, departmentID, imageID_name, imageID_dir, contact_no, email, password, role, userTypeID, date_registered, registration_status, verification_code, verification_expiry) 
-                VALUES (:lName, :fName, :middleIn, :id_number, :departmentID, :imageID_name, :imageID_dir, :contact_no, :email, :password, :role, :userTypeID, :date_registered, :registration_status, :verification_code, :verification_expiry)";
+        $sql = "INSERT INTO users (lName, fName, middleIn, id_number, departmentID, imageID_name, imageID_dir, contact_no, email, password, borrowerTypeID, roleID, date_registered, registration_status, verification_code, verification_expiry) 
+                VALUES (:lName, :fName, :middleIn, :id_number, :departmentID, :imageID_name, :imageID_dir, :contact_no, :email, :password, :borrowerTypeID, :roleID, :date_registered, :registration_status, :verification_code, :verification_expiry)";
 
         $query = $this->connect()->prepare($sql);
 
@@ -43,25 +44,29 @@ class Register extends Database
         $query->bindParam(":email", $this->email);
         $query->bindParam(":password", $this->password);
 
-        $role = 'Borrower';
+        // $role = 'Borrower'; // Removed in 3NF
         // Set initial status to Unverified so they can't login yet
         $this->registration_status = "Unverified";
 
-        $query->bindParam(":role", $role);
-        $query->bindParam(":userTypeID", $this->userTypeID);
+        // $query->bindParam(":role", $role); // Removed in 3NF
+        $query->bindParam(":borrowerTypeID", $this->borrowerTypeID);
         $query->bindParam(":date_registered", $this->date_registered);
         $query->bindParam(":registration_status", $this->registration_status);
-        
+
         // Bind Verification Params
         $query->bindParam(":verification_code", $this->verification_code);
         $query->bindParam(":verification_expiry", $this->verification_expiry);
+
+        // Explicitly set roleID to 1 (Borrower) for new public registrations
+        $roleID = 1;
+        $query->bindParam(":roleID", $roleID);
 
         return $query->execute();
     }
 
     public function fetchUserType()
     {
-        $sql = "SELECT * FROM user_type";
+        $sql = "SELECT * FROM borrower_types";
         $query = $this->connect()->prepare($sql);
 
         if ($query->execute()) {
@@ -96,7 +101,8 @@ class Register extends Database
     }
 
     // New Function: Verify OTP
-    public function verifyEmailOtp($email, $otp) {
+    public function verifyEmailOtp($email, $otp)
+    {
         $sql = "SELECT * FROM users WHERE email = :email AND verification_code = :otp AND verification_expiry > NOW()";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":email", $email);
@@ -107,7 +113,8 @@ class Register extends Database
     }
 
     // New Function: Mark Email as Verified (Set to Pending for Admin)
-    public function markEmailVerified($email) {
+    public function markEmailVerified($email)
+    {
         $sql = "UPDATE users SET registration_status = 'Pending', verification_code = NULL, verification_expiry = NULL WHERE email = :email";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":email", $email);

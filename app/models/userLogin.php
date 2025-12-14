@@ -9,7 +9,7 @@ class Login extends Database
 
     public function userLogIn($email, $password)
     {
-        $sql = "SELECT * FROM users WHERE email = :email";
+        $sql = "SELECT u.*, ur.role_name as role FROM users u JOIN user_roles ur ON u.roleID = ur.roleID WHERE u.email = :email";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":email", $email);
 
@@ -28,7 +28,7 @@ class Login extends Database
 
     public function getUserByEmail($email)
     {
-        $sql = "SELECT * FROM users WHERE email = :email";
+        $sql = "SELECT u.*, ur.role_name as role FROM users u JOIN user_roles ur ON u.roleID = ur.roleID WHERE u.email = :email";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":email", $email);
         if ($query->execute()) {

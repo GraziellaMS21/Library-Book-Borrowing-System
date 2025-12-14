@@ -78,10 +78,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'remove' && isset($_GET['listI
                             <th class="py-3 px-4 hidden sm:table-cell">Author</th>
                             <th class="py-3 px-4 hidden sm:table-cell">Condition</th>
                             <?php if ($userTypeID != 2) { ?>
-                                    <th class="py-3 px-4 w-40">Copies Requested <br><span class="hidden sm:table-cell">(Max:
-                                            1)</span></th>
+                                <th class="py-3 px-4 w-40">Copies Requested <br><span class="hidden sm:table-cell">(Max:
+                                        1)</span></th>
                             <?php } else { ?>
-                                    <th class="py-3 px-4 w-40">Copies Requested</th>
+                                <th class="py-3 px-4 w-40">Copies Requested</th>
 
                             <?php } ?>
                             <th class="py-3 px-4 w-20">Actions</th>
@@ -89,90 +89,91 @@ if (isset($_GET['action']) && $_GET['action'] === 'remove' && isset($_GET['listI
                     </thead>
                     <tbody id="list-body">
                         <?php if (empty($myList)) { ?>
-                                <tr id="empty-list-row">
-                                    <td colspan="7" class="py-16 text-center text-xl text-gray-500">
-                                        Your list is empty. Add books from the <a href="catalogue.php"
-                                            class="text-red-700 font-semibold">Catalogue</a>!
+                            <tr id="empty-list-row">
+                                <td colspan="7" class="py-16 text-center text-xl text-gray-500">
+                                    Your list is empty. Add books from the <a href="catalogue.php"
+                                        class="text-red-700 font-semibold">Catalogue</a>!
+                                </td>
+                            </tr>
+                        <?php } else { ?>
+                            <?php foreach ($myList as $list) {
+                                $listID = $list['listID'];
+                                $copiesRequested = $list['no_of_copies'];
+                                $copiesAvailable = $list['book_copies'];
+
+                                $maxDisplay = ($userTypeID == 2) ? $copiesAvailable : 1;
+
+                                ?>
+                                <tr class="border-b hover:bg-gray-50" data-list-id="<?= $listID ?>"
+                                    data-book-id="<?= $list['bookID'] ?>" data-copies-requested="<?= $copiesRequested ?>">
+                                    <td class="py-4 px-2">
+                                        <input type="checkbox" name="selected_books[]" value="<?= $listID ?>"
+                                            class="checkbox checkbox-item">
+                                    </td>
+
+                                    <td class="py-4 px-4 hidden sm:table-cell">
+                                        <div class="w-16 h-24 shadow-md rounded-md overflow-hidden bg-gray-200 border">
+                                            <?php if (!empty($list['book_cover_dir'])): ?>
+                                                <img src="../../../<?= $list['book_cover_dir'] ?>" alt="Cover"
+                                                    class="w-full h-full object-cover">
+                                            <?php else: ?>
+                                                <div
+                                                    class="flex items-center justify-center w-full h-full text-xs text-gray-500 text-center p-1">
+                                                    No Cover
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4 text-red-800 font-bold max-w-xs">
+                                        <?= $list['book_title'] ?>
+                                    </td>
+                                    <td class="py-4 px-4 hidden sm:table-cell"><?= $list['author_names'] ?></td>
+                                    <td class="py-4 px-4 hidden sm:table-cell"><?= $list['book_condition'] ?></td>
+
+                                    <td class="py-4 px-4">
+                                        <div class="flex flex-col items-start space-y-1">
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-extrabold text-xl text-red-800 copies-display">
+                                                    <?= $copiesRequested ?>
+                                                </span>
+                                                <?php if ($userTypeID == 2) { ?>
+                                                    <p>(Stock : <?= $maxDisplay ?>)</p>
+                                                <?php } ?>
+
+                                            </div>
+
+                                            <?php if (!empty($userTypeID == 2)): ?>
+                                                <button type="button" onclick="showEditCopiesModal(<?= $listID ?>, '<?= $list['book_title'] ?>', <?= $copiesRequested ?>, <?= $copiesAvailable ?>
+                )" class="text-sm text-blue-600 hover:text-blue-800 font-medium p-1 rounded transition duration-150">
+                                                    Edit Copies
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
+                                    </td>
+
+                                    <td class="py-4 px-4">
+                                        <a href="../../../app/controllers/borrowListController.php?action=remove&listID=<?= $listID ?>"
+                                            class="text-red-600 hover:text-red-800 text-sm font-medium">
+                                            Remove
+                                        </a>
                                     </td>
                                 </tr>
-                        <?php } else { ?>
-                                <?php foreach ($myList as $list) {
-                                    $listID = $list['listID'];
-                                    $copiesRequested = $list['no_of_copies'];
-                                    $copiesAvailable = $list['book_copies'];
-
-                                    $maxDisplay = ($userTypeID == 2) ? $copiesAvailable : 1;
-
-                                    ?>
-                                        <tr class="border-b hover:bg-gray-50" data-list-id="<?= $listID ?>"
-                                            data-book-id="<?= $list['bookID'] ?>" data-copies-requested="<?= $copiesRequested ?>">
-                                            <td class="py-4 px-2">
-                                                <input type="checkbox" name="selected_books[]" value="<?= $listID ?>"
-                                                    class="checkbox checkbox-item">
-                                            </td>
-
-                                            <td class="py-4 px-4 hidden sm:table-cell">
-                                                <div class="w-16 h-24 shadow-md rounded-md overflow-hidden bg-gray-200 border">
-                                                    <?php if (!empty($list['book_cover_dir'])): ?>
-                                                            <img src="../../../<?= $list['book_cover_dir'] ?>" alt="Cover"
-                                                                class="w-full h-full object-cover">
-                                                    <?php else: ?>
-                                                            <div
-                                                                class="flex items-center justify-center w-full h-full text-xs text-gray-500 text-center p-1">
-                                                                No Cover
-                                                            </div>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </td>
-                                            <td class="py-4 px-4 text-red-800 font-bold max-w-xs">
-                                                <?= $list['book_title'] ?>
-                                            </td>
-                                            <td class="py-4 px-4 hidden sm:table-cell"><?= $list['author_names'] ?></td>
-                                            <td class="py-4 px-4 hidden sm:table-cell"><?= $list['book_condition'] ?></td>
-
-                                            <td class="py-4 px-4">
-                                                <div class="flex flex-col items-start space-y-1">
-                                                    <div class="flex items-center gap-2">
-                                                        <span class="font-extrabold text-xl text-red-800 copies-display">
-                                                            <?= $copiesRequested ?>
-                                                        </span>
-                                                        <?php if ($userTypeID == 2) { ?>
-                                                                <p>(Stock : <?= $maxDisplay ?>)</p>
-                                                        <?php } ?>
-
-                                                    </div>
-
-                                                    <?php if (!empty($userTypeID == 2)): ?>
-                                                            <button type="button" onclick="showEditCopiesModal(<?= $listID ?>, '<?= $list['book_title'] ?>', <?= $copiesRequested ?>, <?= $copiesAvailable ?>
-                )" class="text-sm text-blue-600 hover:text-blue-800 font-medium p-1 rounded transition duration-150">
-                                                                Edit Copies
-                                                            </button>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </td>
-
-                                            <td class="py-4 px-4">
-                                                <a href="../../../app/controllers/borrowListController.php?action=remove&listID=<?= $listID ?>"
-                                                    class="text-red-600 hover:text-red-800 text-sm font-medium">
-                                                    Remove
-                                                </a>
-                                            </td>
-                                        </tr>
-                                        <input type="hidden" name="list_data[<?= $listID ?>][bookID]" value="<?= $list['bookID'] ?>">
-                                        <input type="hidden" name="list_data[<?= $listID ?>][listID]" value="<?= $listID ?>">
-                                        <input type="hidden" name="list_data[<?= $listID ?>][book_title]"
-                                            value="<?= $list['book_title'] ?>">
-                                        <input type="hidden" name="list_data[<?= $listID ?>][author]" value="<?= $list['author_names'] ?>">
-                                        <input type="hidden" name="list_data[<?= $listID ?>][book_condition]"
-                                            value="<?= $list['book_condition'] ?>">
-                                        <input type="hidden" name="list_data[<?= $listID ?>][book_copies]"
-                                            value="<?= $list['book_copies'] ?>">
-                                        <input type="hidden" name="list_data[<?= $listID ?>][book_cover_dir]"
-                                            value="<?= $list['book_cover_dir'] ?>">
-                                        <input type="hidden" name="list_data[<?= $listID ?>][copies_requested]"
-                                            class="copies-requested-input-<?= $listID ?>" value="<?= $copiesRequested ?>">
-                                <?php }
-                                ; ?>
+                                <input type="hidden" name="list_data[<?= $listID ?>][bookID]" value="<?= $list['bookID'] ?>">
+                                <input type="hidden" name="list_data[<?= $listID ?>][listID]" value="<?= $listID ?>">
+                                <input type="hidden" name="list_data[<?= $listID ?>][book_title]"
+                                    value="<?= $list['book_title'] ?>">
+                                <input type="hidden" name="list_data[<?= $listID ?>][author]"
+                                    value="<?= $list['author_names'] ?>">
+                                <input type="hidden" name="list_data[<?= $listID ?>][book_condition]"
+                                    value="<?= $list['book_condition'] ?>">
+                                <input type="hidden" name="list_data[<?= $listID ?>][book_copies]"
+                                    value="<?= $list['book_copies'] ?>">
+                                <input type="hidden" name="list_data[<?= $listID ?>][book_cover_dir]"
+                                    value="<?= $list['book_cover_dir'] ?>">
+                                <input type="hidden" name="list_data[<?= $listID ?>][copies_requested]"
+                                    class="copies-requested-input-<?= $listID ?>" value="<?= $copiesRequested ?>">
+                            <?php }
+                            ; ?>
                         <?php } ?>
                     </tbody>
                 </table>
@@ -392,11 +393,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'remove' && isset($_GET['listI
     }
 
 
-    // Form submission validation (Modified for confirmation.php redirection)
-    checkoutForm.addEventListener('submit', function (e) {
+    // Form submission validation (Modified for confirmation.php redirection with Pre-Validation)
+    checkoutForm.addEventListener('submit', async function (e) {
+        e.preventDefault(); // Always prevent default first
+
         const selectedCount = document.querySelectorAll('.checkbox-item:checked').length;
         if (selectedCount === 0) {
-            e.preventDefault();
             messageModalBody.textContent = "Please select at least one book to checkout.";
             openModal('message-modal');
             return;
@@ -404,10 +406,63 @@ if (isset($_GET['action']) && $_GET['action'] === 'remove' && isset($_GET['listI
 
         // Final check on dates
         if (!pickupDateHiddenInput.value || !expectedReturnDateHiddenInput.value) {
-            e.preventDefault();
             messageModalBody.textContent = "Please select a valid Pickup Date.";
             openModal('message-modal');
             return;
+        }
+
+        // Prepare data for validation
+        const selectedItems = [];
+        document.querySelectorAll('.checkbox-item:checked').forEach(checkbox => {
+            const listID = checkbox.value;
+            const bookID = document.querySelector(`input[name="list_data[${listID}][bookID]"]`).value;
+            // Use the hidden input that tracks copies
+            const copies = document.querySelector(`.copies-requested-input-${listID}`).value;
+
+            selectedItems.push({
+                bookID: parseInt(bookID),
+                copies: parseInt(copies)
+            });
+        });
+
+        // User ID from PHP
+        const userID = <?= json_encode($_SESSION['user_id'] ?? null) ?>;
+
+        try {
+            // Disable button during validation
+            checkoutBtn.disabled = true;
+            checkoutBtn.textContent = "Validating...";
+
+            const response = await fetch('../../../app/controllers/borrowBookController.php?action=validate_borrow', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    userID: userID,
+                    items: selectedItems
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // If valid, submit the form programmatically
+                checkoutForm.submit();
+            } else {
+                // Show errors in modal
+                const messageBody = document.getElementById('message-modal-body');
+                messageBody.innerHTML = '<strong class="text-red-800 block mb-2">Checkout Failed:</strong>' +
+                    result.errors.map(err => `&bull; ${err}`).join('<br>');
+                openModal('message-modal');
+            }
+        } catch (error) {
+            console.error('Validation error:', error);
+            messageModalBody.textContent = "An error occurred during validation.";
+            openModal('message-modal');
+        } finally {
+            checkoutBtn.disabled = false;
+            checkoutBtn.textContent = "Confirm Selected Books";
         }
     });
 

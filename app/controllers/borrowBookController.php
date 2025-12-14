@@ -24,6 +24,129 @@ $borrowID = $_POST["borrowID"] ?? $_GET["id"] ?? null;
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
+    if ($action === 'validate_borrow') {
+        header('Content-Type: application/json');
+
+        // Support JSON input
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!$input) {
+            $input = $_POST;
+        }
+
+        $userID = $input['userID'] ?? null;
+        $items = $input['items'] ?? []; // Array of { bookID, copies }
+
+        $response = ['success' => true, 'errors' => []];
+
+        if (!$userID) {
+            $response['success'] = false;
+            $response['errors'][] = "User ID is missing.";
+            echo json_encode($response);
+            exit;
+        }
+
+        // 1. Fetch User & Status Check
+        require_once(__DIR__ . "/../models/manageUsers.php");
+        $userObj = new User();
+        $user = $userObj->fetchUser($userID);
+
+        if (!$user) {
+            $response['success'] = false;
+            $response['errors'][] = "User not found.";
+            echo json_encode($response);
+            exit;
+        }
+
+        // STRICT ACCOUNT STATUS CHECK
+        if ($user['account_status'] !== 'Active') {
+            $response['success'] = false;
+            $response['errors'][] = "Your account is currently {$user['account_status']}. You cannot borrow books.";
+            // If blocked, we can stop here
+            echo json_encode($response);
+            exit;
+        }
+
+        // STRICT UNPAID FINES CHECK
+        // checkAndApplyFines returns true if there are unpaid fines
+        if ($borrowObj->checkAndApplyFines($userID)) {
+            $response['success'] = false;
+            $response['errors'][] = "You have unpaid fines. Please settle them before borrowing.";
+            echo json_encode($response);
+            exit;
+        }
+
+        // 2. Borrow Limit Logic
+        $userTypeID = (int) $user["userTypeID"];
+        $borrow_limit = (int) ($user["borrower_limit"] ?? 1);
+        $current_borrowed_count = $borrowObj->fetchTotalBorrowedBooks($userID); // Includes Pending
+        $available_slots = $borrow_limit - $current_borrowed_count;
+
+        $total_requested_copies = 0;
+
+        if (empty($items)) {
+            $response['success'] = false;
+            $response['errors'][] = "No items selected.";
+        }
+
+        foreach ($items as $item) {
+            $bookID = (int) ($item['bookID'] ?? 0);
+            $requested_copies = (int) ($item['copies'] ?? 1);
+
+            if ($bookID <= 0)
+                continue;
+
+            $book = $bookObj->fetchBook($bookID);
+            if (!$book) {
+                $response['success'] = false;
+                $response['errors'][] = "Book ID $bookID not found.";
+                continue;
+            }
+
+            $max_stock = (int) $book['book_copies'];
+            // Real availability considering pending
+            $pending_copies = $borrowObj->fetchPendingAndApprovedCopiesForBook($bookID);
+            $real_available = max(0, $max_stock - $pending_copies);
+
+            $is_borrowed = $borrowObj->isBookBorrowed($userID, $bookID);
+
+            // Use the new Model method
+            $max_allowed_per_book = $borrowObj->calculateMaxCopiesAllowed(
+                $userTypeID,
+                $borrow_limit,
+                $current_borrowed_count, // Passed for context, though slots check is separate
+                $real_available, // Check against real availability
+                $is_borrowed
+            );
+
+            // Per-book check
+            if ($requested_copies > $max_allowed_per_book) {
+                $response['success'] = false;
+                if ($is_borrowed && ($userTypeID == 1 || $userTypeID == 3)) {
+                    $response['errors'][] = "You have already borrowed '{$book['book_title']}'.";
+                } elseif ($real_available <= 0) {
+                    $response['errors'][] = "'{$book['book_title']}' is currently unavailable.";
+                } else {
+                    $response['errors'][] = "You cannot borrow $requested_copies copies of '{$book['book_title']}' (Max allowed: $max_allowed_per_book).";
+                }
+            }
+
+            $total_requested_copies += $requested_copies;
+        }
+
+        // 3. Total Limit Check
+        if ($total_requested_copies > $available_slots) {
+            $response['success'] = false;
+            if ($available_slots <= 0) {
+                $response['errors'][] = "You have reached your borrowing limit ($borrow_limit books).";
+            } else {
+                $response['errors'][] = "Request exceeds your available slots. You can only borrow $available_slots more book(s).";
+            }
+        }
+
+        echo json_encode($response);
+        exit;
+    }
+
     if ($action === 'add_multiple') {
         $userID = trim(htmlspecialchars($_POST["userID"] ?? ''));
         $pickup_date = trim(htmlspecialchars($_POST["pickup_date"] ?? ''));
@@ -216,11 +339,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } elseif ($action === 'cancel' && $borrowID) {
         $detail = $borrowObj->fetchBorrowDetail($borrowID);
         $current_tab = $_GET['tab'] ?? 'pending';
-        
+
         // Capture Reason IDs (Array) and Remarks
         $rawReasonIDs = $_POST['reasonIDs'] ?? [];
         $remarks = trim($_POST['cancellation_reason'] ?? '');
-        
+
         // Separate 'other' from valid DB IDs
         $validReasonIDs = [];
         $isOtherSelected = false;
@@ -237,7 +360,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Construct display string for email/notification
         $reasonParts = [];
-        
+
         // 1. Fetch text for valid numeric IDs
         if (!empty($validReasonIDs)) {
             $reasonTexts = $borrowObj->getReasonTexts($validReasonIDs);
@@ -252,7 +375,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         $reasonTextString = implode(", ", $reasonParts);
-        
+
         // 3. Append Remarks
         $displayReason = $reasonTextString;
         if (!empty($remarks)) {
@@ -269,10 +392,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $return_date = NULL;
 
             if ($borrowObj->updateBorrowDetails($borrowID, $borrow_status, $borrow_request_status, $return_date)) {
-                
+
                 // --- 3NF UPDATE: LOG HISTORY ---
                 $currentUserID = $_SESSION['user_id'] ?? $detail['userID'];
-                
+
                 // Pass ONLY valid numeric IDs to database model (foreign key constraint)
                 $borrowObj->addBorrowStatusHistory($borrowID, 'Cancel', $remarks, $validReasonIDs, $currentUserID);
                 // -------------------------------
@@ -284,9 +407,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
 
                 $adminUserID = 1;
-                $borrowerName = $detail["fName"] . ' ' . $detail["lName"]  ?? 'A user'; 
-                $bookTitle = $detail["book_title"] ?? 'a book'; 
-                
+                $borrowerName = $detail["fName"] . ' ' . $detail["lName"] ?? 'A user';
+                $bookTitle = $detail["book_title"] ?? 'a book';
+
                 $notificationObj->userID = $adminUserID;
                 $notificationObj->title = "Request Cancelled by User";
                 $notificationObj->message = "{$borrowerName} cancelled request for '{$bookTitle}'. Reason: {$displayReason}";
@@ -304,7 +427,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $mail->Port = 465;
 
                     $mail->setFrom('graziellamssaavedra06@gmail.com', 'Library System Alert');
-                    $mail->addAddress('graziellamssaavedra06@gmail.com'); 
+                    $mail->addAddress('graziellamssaavedra06@gmail.com');
 
                     $mail->isHTML(true);
                     $mail->Subject = "User Cancelled Request: {$borrowerName}";

@@ -130,7 +130,7 @@ if ($userID) {
 
 // Populate modal data if book is available (for Staff)
 $modal_book_title = $js_book_title;
-$modal_available_copies = $available_for_request; 
+$modal_available_copies = $available_for_request;
 ?>
 
 <!DOCTYPE html>
@@ -221,13 +221,13 @@ $modal_available_copies = $available_for_request;
                     <div class="w-full h-96 shadow-2xl rounded-lg overflow-hidden bg-gray-200 border-4 border-gray-100">
                         <?php
                         if ($book_cover_dir) { ?>
-                                <img src="<?= "../../../" . $book_cover_dir ?>" alt="<?= $book_title ?> Cover"
-                                    class="w-full h-full object-cover">
+                            <img src="<?= "../../../" . $book_cover_dir ?>" alt="<?= $book_title ?> Cover"
+                                class="w-full h-full object-cover">
                         <?php } else { ?>
-                                <div
-                                    class="flex items-center justify-center w-full h-full text-lg text-gray-500 text-center p-4">
-                                    No Cover Available
-                                </div>
+                            <div
+                                class="flex items-center justify-center w-full h-full text-lg text-gray-500 text-center p-4">
+                                No Cover Available
+                            </div>
                         <?php } ?>
                     </div>
                 </div>
@@ -251,7 +251,8 @@ $modal_available_copies = $available_for_request;
                         </p>
                         <p class="text-gray-700">
                             <strong>Available to Request:</strong>
-                            <span class="font-bold <?= $available_for_request > 0 ? 'text-green-600' : 'text-red-600' ?>">
+                            <span
+                                class="font-bold <?= $available_for_request > 0 ? 'text-green-600' : 'text-red-600' ?>">
                                 <?= $available_for_request ?>
                             </span>
                         </p>
@@ -270,14 +271,15 @@ $modal_available_copies = $available_for_request;
                                     $borrow_action = "href='viewBook.php?modal=borrow&bookID={$bookID}'";
                                     $add_to_list_action = "href='viewBook.php?modal=list&bookID={$bookID}'";
                                 } elseif (!$borrow_denied) {
-                                    // Non-Staff (allowed): direct link to confirmation.php
-                                    $borrow_action = "href='confirmation.php?bookID={$book['bookID']}&copies=1'";
+                                    // Non-Staff (allowed): trigger validation via JS
+                                    $borrow_action = "href='#' onclick=\"event.preventDefault(); validateSingleBorrow({$book['bookID']}, 1);\"";
                                     // Non-staff uses JS function
                                     $add_to_list_action = "onclick=\"event.preventDefault(); addToList({$book['bookID']})\"";
                                 } else {
                                     // Non-Staff (denied): link to error status page
                                     $borrow_action = "href='viewBook.php?status=borrow_denied&bookID={$bookID}&error_code={$error_message_code}&count={$current_borrowed_count}&limit={$borrow_limit}'";
                                 }
+
                             } else {
                                 // Guest Logic: Redirect to Login
                                 $borrow_action = "href='login.php'";
@@ -295,10 +297,10 @@ $modal_available_copies = $available_for_request;
                             </a>
 
                             <?php if ($userID && !$button_disabled): ?>
-                                    <a <?= $add_to_list_action ?>
-                                        class="text-sm font-medium cursor-pointer transition duration-300 px-4 py-2 rounded-full bg-red-800 text-white shadow-md hover:bg-red-900">
-                                        + Add To List
-                                    </a>
+                                <a <?= $add_to_list_action ?>
+                                    class="text-sm font-medium cursor-pointer transition duration-300 px-4 py-2 rounded-full bg-red-800 text-white shadow-md hover:bg-red-900">
+                                    + Add To List
+                                </a>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -309,7 +311,7 @@ $modal_available_copies = $available_for_request;
         <div id="borrow-modal" class="modal <?= $open_modal == 'borrow-modal' ? 'open' : '' ?>">
             <div class="modal-content">
                 <span class="close-times" onclick="closeModalAndRedirect()">&times;</span>
-                <h3 class="text-xl font-bold text-red-800 border-b pb-3 mb-4">Borrow Copies (Staff/Admin)</h3>
+                <h3 class="text-xl font-bold text-red-800 border-b pb-3 mb-4">Borrow Copies (Staff/Librarian)</h3>
 
                 <p class="text-gray-700 mb-3">Book: <strong id="modal-borrow-book-title">
                         <?= $modal_book_title ?>
@@ -344,7 +346,7 @@ $modal_available_copies = $available_for_request;
         <div id="list-modal" class="modal <?= $open_modal == 'list-modal' ? 'open' : '' ?>">
             <div class="modal-content">
                 <span class="close-times" onclick="closeModalAndRedirect()">&times;</span>
-                <h3 class="text-xl font-bold text-red-800 border-b pb-3 mb-4">Add to List Copies (Staff/Admin)</h3>
+                <h3 class="text-xl font-bold text-red-800 border-b pb-3 mb-4">Add to List Copies (Staff/Librarian)</h3>
 
                 <p class="text-gray-700 mb-3">Book: <strong id="modal-list-book-title">
                         <?= $modal_book_title ?>
@@ -425,14 +427,67 @@ $modal_available_copies = $available_for_request;
     }
 
     function closeStatusModal() {
+        // Clear search params to prevent reopening on reload
         const currentUrl = new URL(window.location.href);
         currentUrl.searchParams.delete("status");
         currentUrl.searchParams.delete("copies");
         currentUrl.searchParams.delete("error_code");
         currentUrl.searchParams.delete("count");
         currentUrl.searchParams.delete("limit");
-        window.location.href = currentUrl.toString();
+
+        // Update URL without reloading
+        window.history.replaceState({}, '', currentUrl.toString());
+
+        document.getElementById('message-modal').classList.remove('open');
+        document.getElementById('success-modal').classList.remove('open');
     }
+
+    async function validateSingleBorrow(bookID, copies) {
+        // Assume User ID is available in session/cookie or inserted by PHP
+        // To be safe, we can check if user is logged in via PHP logic variable or just rely on the controller session if we used GET, 
+        // but here we are sending JSON. Controller looks for 'userID' in JSON.
+        // We can inject userID from PHP.
+        const userID = <?= json_encode($_SESSION['user_id'] ?? null) ?>;
+
+        if (!userID) {
+            window.location.href = 'login.php';
+            return;
+        }
+
+        try {
+            const response = await fetch('../../../app/controllers/borrowBookController.php?action=validate_borrow', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    userID: userID,
+                    items: [{ bookID: bookID, copies: copies }]
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Proceed to confirmation page
+                window.location.href = `confirmation.php?bookID=${bookID}&copies=${copies}`;
+            } else {
+                // Show errors in modal
+                const messageModalBody = document.getElementById('message-modal-body');
+                const title = document.getElementById('book-title');
+
+                title.textContent = 'Unable to Borrow';
+                // Join errors with line breaks
+                messageModalBody.innerHTML = result.errors.map(err => `&bull; ${err}`).join('<br>');
+
+                document.getElementById('message-modal').classList.add('open');
+            }
+        } catch (error) {
+            console.error('Validation error:', error);
+            alert('An unexpected error occurred while validating your request. Please try again.');
+        }
+    }
+
 
     // Function for non-staff Add to List
     function addToList(bookID) {

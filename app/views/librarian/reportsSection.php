@@ -47,6 +47,7 @@ $book_status_overview = $reportsObj->getBookStatusOverview();
 $books_per_category = $reportsObj->getBooksPerCategory();
 $avg_borrow_duration = $reportsObj->getAverageBorrowDurationByCategory();
 $overdue_books_summary = $reportsObj->getOverdueBooksSummary();
+$lost_books_summary = $reportsObj->getLostBooksDetails();
 $late_returns_trend = $reportsObj->getLateReturnsTrend();
 ?>
 <!DOCTYPE html>
@@ -176,16 +177,35 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                             </div>
                         </div>
                         <div class="report-chart-container">
-                            <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">4. Borrowing Activity by Department</h2>
-                            <div class="flex justify-center items-center w-full">
-                                <canvas id="borrowByDeptChart"></canvas>
-                            </div>
-                        </div>
-                        <div class="report-chart-container lg:col-span-2">
-                            <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">5. Borrower Type Breakdown</h2>
+                            <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">4. Borrower Type Breakdown</h2>
                             <div class="flex justify-center items-center w-full">
                                 <canvas id="borrowerTypeChart" class="max-h-80 mx-auto"></canvas>
                             </div>
+                        </div>
+                        <div class="report-chart-container lg:col-span-2">
+                             <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">5. Borrowing Activity by Department</h2>
+                             <div class="overflow-x-auto w-full">
+                                <table class="w-full text-sm text-center">
+                                    <thead>
+                                        <tr class="bg-gray-100 border-b">
+                                            <th class="py-2 px-4 font-semibold text-gray-700">Department Name</th>
+                                            <th class="py-2 px-4 font-semibold text-gray-700">Total Borrowed Books</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (empty($borrowing_by_department)): ?>
+                                            <tr><td colspan="2" class="py-4 text-gray-500">No data available.</td></tr>
+                                        <?php else: ?>
+                                            <?php foreach ($borrowing_by_department as $dept): ?>
+                                            <tr class="border-b hover:bg-gray-50">
+                                                <td class="py-2 px-4"><?= htmlspecialchars($dept['department']) ?></td>
+                                                <td class="py-2 px-4 font-bold text-red-900"><?= htmlspecialchars($dept['total_borrowed']) ?></td>
+                                            </tr>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                             </div>
                         </div>
                     </div>
                 </div>
@@ -215,6 +235,37 @@ $late_returns_trend = $reportsObj->getLateReturnsTrend();
                             <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">4. Books per Category</h2>
                             <div class="flex justify-center items-center w-full">
                                 <canvas id="booksPerCategoryChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="report-chart-container lg:col-span-2">
+                            <h2 class="text-xl font-bold text-red-900 text-center mb-3 w-full">5. Lost Books Summary</h2>
+                             <div class="overflow-x-auto w-full">
+                                <table class="w-full text-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Book Title</th>
+                                            <th>Borrower</th>
+                                            <th>Date Borrowed</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (empty($lost_books_summary)): ?>
+                                            <tr><td colspan="4" class="text-center py-4 text-gray-500">No lost books found.</td></tr>
+                                        <?php else: ?>
+                                            <?php foreach ($lost_books_summary as $item): ?>
+                                                <tr>
+                                                    <td><?= htmlspecialchars($item['book_title']) ?></td>
+                                                    <td><?= htmlspecialchars($item['fName'] . ' ' . $item['lName']) ?></td>
+                                                    <td><?= htmlspecialchars($item['borrow_date']) ?></td>
+                                                    <td class="text-center font-semibold text-red-600">
+                                                        <?= $item['borrow_status'] ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>

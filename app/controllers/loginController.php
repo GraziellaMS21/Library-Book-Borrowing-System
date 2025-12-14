@@ -45,10 +45,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 header("Location: ../../app/views/borrower/login.php?status=blocked&userID=" . $result['userID']);
                 exit;
             } elseif ($result["registration_status"] === "Approved") {
-                
+
                 // --- AUTOMATIC BAN CHECK ---
                 $borrowObj = new BorrowDetails();
-                
+
                 // This method calculates fines AND automatically bans the user if needed.
                 $isNowBlocked = $borrowObj->checkAndApplyFines($result['userID']);
 
@@ -70,7 +70,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 if ($result["role"] === "Borrower") {
                     header("Location: ../../app/views/borrower/catalogue.php");
                     exit;
-                } elseif ($result["role"] === "Admin" || $result["role"] === "Super Admin") {
+                } elseif ($result["role"] === "Librarian" || $result["role"] === "Admin") {
                     header("Location: ../../app/views/librarian/dashboard.php");
                     exit;
                 }

@@ -98,8 +98,8 @@ class Reports extends Database
                     SELECT DATE_FORMAT(CURDATE() - INTERVAL (n.n - 1) MONTH, '%M') AS month
                     FROM (SELECT 1 AS n UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10 UNION ALL SELECT 11 UNION ALL SELECT 12) AS n
                 ) AS Months
-                LEFT JOIN ( SELECT DATE_FORMAT(return_date, '%M') AS month, SUM(fine_amount) AS total_fines FROM borrowing_details WHERE fine_status = 'Paid' GROUP BY DATE_FORMAT(return_date, '%M') ) AS f_paid ON Months.month = f_paid.month
-                LEFT JOIN ( SELECT DATE_FORMAT(expected_return_date, '%M') AS month, SUM(fine_amount) AS total_fines FROM borrowing_details WHERE fine_status = 'Unpaid' GROUP BY DATE_FORMAT(expected_return_date, '%M') ) AS f_unpaid ON Months.month = f_unpaid.month
+                LEFT JOIN ( SELECT DATE_FORMAT(f.date_created, '%M') AS month, SUM(f.fine_amount) AS total_fines FROM fines f WHERE f.fine_status = 'Paid' GROUP BY DATE_FORMAT(f.date_created, '%M') ) AS f_paid ON Months.month = f_paid.month
+                LEFT JOIN ( SELECT DATE_FORMAT(f.date_created, '%M') AS month, SUM(f.fine_amount) AS total_fines FROM fines f WHERE f.fine_status = 'Unpaid' GROUP BY DATE_FORMAT(f.date_created, '%M') ) AS f_unpaid ON Months.month = f_unpaid.month
                 GROUP BY Months.month ORDER BY STR_TO_DATE(CONCAT('01 ', Months.month, ' 2000'), '%d %M %Y') ASC";
         $query = $this->connect()->prepare($sql);
         $query->execute();
@@ -108,10 +108,11 @@ class Reports extends Database
 
     public function getTopUnpaidFinesUsers($limit = 5)
     {
-        $sql = "SELECT u.fName, u.lName, SUM(bd.fine_amount) AS total_unpaid, COUNT(bd.borrowID) AS overdue_items 
+        $sql = "SELECT u.fName, u.lName, SUM(f.fine_amount) AS total_unpaid, COUNT(bd.borrowID) AS overdue_items 
                 FROM borrowing_details bd 
+                JOIN fines f ON bd.borrowID = f.borrowID
                 JOIN users u ON bd.userID = u.userID 
-                WHERE bd.fine_status = 'Unpaid' 
+                WHERE f.fine_status = 'Unpaid' 
                 GROUP BY bd.userID, u.fName, u.lName 
                 HAVING total_unpaid > 0 
                 ORDER BY total_unpaid DESC 
@@ -128,7 +129,7 @@ class Reports extends Database
                     SUM(CASE WHEN fine_status = 'Paid' THEN fine_amount ELSE 0 END) AS total_collected, 
                     SUM(CASE WHEN fine_status = 'Unpaid' THEN fine_amount ELSE 0 END) AS total_outstanding, 
                     SUM(fine_amount) AS total_issued 
-                FROM borrowing_details 
+                FROM fines 
                 WHERE fine_amount > 0";
         $query = $this->connect()->prepare($sql);
         $query->execute();
@@ -203,7 +204,7 @@ class Reports extends Database
 
     public function countTotalActiveBorrowers()
     {
-        $sql = "SELECT COUNT(userID) AS total_borrowers FROM users WHERE role = 'Borrower' AND account_status = 'Active'";
+        $sql = "SELECT COUNT(userID) AS total_borrowers FROM users WHERE roleID = 1 AND account_status = 'Active'";
         $query = $this->connect()->prepare($sql);
         $query->execute();
         $result = $query->fetch(PDO::FETCH_ASSOC);
@@ -240,11 +241,11 @@ class Reports extends Database
 
     public function getBorrowerTypeBreakdown()
     {
-        $sql = "SELECT ut.type_name, COUNT(bd.borrowID) AS borrow_count 
+        $sql = "SELECT ut.borrower_type, COUNT(bd.borrowID) AS borrow_count 
                 FROM borrowing_details bd 
                 JOIN users u ON bd.userID = u.userID 
-                JOIN user_type ut ON u.userTypeID = ut.userTypeID 
-                GROUP BY ut.type_name 
+                JOIN borrower_types ut ON u.borrowerTypeID = ut.borrowerTypeID 
+                GROUP BY ut.borrower_type 
                 ORDER BY borrow_count DESC";
         $query = $this->connect()->prepare($sql);
         $query->execute();
@@ -273,6 +274,24 @@ class Reports extends Database
             ['status' => 'Borrowed', 'count' => $borrowed],
             ['status' => 'Lost/Damaged', 'count' => $lost]
         ];
+    }
+
+    public function getLostBooksDetails()
+    {
+        $sql = "SELECT 
+                    b.book_title,
+                    b.book_copies,
+                    u.fName,
+                    u.lName,
+                    bd.pickup_date AS borrow_date,
+                    bd.borrow_status
+                FROM borrowing_details bd
+                JOIN books b ON bd.bookID = b.bookID
+                LEFT JOIN users u ON bd.userID = u.userID
+                WHERE bd.borrow_status = 'Lost'";
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getBooksPerCategory()
@@ -311,15 +330,16 @@ class Reports extends Database
             u.lName,
             bd.expected_return_date,
             bd.return_date,
-            bd.fine_status,
+            f.fine_status,
             DATEDIFF(CURDATE(), bd.expected_return_date) AS days_overdue,
-            bd.fine_amount,
+            f.fine_amount,
             bd.borrow_status
         FROM borrowing_details bd
+        INNER JOIN fines f ON bd.borrowID = f.borrowID
         INNER JOIN users u ON bd.userID = u.userID
         INNER JOIN books b ON bd.bookID = b.bookID
         WHERE 
-            bd.fine_status = 'Unpaid' OR bd.fine_status = 'Paid'
+            f.fine_status = 'Unpaid' OR f.fine_status = 'Paid'
         ORDER BY days_overdue DESC
     ";
 

@@ -86,19 +86,19 @@ unset($_SESSION['otp_error']);
                     enctype="multipart/form-data">
                     <div class="borrowerType">
                         <label for="borrowerType">Register as? <span>*</span></label>
-                        <select name="userTypeID" id="borrowerType" class="h-12 w-full rounded-lg">
+                        <select name="borrowerTypeID" id="borrowerType" class="h-12 w-full rounded-lg">
                             <option value="">--Select--</option>
                             <?php
                             foreach ($userTypes as $type) {
                                 ?>
-                                <option value="<?= $type["userTypeID"] ?>" <?= isset($register["userTypeID"]) && $register["userTypeID"] == $type["userTypeID"] ? "selected" : "" ?>>
-                                    <?= $type["type_name"] ?>
+                                <option value="<?= $type["borrowerTypeID"] ?>" <?= isset($register["borrowerTypeID"]) && $register["borrowerTypeID"] == $type["borrowerTypeID"] ? "selected" : "" ?>>
+                                    <?= $type["borrower_type"] ?>
                                 </option>
                                 <?php
                             }
                             ?>
                         </select>
-                        <p class="errors"><?= $errors["userTypeID"] ?? "" ?></p>
+                        <p class="errors"><?= $errors["borrowerTypeID"] ?? "" ?></p>
                     </div>
 
                     <div class="input">
@@ -201,16 +201,27 @@ unset($_SESSION['otp_error']);
     </main>
 
     <div class="modal <?= $open_modal == 'termsModal' ? 'open' : '' ?>" id="termsModal">
-        
-        <div class="modal-content bg-white rounded-xl shadow-2xl w-11/12 md:w-3/4 lg:w-1/2 max-h-[90vh] flex flex-col transform transition-all scale-100">
-            
-            <div class="flex justify-between items-center p-5 border-b border-gray-200 bg-gray-50 rounded-t-xl sticky top-0 z-10">
+
+        <div
+            class="modal-content bg-white rounded-xl shadow-2xl w-11/12 md:w-3/4 lg:w-1/2 max-h-[90vh] flex flex-col transform transition-all scale-100">
+
+            <div
+                class="flex justify-between items-center p-5 border-b border-gray-200 bg-gray-50 rounded-t-xl sticky top-0 z-10">
                 <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <svg class="w-6 h-6 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <svg class="w-6 h-6 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                        </path>
+                    </svg>
                     Terms and Conditions
                 </h2>
-                <button id="closeModal" class="text-gray-400 hover:text-red-600 transition-colors focus:outline-none p-1 rounded-full hover:bg-gray-200">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                <button id="closeModal"
+                    class="text-gray-400 hover:text-red-600 transition-colors focus:outline-none p-1 rounded-full hover:bg-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
                 </button>
             </div>
 
@@ -222,7 +233,9 @@ unset($_SESSION['otp_error']);
                 <section>
                     <h3 class="text-lg font-bold text-gray-900 mb-2">1. Acceptance of Terms</h3>
                     <p class="text-sm text-gray-600">
-                        By registering an account in the Library Book Borrowing System, you agree to comply with and be bound by these Terms and Conditions. If you do not agree with any part of these terms, please do not create an account or use the system.
+                        By registering an account in the Library Book Borrowing System, you agree to comply with and be
+                        bound by these Terms and Conditions. If you do not agree with any part of these terms, please do
+                        not create an account or use the system.
                     </p>
                 </section>
 
@@ -230,8 +243,10 @@ unset($_SESSION['otp_error']);
                     <h3 class="text-lg font-bold text-gray-900 mb-2">2. Account Registration</h3>
                     <ul class="list-disc list-outside pl-5 space-y-1 text-sm text-gray-600 marker:text-red-800">
                         <li>You must provide accurate, complete, and up-to-date information during registration.</li>
-                        <li>You agree not to use false information, another person’s identity, or unauthorized credentials.</li>
-                        <li>Each user is allowed to create only one account. Duplicate or fraudulent accounts will be removed or suspended.</li>
+                        <li>You agree not to use false information, another person’s identity, or unauthorized
+                            credentials.</li>
+                        <li>Each user is allowed to create only one account. Duplicate or fraudulent accounts will be
+                            removed or suspended.</li>
                     </ul>
                 </section>
 
@@ -240,7 +255,8 @@ unset($_SESSION['otp_error']);
                     <ul class="list-disc list-outside pl-5 space-y-1 text-sm text-gray-600 marker:text-red-800">
                         <li>The system is intended solely for borrowing and returning library books.</li>
                         <li>You agree not to use the system for illegal, fraudulent, or abusive activities.</li>
-                        <li>Any attempt to manipulate data, bypass system security, or misuse privileges may result in account suspension or legal action.</li>
+                        <li>Any attempt to manipulate data, bypass system security, or misuse privileges may result in
+                            account suspension or legal action.</li>
                     </ul>
                 </section>
 
@@ -256,39 +272,58 @@ unset($_SESSION['otp_error']);
                 <section>
                     <h3 class="text-lg font-bold text-gray-900 mb-2">5. Privacy and Data Protection</h3>
                     <ul class="list-disc list-outside pl-5 space-y-1 text-sm text-gray-600 marker:text-red-800">
-                        <li>The library respects your privacy and protects your personal information in accordance with the Data Privacy Act of 2012 (RA 10173).</li>
-                        <li>Information collected (such as name, ID number, email address, and borrowing history) will only be used for official library transactions.</li>
-                        <li>Your data will not be shared or disclosed without your consent, except as required by law or internal policy compliance.</li>
+                        <li>The library respects your privacy and protects your personal information in accordance with
+                            the Data Privacy Act of 2012 (RA 10173).</li>
+                        <li>Information collected (such as name, ID number, email address, and borrowing history) will
+                            only be used for official library transactions.</li>
+                        <li>Your data will not be shared or disclosed without your consent, except as required by law or
+                            internal policy compliance.</li>
                     </ul>
                 </section>
 
                 <section>
                     <h3 class="text-lg font-bold text-gray-900 mb-2">6. Violation and Suspension</h3>
                     <ul class="list-disc list-outside pl-5 space-y-1 text-sm text-gray-600 marker:text-red-800">
-                        <li>Violation of any part of these Terms may result in temporary or permanent suspension of your account.</li>
-                        <li>The library reserves the right to take disciplinary or legal action for serious offenses, such as system tampering or misuse of borrowed materials.</li>
+                        <li>Violation of any part of these Terms may result in temporary or permanent suspension of your
+                            account.</li>
+                        <li>The library reserves the right to take disciplinary or legal action for serious offenses,
+                            such as system tampering or misuse of borrowed materials.</li>
                     </ul>
                 </section>
 
                 <section class="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <h3 class="text-lg font-bold text-gray-900 mb-3">7. Contact Information</h3>
-                    <p class="text-sm text-gray-600 mb-2">For inquiries or assistance regarding your account or these terms, please contact:</p>
+                    <p class="text-sm text-gray-600 mb-2">For inquiries or assistance regarding your account or these
+                        terms, please contact:</p>
                     <div class="text-sm">
-                        <p class="font-bold text-gray-800">Library Administrator</p>
+                        <p class="font-bold text-gray-800">Library Administration</p>
                         <p class="flex items-center gap-2 mt-1">
-                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                                </path>
+                            </svg>
                             <span class="text-blue-600">library@wmsu.edu.ph</span>
                         </p>
                         <p class="flex items-start gap-2 mt-1">
-                            <svg class="w-4 h-4 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <svg class="w-4 h-4 text-gray-500 mt-0.5" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z">
+                                </path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
                             <span class="text-gray-600">WMSU Main Campus Library, Normal Road, Zamboanga City</span>
                         </p>
                     </div>
                 </section>
             </div>
 
-            <div class="p-5 border-t border-gray-200 bg-gray-50 rounded-b-xl flex justify-end gap-3 sticky bottom-0 z-10">
-                <button id="closeBtn" class="px-6 py-2.5 bg-red-800 hover:bg-red-900 text-white font-semibold rounded-lg shadow-md transition-all duration-200 transform hover:scale-105 focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+            <div
+                class="p-5 border-t border-gray-200 bg-gray-50 rounded-b-xl flex justify-end gap-3 sticky bottom-0 z-10">
+                <button id="closeBtn"
+                    class="px-6 py-2.5 bg-red-800 hover:bg-red-900 text-white font-semibold rounded-lg shadow-md transition-all duration-200 transform hover:scale-105 focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
                     I Understand & Close
                 </button>
             </div>
@@ -302,28 +337,34 @@ unset($_SESSION['otp_error']);
                 We have sent a verification code to your email address.<br>
                 Please enter the 6-digit code below to complete your registration.
             </p>
-            
+
             <form action="../../../app/controllers/registerController.php?action=verify_otp" method="POST">
                 <div class="otp-input-group">
-                    <input type="text" name="otp[]" class="otp-input" maxlength="1" 
-                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()" required>
-                    <input type="text" name="otp[]" class="otp-input" maxlength="1" 
-                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()" required>
-                    <input type="text" name="otp[]" class="otp-input" maxlength="1" 
-                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()" required>
-                    <input type="text" name="otp[]" class="otp-input" maxlength="1" 
-                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()" required>
-                    <input type="text" name="otp[]" class="otp-input" maxlength="1" 
-                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()" required>
-                    <input type="text" name="otp[]" class="otp-input" maxlength="1" 
+                    <input type="text" name="otp[]" class="otp-input" maxlength="1"
+                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()"
+                        required>
+                    <input type="text" name="otp[]" class="otp-input" maxlength="1"
+                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()"
+                        required>
+                    <input type="text" name="otp[]" class="otp-input" maxlength="1"
+                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()"
+                        required>
+                    <input type="text" name="otp[]" class="otp-input" maxlength="1"
+                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()"
+                        required>
+                    <input type="text" name="otp[]" class="otp-input" maxlength="1"
+                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()"
+                        required>
+                    <input type="text" name="otp[]" class="otp-input" maxlength="1"
                         oninput="this.value=this.value.replace(/[^0-9]/g,'')" required>
                 </div>
-                
+
                 <?php if ($otp_error): ?>
                     <p class="text-red-600 mb-4 font-bold bg-red-100 p-2 rounded"><?= $otp_error ?></p>
                 <?php endif; ?>
 
-                <button type="submit" class="bg-red-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 w-full transition-colors shadow-lg">
+                <button type="submit"
+                    class="bg-red-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 w-full transition-colors shadow-lg">
                     Verify Code
                 </button>
             </form>
@@ -335,10 +376,12 @@ unset($_SESSION['otp_error']);
             <h2 class="text-2xl font-bold mb-4 text-green-700">Email Verified!</h2>
 
             <p class="mb-6 text-gray-700">
-                Thank you for verifying your email. Your account is now <strong class="text-green-600">Pending Approval</strong>.
+                Thank you for verifying your email. Your account is now <strong class="text-green-600">Pending
+                    Approval</strong>.
             </p>
             <p class="mb-6 text-gray-700 font-semibold">
-                Please wait for the administrator to review your ID/Card validation. You can try logging in after a few hours.
+                Please wait for the administrator to review your ID/Card validation. You can try logging in after a few
+                hours.
             </p>
 
             <div class="flex justify-center mt-6">

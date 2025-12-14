@@ -11,7 +11,7 @@ require_once __DIR__ . '/../libraries/phpmailer/src/SMTP.php';
 $userObj = new User();
 $user = [];
 $errors = [];
-$userTypes = $userObj->fetchUserTypes();
+$userTypes = $userObj->fetchUserTypes(); // This method is now effectively fetching borrower types
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 $userID = $_POST["userID"] ?? $_GET["id"] ?? null;
@@ -21,7 +21,7 @@ $upload_dir = __DIR__ . "/../../public/uploads/id_images/";
 
 // --- GET CURRENT ADMIN DETAILS ---
 $currentAdminID = $_SESSION['user_id'] ?? null;
-$currentAdminName = ($_SESSION['fName'] ?? 'Admin') . ' ' . ($_SESSION['lName'] ?? '');
+$currentAdminName = ($_SESSION['fName'] ?? 'Librarian') . ' ' . ($_SESSION['lName'] ?? '');
 
 // --- 3NF LOGIC: Capture Reason IDs and Custom Remarks ---
 $remarks = NULL;
@@ -39,7 +39,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
     }
-    
+
     // Capture the typed custom note
     if (!empty($_POST['reason_custom'])) {
         $remarks = htmlspecialchars(trim($_POST['reason_custom']));
@@ -71,8 +71,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['errors']['password'] = "All password fields are required.";
         } elseif ($new_password !== $c_password) {
             $_SESSION['errors']['password'] = "New password and confirmation do not match.";
-        } 
-        
+        }
+
         // elseif (strlen($new_password) < 6) { 
         //     $_SESSION['errors']['password'] = "Password must be at least 6 characters long.";
         // }
@@ -82,7 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if (empty($_SESSION['errors'])) {
             // Ensure you have a 'changePassword' method in your manageUsers.php model
-            if ($userObj->changePassword($userID,$new_password)) {
+            if ($userObj->changePassword($userID, $new_password)) {
                 $_SESSION['success_msg'] = "Password updated successfully.";
                 header("Location: ../../app/views/borrower/profile.php?success=password");
                 exit;
@@ -106,16 +106,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $user["middleIn"] = trim(htmlspecialchars($_POST["middleIn"] ?? ''));
         $user["contact_no"] = trim(htmlspecialchars($_POST["contact_no"] ?? ''));
         $user["email"] = trim(htmlspecialchars($_POST["email"] ?? ''));
-        
+
         // Hidden fields usually present in form or session for updates
-        $user["departmentID"] = $_POST["departmentID"] ?? $_SESSION['departmentID'] ?? ''; 
-        $user["userTypeID"] = $_POST["userTypeID"] ?? $_SESSION['userTypeID'] ?? '';
-        $user["role"] = $_POST["role"] ?? $_SESSION['role'] ?? 'Borrower';
+        $user["departmentID"] = $_POST["departmentID"] ?? $_SESSION['departmentID'] ?? '';
+        $user["borrowerTypeID"] = $_POST["borrowerTypeID"] ?? $_SESSION['borrowerTypeID'] ?? '';
+        // $user["role"] = $_POST["role"] ?? $_SESSION['role'] ?? 'Borrower'; // Handled by UserType
 
         // Validations
-        if (empty($user["lName"])) $errors["lName"] = "Last Name is required.";
-        if (empty($user["fName"])) $errors["fName"] = "First Name is required.";
-        
+        if (empty($user["lName"]))
+            $errors["lName"] = "Last Name is required.";
+        if (empty($user["fName"]))
+            $errors["fName"] = "First Name is required.";
+
         if (empty($user["email"])) {
             $errors["email"] = "Email is required.";
         } elseif (!filter_var($user["email"], FILTER_VALIDATE_EMAIL)) {
@@ -144,7 +146,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 if (move_uploaded_file($file['tmp_name'], $target_path)) {
                     $new_image_name = $new_name;
                     $new_image_dir = "public/uploads/id_images/" . $new_name;
-                    
+
                     // Remove old image if it exists and isn't default
                     if ($existing_image_name && file_exists(__DIR__ . "/../../" . $existing_image_dir)) {
                         unlink(__DIR__ . "/../../" . $existing_image_dir);
@@ -163,8 +165,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $userObj->contact_no = $user["contact_no"];
             $userObj->departmentID = $user["departmentID"];
             $userObj->email = $user["email"];
-            $userObj->userTypeID = $user["userTypeID"];
-            $userObj->role = $user["role"];
+            $userObj->borrowerTypeID = $user["borrowerTypeID"];
+            // $userObj->role = $user["role"]; // Removed in 3NF
             $userObj->imageID_name = $new_image_name;
             $userObj->imageID_dir = $new_image_dir;
 
@@ -201,8 +203,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $user["contact_no"] = trim(htmlspecialchars($_POST["contact_no"] ?? ''));
         $user["departmentID"] = trim(htmlspecialchars($_POST["departmentID"] ?? ''));
         $user["email"] = trim(htmlspecialchars($_POST["email"] ?? ''));
-        $user["userTypeID"] = trim(htmlspecialchars($_POST["userTypeID"] ?? ''));
-        $user["role"] = trim(htmlspecialchars($_POST["role"] ?? ''));
+        $user["borrowerTypeID"] = trim(htmlspecialchars($_POST["borrowerTypeID"] ?? ''));
+        // $user["role"] = trim(htmlspecialchars($_POST["role"] ?? '')); // Removed in 3NF
 
         if (empty($user["lName"])) {
             $errors["lName"] = "Last Name is required.";
@@ -210,11 +212,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (empty($user["fName"])) {
             $errors["fName"] = "First Name is required.";
         }
-        if (empty($user["userTypeID"])) {
-            $errors["userTypeID"] = "User Type is required.";
+        if (empty($user["borrowerTypeID"])) {
+            $errors["borrowerTypeID"] = "User Type is required.";
         }
-        if (empty($user["role"])) {
-            $errors["role"] = "Role is required.";
+        if (empty($user["borrowerTypeID"])) {
+            $errors["borrowerTypeID"] = "User Type is required.";
         }
 
         if ($userID) {
@@ -265,8 +267,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $userObj->contact_no = $user["contact_no"];
                 $userObj->departmentID = $user["departmentID"];
                 $userObj->email = $user["email"];
-                $userObj->userTypeID = $user["userTypeID"];
-                $userObj->role = $user["role"];
+                $userObj->borrowerTypeID = $user["borrowerTypeID"];
+                // $userObj->role = $user["role"]; // Removed in 3NF
 
                 $userObj->imageID_name = $new_image_name;
                 $userObj->imageID_dir = $new_image_dir;
@@ -295,10 +297,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // --- REJECT ACTION (Updated) ---
     if ($action === 'reject' && $userID) {
-        
+
         // Pass $currentAdminID to log who rejected it
         if ($userObj->updateUserStatus($userID, "Rejected", "Inactive", "Reject", $remarks, $reasonIDs, $currentAdminID)) {
-            
+
             $mail = new PHPMailer(true);
             $userData = $userObj->fetchUser($userID);
             $fullName = $userData["fName"] . ' ' . $userData["lName"];
@@ -306,11 +308,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // Fetch reasons for email
             $statusDetails = $userObj->fetchLatestUserReasons($userID);
             $emailReasonList = "<ul>";
-            foreach($statusDetails['reasons'] as $rText) {
+            foreach ($statusDetails['reasons'] as $rText) {
                 $emailReasonList .= "<li>" . htmlspecialchars($rText) . "</li>";
             }
             $emailReasonList .= "</ul>";
-            if(!empty($statusDetails['remarks'])) {
+            if (!empty($statusDetails['remarks'])) {
                 $emailReasonList .= "<p><em>Note: " . htmlspecialchars($statusDetails['remarks']) . "</em></p>";
             }
 
@@ -349,7 +351,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                 You may contact the librarian for more details regarding your application.
                             </p>
                             <div style="text-align: center; margin-bottom: 10px;">
-                                <a href="#" style="background-color: #edf2f7; color: #2d3748; border: 1px solid #cbd5e0; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; display: inline-block;">Contact Support</a>
+                                <a href="http://localhost/Library-Book-Borrowing-System/app/views/borrower/contact.php" style="background-color: #edf2f7; color: #2d3748; border: 1px solid #cbd5e0; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; display: inline-block;">Contact Support</a>
                             </div>
                         </div>
                     </div>
@@ -370,10 +372,10 @@ EOT;
 
     // --- BLOCK ACTION (Updated) ---
     if ($action === 'block' && $userID) {
-        
+
         // Pass $currentAdminID
         if ($userObj->updateUserStatus($userID, "", "Blocked", "Block", $remarks, $reasonIDs, $currentAdminID)) {
-            
+
             $mail = new PHPMailer(true);
             $userData = $userObj->fetchUser($userID);
             $fullName = $userData["fName"] . ' ' . $userData["lName"];
@@ -381,11 +383,11 @@ EOT;
             // Fetch reasons for email
             $statusDetails = $userObj->fetchLatestUserReasons($userID);
             $emailReasonList = "<ul>";
-            foreach($statusDetails['reasons'] as $rText) {
+            foreach ($statusDetails['reasons'] as $rText) {
                 $emailReasonList .= "<li>" . htmlspecialchars($rText) . "</li>";
             }
             $emailReasonList .= "</ul>";
-            if(!empty($statusDetails['remarks'])) {
+            if (!empty($statusDetails['remarks'])) {
                 $emailReasonList .= "<p><em>Note: " . htmlspecialchars($statusDetails['remarks']) . "</em></p>";
             }
 
@@ -424,7 +426,7 @@ EOT;
                                 To restore your access, please resolve this issue with the administration office as soon as possible.
                             </p>
                             <div style="text-align: center; margin-bottom: 20px;">
-                                <a href="#" style="background-color: #2D3748; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; display: inline-block;">Contact Support</a>
+                                <a href="http://localhost/Library-Book-Borrowing-System/app/views/borrower/contact.php" style="background-color: #2D3748; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; display: inline-block;">Contact Support</a>
                             </div>
                             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
                             <p style="font-size: 12px; color: #a0aec0; text-align: center;">
@@ -452,7 +454,7 @@ EOT;
 if ($action === 'unblock' && $userID) {
     // Pass $currentAdminID
     if ($userObj->updateUserStatus($userID, "Approved", "Active", "Unblock", $remarks, $reasonIDs, $currentAdminID)) {
-        
+
         $mail = new PHPMailer(true);
         $userData = $userObj->fetchUser($userID);
         $fullName = $userData["fName"] . ' ' . $userData["lName"];
@@ -491,7 +493,7 @@ if ($action === 'unblock' && $userID) {
                             You now have full access to borrow books, reserve titles, and view your history.
                         </p>
                         <div style="text-align: center; margin-bottom: 10px;">
-                            <a href="#" style="background-color: #3182ce; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; display: inline-block;">Login to Account</a>
+                            <a href="http://localhost/Library-Book-Borrowing-System/app/views/borrower/login.php" style="background-color: #3182ce; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; display: inline-block;">Login to Account</a>
                         </div>
                         <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
                         <p style="font-size: 12px; color: #a0aec0; text-align: center;">
@@ -564,7 +566,7 @@ if ($action === 'approve' && $userID) {
                             You can now log in to browse books and manage your reservations.
                         </p>
                         <div style="text-align: center; margin-bottom: 10px;">
-                            <a href="#" style="background-color: #28a745; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; display: inline-block;">Login to Dashboard</a>
+                            <a href="http://localhost/Library-Book-Borrowing-System/app/views/borrower/login.php" style="background-color: #28a745; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; display: inline-block;">Login to Dashboard</a>
                         </div>
                     </div>
                 </div>
@@ -590,14 +592,14 @@ if ($action === 'delete' && $userID) {
     $targetUserRole = $targetUserData['role'];
     $imagePath = $targetUserData['imageID_dir'] ?? null;
 
-    if ($targetUserRole === 'Super Admin') {
-        $_SESSION["errors"] = ["permission" => "System Error: Cannot delete the Main Super Admin account."];
+    if ($targetUserRole === 'Admin') {
+        $_SESSION["errors"] = ["permission" => "System Error: Cannot delete the Main Admin account."];
         header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}");
         exit;
     }
 
-    if ($currentUserRole !== 'Super Admin' && $targetUserRole === 'Admin') {
-        $_SESSION["errors"] = ["permission" => "Permission Denied: Only a Super Admin can delete other Librarians."];
+    if ($currentUserRole !== 'Admin' && $targetUserRole === 'Librarian') {
+        $_SESSION["errors"] = ["permission" => "Permission Denied: Only an Admin can delete other Librarians."];
         header("Location: ../../app/views/librarian/usersSection.php?tab={$currentTab}");
         exit;
     }
