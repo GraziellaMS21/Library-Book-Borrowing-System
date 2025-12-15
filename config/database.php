@@ -6,7 +6,7 @@ class Database {
     private $host = "localhost";
     private $username = "root";
     private $password = "";
-    private $dbname = "library_book_borrowing_db";
+    private $dbname = "library_book_borrowing_db"; 
 
     protected $conn;
 

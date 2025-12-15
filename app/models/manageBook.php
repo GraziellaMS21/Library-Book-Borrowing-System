@@ -57,7 +57,7 @@ class Book extends Database
             $query->bindValue(":book_cover_dir", $this->book_cover_dir);
             $query->bindValue(":replacement_cost", $this->replacement_cost);
             $query->execute();
-
+ 
             $newBookID = $pdo->lastInsertId();
 
             $sqlAuthor = "INSERT INTO book_authors (bookID, authorID) VALUES (:bookID, :authorID)";
