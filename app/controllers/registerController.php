@@ -49,6 +49,10 @@ EOT;
         return false;
     }
 }
+
+// ==========================================================
+// ACTION 1: REGISTER
+// ==========================================================
 if ($action === 'register' && $_SERVER["REQUEST_METHOD"] == "POST") {
 
     $register["borrowerTypeID"] = trim(htmlspecialchars($_POST["borrowerTypeID"] ?? ''));
@@ -141,6 +145,7 @@ if ($action === 'register' && $_SERVER["REQUEST_METHOD"] == "POST") {
 
                 // Set session for verification step
                 $_SESSION['verify_email'] = $register["email"];
+                $_SESSION['verify_name'] = $fullName; // Store name for resending
 
                 // Redirect to Verify View
                 header("Location: ../../app/views/borrower/register.php?view=verify");
@@ -170,9 +175,13 @@ if ($action === 'register' && $_SERVER["REQUEST_METHOD"] == "POST") {
 // ==========================================================
 else if ($action === 'verify_otp' && $_SERVER["REQUEST_METHOD"] == "POST") {
 
-    $otp = implode("", $_POST['otp'] ?? []);
-    if (empty($otp))
-        $otp = trim($_POST['otp_code'] ?? '');
+    // MODIFIED: Prioritize the single input field 'otp_code'
+    $otp = trim($_POST['otp_code'] ?? '');
+    
+    // Fallback for array (if old cached version used)
+    if (empty($otp) && isset($_POST['otp'])) {
+        $otp = implode("", $_POST['otp']);
+    }
 
     $email = $_SESSION['verify_email'] ?? '';
 
@@ -186,10 +195,11 @@ else if ($action === 'verify_otp' && $_SERVER["REQUEST_METHOD"] == "POST") {
     $user = $registerObj->verifyEmailOtp($email, $otp);
 
     if ($user) {
-        // Success: Change status from 'Unverified' to 'Pending' (for Admin Review)
+        // Success: Change status from 'Unverified' to 'Pending'
         $registerObj->markEmailVerified($email);
 
         unset($_SESSION['verify_email']);
+        unset($_SESSION['verify_name']);
 
         // Redirect to Final Success Page
         header("Location: ../../app/views/borrower/register.php?success=pending");
@@ -199,5 +209,37 @@ else if ($action === 'verify_otp' && $_SERVER["REQUEST_METHOD"] == "POST") {
         header("Location: ../../app/views/borrower/register.php?view=verify");
         exit;
     }
+}
+
+// ==========================================================
+// ACTION 3: RESEND OTP (UPDATED)
+// ==========================================================
+else if ($action === 'resend_otp') {
+    
+    $email = $_SESSION['verify_email'] ?? '';
+    $name = $_SESSION['verify_name'] ?? 'User'; // Fallback name
+
+    if (!empty($email)) {
+        // Generate NEW OTP
+        $otp = rand(100000, 999999);
+        $expiry = date("Y-m-d H:i:s", time() + (60 * 10)); // 10 Minutes
+
+        // UPDATE DB using the new model method
+        if ($registerObj->updateVerificationCode($email, $otp, $expiry)) {
+            // Send Email
+            if (sendOtpEmail($email, $name, $otp)) {
+                 $_SESSION['otp_success'] = "A new code has been sent to your email.";
+            } else {
+                 $_SESSION['otp_error'] = "Failed to send email. Please try again.";
+            }
+        } else {
+             $_SESSION['otp_error'] = "Failed to update verification code. Please try again.";
+        }
+    } else {
+        $_SESSION['otp_error'] = "Session expired. Please register again.";
+    }
+
+    header("Location: ../../app/views/borrower/register.php?view=verify");
+    exit;
 }
 ?>

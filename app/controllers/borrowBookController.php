@@ -26,8 +26,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if ($action === 'validate_borrow') {
         header('Content-Type: application/json');
-
-        // Support JSON input
         $input = json_decode(file_get_contents('php://input'), true);
         if (!$input) {
             $input = $_POST;
@@ -45,7 +43,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             exit;
         }
 
-        // 1. Fetch User & Status Check
+        // Fetch User & Status Check
         require_once(__DIR__ . "/../models/manageUsers.php");
         $userObj = new User();
         $user = $userObj->fetchUser($userID);
@@ -75,7 +73,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             exit;
         }
 
-        // 2. Borrow Limit Logic
+        // Borrow Limit Logic
         $userTypeID = (int) $user["borrowerTypeID"];
         $borrow_limit = (int) ($user["borrower_limit"] ?? 1);
         $current_borrowed_count = $borrowObj->fetchTotalBorrowedBooks($userID); // Includes Pending
@@ -133,7 +131,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $total_requested_copies += $requested_copies;
         }
 
-        // 3. Total Limit Check
+        // Total Limit Check
         if ($total_requested_copies > $available_slots) {
             $response['success'] = false;
             if ($available_slots <= 0) {
@@ -361,7 +359,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Construct display string for email/notification
         $reasonParts = [];
 
-        // 1. Fetch text for valid numeric IDs
+        // Fetch text for valid numeric IDs
         if (!empty($validReasonIDs)) {
             $reasonTexts = $borrowObj->getReasonTexts($validReasonIDs);
             if (!empty($reasonTexts)) {
@@ -369,14 +367,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
 
-        // 2. Add "Others" label if selected
+        // Add "Others" label if selected
         if ($isOtherSelected) {
             $reasonParts[] = "Others";
         }
 
         $reasonTextString = implode(", ", $reasonParts);
 
-        // 3. Append Remarks
+        // Append Remarks
         $displayReason = $reasonTextString;
         if (!empty($remarks)) {
             $displayReason .= (!empty($displayReason) ? " - " : "") . $remarks;
@@ -392,13 +390,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $return_date = NULL;
 
             if ($borrowObj->updateBorrowDetails($borrowID, $borrow_status, $borrow_request_status, $return_date)) {
-
-                // --- 3NF UPDATE: LOG HISTORY ---
                 $currentUserID = $_SESSION['user_id'] ?? $detail['userID'];
-
-                // Pass ONLY valid numeric IDs to database model (foreign key constraint)
                 $borrowObj->addBorrowStatusHistory($borrowID, 'Cancel', $remarks, $validReasonIDs, $currentUserID);
-                // -------------------------------
 
                 if ($detail['borrow_request_status'] === 'Approved') {
                     $book_id_to_update = $detail['bookID'];

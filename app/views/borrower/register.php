@@ -12,7 +12,7 @@ $departments = $registerObj->fetchDepartments();
 // Check for parameters in the URL
 $current_modal = $_GET['modal'] ?? '';
 $success_message = $_GET['success'] ?? '';
-$view_mode = $_GET['view'] ?? ''; // NEW: Check if we are in verification mode
+$view_mode = $_GET['view'] ?? '';
 $open_modal = '';
 
 if ($success_message === 'pending') {
@@ -20,12 +20,13 @@ if ($success_message === 'pending') {
 } else if ($current_modal === 'terms') {
     $open_modal = 'termsModal';
 } else if ($view_mode === 'verify') {
-    $open_modal = 'verifyEmailModal'; // NEW: Set modal to verify email
+    $open_modal = 'verifyEmailModal';
 }
 
-// Get OTP specific errors if any
+// Get OTP specific errors/success if any
 $otp_error = $_SESSION['otp_error'] ?? '';
-unset($_SESSION['otp_error']);
+$otp_success = $_SESSION['otp_success'] ?? ''; // New: For resend success message
+unset($_SESSION['otp_error'], $_SESSION['otp_success']);
 ?>
 
 <!DOCTYPE html>
@@ -39,30 +40,35 @@ unset($_SESSION['otp_error']);
     <link rel="stylesheet" href="../../../public/assets/css/header_footer.css" />
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
     <style>
-        /* NEW STYLES: For OTP Input Fields */
-        .otp-input-group {
-            display: flex;
-            gap: 10px;
+        /* Shared Modal Styles (If not already in CSS) */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
             justify-content: center;
-            margin-bottom: 20px;
+            align-items: center;
         }
 
-        .otp-input {
-            width: 45px;
-            height: 55px;
-            text-align: center;
-            font-size: 24px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            background-color: #f9f9f9;
-            transition: all 0.3s ease;
+        .modal.open {
+            display: flex;
         }
 
-        .otp-input:focus {
-            border-color: #991b1b;
-            background-color: #fff;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(153, 27, 27, 0.1);
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 30px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 450px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
     </style>
 </head>
@@ -201,21 +207,11 @@ unset($_SESSION['otp_error']);
     </main>
 
     <div class="modal <?= $open_modal == 'termsModal' ? 'open' : '' ?>" id="termsModal">
-
         <div
             class="modal-content bg-white rounded-xl shadow-2xl w-11/12 md:w-3/4 lg:w-1/2 max-h-[90vh] flex flex-col transform transition-all scale-100">
-
             <div
                 class="flex justify-between items-center p-5 border-b border-gray-200 bg-gray-50 rounded-t-xl sticky top-0 z-10">
-                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <svg class="w-6 h-6 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                        </path>
-                    </svg>
-                    Terms and Conditions
-                </h2>
+                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">Terms and Conditions</h2>
                 <button id="closeModal"
                     class="text-gray-400 hover:text-red-600 transition-colors focus:outline-none p-1 rounded-full hover:bg-gray-200">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,149 +220,58 @@ unset($_SESSION['otp_error']);
                     </svg>
                 </button>
             </div>
-
             <div class="p-6 overflow-y-auto text-gray-700 space-y-6 leading-relaxed">
-                <p class="text-sm text-gray-500 italic border-l-4 border-red-800 pl-3">
-                    Please read these terms carefully before creating an account.
-                </p>
-
-                <section>
-                    <h3 class="text-lg font-bold text-gray-900 mb-2">1. Acceptance of Terms</h3>
-                    <p class="text-sm text-gray-600">
-                        By registering an account in the Library Book Borrowing System, you agree to comply with and be
-                        bound by these Terms and Conditions. If you do not agree with any part of these terms, please do
-                        not create an account or use the system.
-                    </p>
-                </section>
-
-                <section>
-                    <h3 class="text-lg font-bold text-gray-900 mb-2">2. Account Registration</h3>
-                    <ul class="list-disc list-outside pl-5 space-y-1 text-sm text-gray-600 marker:text-red-800">
-                        <li>You must provide accurate, complete, and up-to-date information during registration.</li>
-                        <li>You agree not to use false information, another person’s identity, or unauthorized
-                            credentials.</li>
-                        <li>Each user is allowed to create only one account. Duplicate or fraudulent accounts will be
-                            removed or suspended.</li>
-                    </ul>
-                </section>
-
-                <section>
-                    <h3 class="text-lg font-bold text-gray-900 mb-2">3. Use of the System</h3>
-                    <ul class="list-disc list-outside pl-5 space-y-1 text-sm text-gray-600 marker:text-red-800">
-                        <li>The system is intended solely for borrowing and returning library books.</li>
-                        <li>You agree not to use the system for illegal, fraudulent, or abusive activities.</li>
-                        <li>Any attempt to manipulate data, bypass system security, or misuse privileges may result in
-                            account suspension or legal action.</li>
-                    </ul>
-                </section>
-
-                <section>
-                    <h3 class="text-lg font-bold text-gray-900 mb-2">4. Account Responsibility</h3>
-                    <ul class="list-disc list-outside pl-5 space-y-1 text-sm text-gray-600 marker:text-red-800">
-                        <li>You are responsible for maintaining the confidentiality of your account credentials.</li>
-                        <li>If you suspect unauthorized access, you must immediately notify library staff.</li>
-                        <li>You are liable for any activity that occurs under your account until reported.</li>
-                    </ul>
-                </section>
-
-                <section>
-                    <h3 class="text-lg font-bold text-gray-900 mb-2">5. Privacy and Data Protection</h3>
-                    <ul class="list-disc list-outside pl-5 space-y-1 text-sm text-gray-600 marker:text-red-800">
-                        <li>The library respects your privacy and protects your personal information in accordance with
-                            the Data Privacy Act of 2012 (RA 10173).</li>
-                        <li>Information collected (such as name, ID number, email address, and borrowing history) will
-                            only be used for official library transactions.</li>
-                        <li>Your data will not be shared or disclosed without your consent, except as required by law or
-                            internal policy compliance.</li>
-                    </ul>
-                </section>
-
-                <section>
-                    <h3 class="text-lg font-bold text-gray-900 mb-2">6. Violation and Suspension</h3>
-                    <ul class="list-disc list-outside pl-5 space-y-1 text-sm text-gray-600 marker:text-red-800">
-                        <li>Violation of any part of these Terms may result in temporary or permanent suspension of your
-                            account.</li>
-                        <li>The library reserves the right to take disciplinary or legal action for serious offenses,
-                            such as system tampering or misuse of borrowed materials.</li>
-                    </ul>
-                </section>
-
-                <section class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <h3 class="text-lg font-bold text-gray-900 mb-3">7. Contact Information</h3>
-                    <p class="text-sm text-gray-600 mb-2">For inquiries or assistance regarding your account or these
-                        terms, please contact:</p>
-                    <div class="text-sm">
-                        <p class="font-bold text-gray-800">Library Administration</p>
-                        <p class="flex items-center gap-2 mt-1">
-                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
-                                </path>
-                            </svg>
-                            <span class="text-blue-600">library@wmsu.edu.ph</span>
-                        </p>
-                        <p class="flex items-start gap-2 mt-1">
-                            <svg class="w-4 h-4 text-gray-500 mt-0.5" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z">
-                                </path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
-                            <span class="text-gray-600">WMSU Main Campus Library, Normal Road, Zamboanga City</span>
-                        </p>
-                    </div>
-                </section>
+                <p>Please read these terms carefully...</p>
             </div>
-
             <div
                 class="p-5 border-t border-gray-200 bg-gray-50 rounded-b-xl flex justify-end gap-3 sticky bottom-0 z-10">
-                <button id="closeBtn"
-                    class="px-6 py-2.5 bg-red-800 hover:bg-red-900 text-white font-semibold rounded-lg shadow-md transition-all duration-200 transform hover:scale-105 focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-                    I Understand & Close
-                </button>
+                <button id="closeBtn" class="px-6 py-2.5 bg-red-800 text-white font-semibold rounded-lg">I Understand &
+                    Close</button>
             </div>
         </div>
     </div>
 
     <div id="verifyEmailModal" class="modal <?= $open_modal == 'verifyEmailModal' ? 'open' : '' ?>">
-        <div class="modal-content text-center">
-            <h2 class="text-2xl font-bold mb-4 text-gray-800">Verify Your Email</h2>
-            <p class="mb-6 text-gray-600">
+        <div class="modal-content text-center p-8">
+            <h2 class="text-2xl font-bold mb-2 text-gray-800">Verify Your Email</h2>
+            <p class="mb-6 text-sm text-gray-600">
                 We have sent a verification code to your email address.<br>
-                Please enter the 6-digit code below to complete your registration.
+                Please enter the 6-digit code below.
             </p>
 
-            <form action="../../../app/controllers/registerController.php?action=verify_otp" method="POST">
-                <div class="otp-input-group">
-                    <input type="text" name="otp[]" class="otp-input" maxlength="1"
-                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()"
-                        required>
-                    <input type="text" name="otp[]" class="otp-input" maxlength="1"
-                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()"
-                        required>
-                    <input type="text" name="otp[]" class="otp-input" maxlength="1"
-                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()"
-                        required>
-                    <input type="text" name="otp[]" class="otp-input" maxlength="1"
-                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()"
-                        required>
-                    <input type="text" name="otp[]" class="otp-input" maxlength="1"
-                        oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length==1) this.nextElementSibling.focus()"
-                        required>
-                    <input type="text" name="otp[]" class="otp-input" maxlength="1"
-                        oninput="this.value=this.value.replace(/[^0-9]/g,'')" required>
+            <form action="../../../app/controllers/registerController.php?action=verify_otp" method="POST" class="!w-full">
+
+                <?php if ($otp_success): ?>
+                    <div class="p-3 mb-4 text-sm text-green-700 bg-green-100 rounded-lg text-center">
+                        <?= $otp_success ?>
+                    </div>
+                <?php endif; ?>
+
+                <div class="input mb-6">
+                    <input type="text" name="otp_code"
+                        class="input-field w-full border p-2 rounded text-center text-lg tracking-widest h-12"
+                        placeholder="e.g. 123456" maxlength="6" pattern="\d{6}" required autofocus>
                 </div>
 
                 <?php if ($otp_error): ?>
-                    <p class="text-red-600 mb-4 font-bold bg-red-100 p-2 rounded"><?= $otp_error ?></p>
+                    <p class="text-red-600 mb-4 font-bold bg-red-100 p-2 rounded text-sm"><?= $otp_error ?></p>
                 <?php endif; ?>
 
                 <button type="submit"
-                    class="bg-red-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 w-full transition-colors shadow-lg">
+                    class="bg-red-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 w-full transition-colors shadow-lg mb-4">
                     Verify Code
                 </button>
+
+                <div class="text-center">
+                    <p id="timerText" class="text-sm text-gray-500">
+                        Resend code in <span id="timer" class="font-bold text-red-600">02:00</span>
+                    </p>
+
+                    <a href="../../../app/controllers/registerController.php?action=resend_otp" id="resendBtn"
+                        class="hidden text-sm text-blue-600 hover:underline font-bold">
+                        Resend OTP
+                    </a>
+                </div>
             </form>
         </div>
     </div>
@@ -374,7 +279,6 @@ unset($_SESSION['otp_error']);
     <div id="successPendingModal" class="modal <?= $open_modal == 'successPendingModal' ? 'open' : '' ?>">
         <div class="modal-content text-center">
             <h2 class="text-2xl font-bold mb-4 text-green-700">Email Verified!</h2>
-
             <p class="mb-6 text-gray-700">
                 Thank you for verifying your email. Your account is now <strong class="text-green-600">Pending
                     Approval</strong>.
@@ -383,7 +287,6 @@ unset($_SESSION['otp_error']);
                 Please wait for the administrator to review your ID/Card validation. You can try logging in after a few
                 hours.
             </p>
-
             <div class="flex justify-center mt-6">
                 <a href="login.php"
                     class="bg-red-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
@@ -397,8 +300,36 @@ unset($_SESSION['otp_error']);
 </body>
 <script src="../../../public/assets/js/header_footer.js"></script>
 <script>
-    //email message js
     document.addEventListener('DOMContentLoaded', function () {
+        // --- Timer Logic for Verification Modal ---
+        const verifyModal = document.getElementById('verifyEmailModal');
+        const timerElement = document.getElementById('timer');
+        const timerText = document.getElementById('timerText');
+        const resendBtn = document.getElementById('resendBtn');
+
+        // Only run timer if the verify modal is open
+        if (verifyModal && verifyModal.classList.contains('open')) {
+            let timeLeft = 120; // 2 minutes
+
+            const countdown = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(countdown);
+                    if (timerText) timerText.style.display = 'none';
+                    if (resendBtn) resendBtn.classList.remove('hidden');
+                    if (resendBtn) resendBtn.style.display = 'inline-block'; // Ensure visibility
+                } else {
+                    timeLeft--;
+                    const minutes = Math.floor(timeLeft / 60);
+                    const seconds = timeLeft % 60;
+                    if (timerElement) {
+                        timerElement.textContent =
+                            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    }
+                }
+            }, 1000);
+        }
+
+        // --- Existing Form Logic ---
         const id_number = document.getElementById('id_number_container');
         const select = document.getElementById('borrowerType');
         const college_department_div = document.getElementById('college_department');
@@ -421,59 +352,39 @@ unset($_SESSION['otp_error']);
                 id_number.classList.add('hidden');
             }
         }
-        updateFields();
-        select.addEventListener('change', updateFields);
 
-        // --- Custom JS for the success modal ---
+        if (select) {
+            updateFields();
+            select.addEventListener('change', updateFields);
+        }
+
+        // --- Success Modal Logic ---
         const successModal = document.getElementById('successPendingModal');
-        if (successModal.classList.contains('open')) {
-            // Function to close the modal and remove the URL parameter
+        if (successModal && successModal.classList.contains('open')) {
             const closeModal = () => {
                 const url = new URL(window.location.href);
                 url.searchParams.delete('success');
-                window.history.replaceState(null, '', url); // Clean the URL without reloading
+                window.history.replaceState(null, '', url);
                 successModal.classList.remove('open');
                 successModal.style.display = 'none';
             };
-
-            // Close when clicking the login button (it redirects anyway, but cleans the URL history)
             const loginBtn = successModal.querySelector('a');
-            loginBtn.addEventListener('click', () => {
-                closeModal(); // Only cleans URL, actual redirect handled by <a> tag
-            });
-
-            // Close when clicking outside the modal
-            window.addEventListener('click', (e) => {
-                if (e.target === successModal) {
-                    closeModal();
-                }
-            });
+            if (loginBtn) loginBtn.addEventListener('click', () => { closeModal(); });
+            window.addEventListener('click', (e) => { if (e.target === successModal) closeModal(); });
         }
-    });
 
-    //modal js for terms and conditions
-    const openModal = document.getElementById("openModal");
-    const closeModal = document.getElementById("closeModal");
-    const closeBtn = document.getElementById("closeBtn");
-    const modal = document.getElementById("termsModal");
-    openModal.addEventListener("click", () => {
-        modal.classList.add("open");
+        // --- Terms Modal Logic ---
+        const openModal = document.getElementById("openModal");
+        const closeModalTerms = document.getElementById("closeModal");
+        const closeBtnTerms = document.getElementById("closeBtn");
+        const modalTerms = document.getElementById("termsModal");
 
-    })
-
-    closeModal.addEventListener("click", () => {
-        modal.classList.remove("open");
-
-    })
-
-    closeBtn.addEventListener("click", () => {
-        modal.classList.remove("open");
-    })
-
-    modal.addEventListener("click", (e) => {
-        if (e.target === modal) {
-            modal.classList.remove("open");
-        }
+        if (openModal) openModal.addEventListener("click", () => modalTerms.classList.add("open"));
+        if (closeModalTerms) closeModalTerms.addEventListener("click", () => modalTerms.classList.remove("open"));
+        if (closeBtnTerms) closeBtnTerms.addEventListener("click", () => modalTerms.classList.remove("open"));
+        if (modalTerms) modalTerms.addEventListener("click", (e) => {
+            if (e.target === modalTerms) modalTerms.classList.remove("open");
+        });
     });
 </script>
 

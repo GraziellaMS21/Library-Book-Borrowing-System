@@ -72,8 +72,6 @@ class Notification extends Database
         $query->bindParam(":notifID", $notifID);
         return $query->execute();
     }
-
-    // New method to delete a notification
     public function deleteNotification($notifID)
     {
         $sql = "DELETE FROM notifications WHERE notifID = :notifID";

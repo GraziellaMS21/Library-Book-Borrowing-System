@@ -118,5 +118,16 @@ class Register extends Database
         $query->bindParam(":email", $email);
         return $query->execute();
     }
+
+    // NEW FUNCTION: Update Verification Code (For Resend OTP)
+    public function updateVerificationCode($email, $code, $expiry)
+    {
+        $sql = "UPDATE users SET verification_code = :code, verification_expiry = :expiry WHERE email = :email";
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(":code", $code);
+        $query->bindParam(":expiry", $expiry);
+        $query->bindParam(":email", $email);
+        return $query->execute();
+    }
 }
 ?>

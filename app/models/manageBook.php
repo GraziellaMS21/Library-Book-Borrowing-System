@@ -17,7 +17,6 @@ class Book extends Database
 
     protected $db;
 
-    // --- HELPER FUNCTION FOR AUTHOR FORMATTING ---
     private function formatAuthorString($author_names)
     {
         if (empty($author_names))
@@ -34,7 +33,6 @@ class Book extends Database
         }
         return $author_names;
     }
-    // ---------------------------------------------
 
     public function addBook($authorsArray, $publisherName)
     {
@@ -118,7 +116,6 @@ class Book extends Database
             }
             $query->execute();
 
-            // Update Authors
             $delSql = "DELETE FROM book_authors WHERE bookID = :bookID";
             $delQuery = $pdo->prepare($delSql);
             $delQuery->execute([':bookID' => $pid]);
@@ -152,7 +149,6 @@ class Book extends Database
             LEFT JOIN book_authors ba ON b.bookID = ba.bookID
             LEFT JOIN authors a ON ba.authorID = a.authorID";
 
-        // Added filter for soft delete
         $conditions = ["b.is_removed = 0"];
 
         if ($search != "") {
@@ -179,7 +175,6 @@ class Book extends Database
         if ($query->execute()) {
             $results = $query->fetchAll();
 
-            // Format author names for display
             foreach ($results as &$row) {
                 if (!empty($row['author_names'])) {
                     $row['author_names'] = $this->formatAuthorString($row['author_names']);
@@ -194,26 +189,13 @@ class Book extends Database
 
     public function deleteBook($pid)
     {
-        // Changed DELETE to UPDATE is_removed
         $sql = "UPDATE books SET is_removed = 1 WHERE bookID = :id";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":id", $pid);
         $result = $query->execute();
-
-        // Commented out file deletion so image persists if book is restored
-        /*
-        $book = $this->fetchBook($pid);
-        if ($result && $book && !empty($book['book_cover_dir'])) {
-            $absolute_path = __DIR__ . "/../../" . $book['book_cover_dir'];
-            if (file_exists($absolute_path)) {
-                @unlink($absolute_path);
-            }
-        }
-        */
         return $result;
     }
 
-    // Updated to support multiple authors
     public function showThreeBooks($categoryID)
     {
         $sql = "SELECT b.*, c.category_name,
@@ -232,7 +214,6 @@ class Book extends Database
 
         if ($query->execute()) {
             $results = $query->fetchAll();
-            // Format author names for display
             foreach ($results as &$row) {
                 if (!empty($row['author_names'])) {
                     $row['author_names'] = $this->formatAuthorString($row['author_names']);
@@ -244,7 +225,6 @@ class Book extends Database
         }
     }
 
-    // Get raw array for editing
     public function fetchBookAuthors($bookID)
     {
         $sql = "SELECT a.author_name 
@@ -286,7 +266,6 @@ class Book extends Database
 
     public function countTotalDistinctBooks()
     {
-        // Added is_removed filter
         $sql = "SELECT COUNT(book_title) AS total_books FROM books WHERE is_removed = 0";
         $query = $this->connect()->prepare($sql);
         $query->execute();
@@ -296,7 +275,6 @@ class Book extends Database
 
     public function countTotalBookCopies()
     {
-        // Added is_removed filter
         $sql = "SELECT (SELECT SUM(book_copies) FROM books WHERE is_removed = 0) AS total_books";
         $query = $this->connect()->prepare($sql);
         $query->execute();
@@ -306,7 +284,6 @@ class Book extends Database
 
     public function fetchCategory()
     {
-        // Added is_removed filter
         $sql = "SELECT * FROM category WHERE is_removed = 0";
         $query = $this->connect()->prepare($sql);
         if ($query->execute()) {
@@ -333,7 +310,6 @@ class Book extends Database
         $query->execute();
         $result = $query->fetch();
 
-        // Apply author formatting to the single result
         if ($result && !empty($result['author_names'])) {
             $result['author_names'] = $this->formatAuthorString($result['author_names']);
         }
@@ -343,7 +319,6 @@ class Book extends Database
 
     public function fetchBookTitles()
     {
-        // Added is_removed filter
         $sql = "SELECT bookID, book_title FROM books WHERE is_removed = 0";
         $query = $this->connect()->prepare($sql);
         $query->execute();
@@ -353,7 +328,6 @@ class Book extends Database
     public function isTitleExist($book_title, $bookID = "")
     {
         if ($bookID) {
-            // Check is_removed so we can reuse names of deleted books
             $sql = "SELECT COUNT(bookID) as total_books FROM books WHERE book_title = :book_title AND bookID <> :bookID AND is_removed = 0";
         } else {
             $sql = "SELECT COUNT(bookID) as total_books FROM books WHERE book_title = :book_title AND is_removed = 0";

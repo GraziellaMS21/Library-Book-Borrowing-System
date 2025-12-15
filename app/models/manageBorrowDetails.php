@@ -35,29 +35,36 @@ class BorrowDetails extends Database
 
     public function addBorrowStatusHistory($borrowID, $actionType, $remarks, $reasonIDs = [], $adminID = null)
     {
-        $this->db = $this->connect();
-        try {
-            $sqlHist = "INSERT INTO borrowing_status_history (borrowID, action_type, additional_remarks, performed_by) VALUES (:bid, :action, :remarks, :adminID)";
-            $query = $this->db->prepare($sqlHist);
-            $query->execute([
-                ':bid' => $borrowID,
-                ':action' => $actionType,
-                ':remarks' => $remarks,
-                ':adminID' => $adminID
-            ]);
-            $historyID = $this->db->lastInsertId();
+        // Insert into borrowing_status_history
+        $sqlHist = "INSERT INTO borrowing_status_history 
+                (borrowID, action_type, additional_remarks, performed_by)
+                VALUES (:bid, :action, :remarks, :adminID)";
 
-            if (!empty($reasonIDs)) {
-                $sqlEvent = "INSERT INTO borrowing_status_event_reasons (historyID, reasonID) VALUES (:hid, :rid)";
-                $queryEvent = $this->db->prepare($sqlEvent);
-                foreach ($reasonIDs as $rid) {
-                    $queryEvent->execute([':hid' => $historyID, ':rid' => $rid]);
-                }
+        $queryHist = $this->connect()->prepare($sqlHist);
+        $queryHist->bindParam(":bid", $borrowID);
+        $queryHist->bindParam(":action", $actionType);
+        $queryHist->bindParam(":remarks", $remarks);
+        $queryHist->bindParam(":adminID", $adminID);
+
+        $result = $queryHist->execute();
+
+        if ($result && !empty($reasonIDs)) {
+            $historyID = $this->connect()->lastInsertId();
+
+            $sqlEvent = "INSERT INTO borrowing_status_event_reasons 
+                     (historyID, reasonID)
+                     VALUES (:hid, :rid)";
+
+            $queryEvent = $this->connect()->prepare($sqlEvent);
+
+            foreach ($reasonIDs as $rid) {
+                $queryEvent->bindParam(":hid", $historyID);
+                $queryEvent->bindParam(":rid", $rid);
+                $queryEvent->execute();
             }
-            return true;
-        } catch (Exception $e) {
-            return false;
         }
+
+        return $result;
     }
 
     public function getReasonTexts($reasonIDs)
@@ -119,7 +126,6 @@ class BorrowDetails extends Database
         $query->bindParam(":returned_condition", $this->returned_condition);
         $query->bindParam(":borrow_request_status", $this->borrow_request_status);
         $query->bindParam(":borrow_status", $this->borrow_status);
-        // Fine columns removed from borrowing_details
         return $query->execute();
     }
 
@@ -152,7 +158,6 @@ class BorrowDetails extends Database
         $query->bindParam(":returned_condition", $this->returned_condition);
         $query->bindParam(":borrow_request_status", $this->borrow_request_status);
         $query->bindParam(":borrow_status", $this->borrow_status);
-        // Fine columns removed from borrowing_details
 
         return $query->execute();
     }
@@ -469,35 +474,66 @@ class BorrowDetails extends Database
 
     public function calculateFinalFine($expected_return_date, $comparison_date_string, Book $bookObj, $bookID)
     {
+        // If no comparison date is provided, use today's date
         $comparison_date_string = $comparison_date_string ?: date("Y-m-d");
+
+        // Convert date strings into DateTime objects for comparison
         $comparison = new DateTime($comparison_date_string);
         $expected = new DateTime($expected_return_date);
-        $results = ['is_lost' => false, 'fine_amount' => 0.00, 'fine_reason' => null, 'fine_status' => null];
 
+        // Default result structure (assume no fine at first)
+        $results = [
+            'is_lost' => false,
+            'fine_amount' => 0.00,
+            'fine_reason' => null,
+            'fine_status' => null
+        ];
+
+        // Check if the book was returned AFTER the expected return date
         if ($comparison > $expected) {
+
+            // Get the difference between expected date and actual return date
             $interval = $expected->diff($comparison);
             $days_late = $interval->days;
 
-            $MAX_LATE_WEEKS = 10;
+            // Fine rules and limits
+            $MAX_LATE_WEEKS = 10;                // Maximum late period before book is considered lost
             $MAX_LATE_DAYS = $MAX_LATE_WEEKS * 7;
-            $DAILY_FINE = 5.00;
+            $DAILY_FINE = 5.00;              // Fine per day
 
+            // If the book is late for 10 weeks or more, treat it as LOST
             if ($days_late >= $MAX_LATE_DAYS) {
+
                 $results['is_lost'] = true;
+
+                // Maximum late fine accumulated before the book is marked lost
                 $max_accumulated_fine = $MAX_LATE_DAYS * $DAILY_FINE;
+
+                // Get the replacement cost of the book from the Book object
                 $replacement_cost = $bookObj->fetchBookReplacementCost($bookID);
+
+                // Total fine = max late fine + replacement cost
                 $results['fine_amount'] = $max_accumulated_fine + $replacement_cost;
                 $results['fine_reason'] = 'Lost';
                 $results['fine_status'] = 'Unpaid';
-            } else {
+
+            }
+            // Otherwise, the book is just LATE
+            else {
+
+                // Late fine is computed based on number of days late
                 $late_fine_amount = $days_late * $DAILY_FINE;
+
                 $results['fine_amount'] = $late_fine_amount;
                 $results['fine_reason'] = 'Late';
                 $results['fine_status'] = 'Unpaid';
             }
         }
+
+        // Return the final fine computation results
         return $results;
     }
+
 
     public function countTotalBorrowedBooks()
     {
@@ -692,20 +728,18 @@ class BorrowDetails extends Database
         return $query->execute();
     }
 
-    // Helper to calculate max copies allowed based on user type and limits
     public function calculateMaxCopiesAllowed($userTypeID, $borrow_limit, $current_borrowed_count, $max_available, $is_borrowed)
     {
         $available_slots = $borrow_limit - $current_borrowed_count;
 
         if ($available_slots <= 0) {
-            return 0; // No available slots overall
+            return 0;
         }
 
-        if ($userTypeID == 1 || $userTypeID == 3) { // Student, Guest: Max 1 copy of any single book
+        if ($userTypeID == 1 || $userTypeID == 3) {
             if ($is_borrowed) {
-                return 0; // Already borrowed this specific book (must return it first)
+                return 0;
             }
-            // Limit to 1 copy, available slots, and stock
             return min(1, $available_slots, $max_available);
         }
 
@@ -713,12 +747,10 @@ class BorrowDetails extends Database
             if ($is_borrowed) {
                 return 0;
             }
-
-            // Allowed by stock and overall limit
             return min($max_available, $available_slots);
         }
 
-        return 0; // Default safety
+        return 0;
     }
 }
 ?>

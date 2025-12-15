@@ -16,12 +16,8 @@ class User extends Database
     public $date_registered = "";
     public $role = "";
     public $registration_status = "";
-    // public $status_reason = ""; // Removed in 3NF
     protected $db;
 
-    // ==========================================================
-    // NEW: CHANGE PASSWORD METHOD
-    // ==========================================================
     public function changePassword($userID, $new_password)
     {
         $sql = "UPDATE users SET password = :password WHERE userID = :userID";
@@ -33,7 +29,6 @@ class User extends Database
 
     public function editUser($userID)
     {
-        // Added id_number to the SQL query
         $sql = "UPDATE users SET 
                     lName = :lName, 
                     fName = :fName, 
@@ -49,23 +44,17 @@ class User extends Database
 
         $query = $this->connect()->prepare($sql);
 
-        // LOGIC: Convert empty strings to NULL for optional fields
-        // This prevents Foreign Key constraints from failing if no department is selected
         $deptID = empty($this->departmentID) ? null : $this->departmentID;
         $query->bindParam(":lName", $this->lName);
         $query->bindParam(":fName", $this->fName);
         $query->bindParam(":middleIn", $this->middleIn);
         $query->bindParam(":contact_no", $this->contact_no);
-
-        // Bind the processed variables (NULL or Value)
         $query->bindParam(":departmentID", $deptID);
         $query->bindParam(":id_number", $idNum);
-
         $query->bindParam(":imageID_name", $this->imageID_name);
         $query->bindParam(":imageID_dir", $this->imageID_dir);
         $query->bindParam(":email", $this->email);
         $query->bindParam(":borrowerTypeID", $this->borrowerTypeID);
-        // $query->bindParam(":role", $this->role); // Removed in 3NF
         $query->bindParam(":userID", $userID);
 
         return $query->execute();
@@ -74,8 +63,6 @@ class User extends Database
     public function viewUser($search = "", $userType = "", $statusFilter = "")
     {
         $whereConditions = [];
-
-        // Always filter out deleted users
         $whereConditions[] = "u.is_removed = 0";
 
         $dbStatus = ucfirst($statusFilter);
@@ -164,7 +151,7 @@ class User extends Database
         $query = $this->connect()->prepare($sql);
         $query->bindParam(':borrowerTypeID', $borrowerTypeID);
         $query->execute();
-        $result = $query->fetch(PDO::FETCH_ASSOC);
+        $result = $query->fetch();
         return $result['borrower_limit'] ?? 0;
     }
 
@@ -185,9 +172,6 @@ class User extends Database
         $record = $query->fetch();
         return ($record["total_users"] > 0);
     }
-
-    // --- 3NF METHODS START ---
-
     public function fetchReasonRefs($category = null)
     {
         $sql = "SELECT * FROM ref_status_reasons";
@@ -199,10 +183,9 @@ class User extends Database
             $query->bindParam(':category', $category);
         }
         $query->execute();
-        return $query->fetchAll(PDO::FETCH_ASSOC);
+        return $query->fetchAll();
     }
 
-    // UPDATED: Now fetches the Admin Name who performed the action
     public function fetchLatestUserReasons($userID)
     {
         $sqlHistory = "SELECT h.userHistoryID, h.additional_remarks, h.created_at, 
@@ -215,7 +198,7 @@ class User extends Database
         $queryHistory = $this->connect()->prepare($sqlHistory);
         $queryHistory->bindParam(':userID', $userID);
         $queryHistory->execute();
-        $history = $queryHistory->fetch(PDO::FETCH_ASSOC);
+        $history = $queryHistory->fetch();
 
         if (!$history)
             return ['remarks' => '', 'reasons' => [], 'admin_name' => 'System', 'date' => ''];
@@ -235,66 +218,69 @@ class User extends Database
         ];
     }
 
-    // UPDATED: Now accepts $adminID to track who performed the action
     public function updateUserStatus($userID, $newRegStatus, $newAccStatus, $actionType, $remarks = "", $reasonIDs = [], $adminID = null)
     {
-        $this->db = $this->connect();
+        /* 1. Update users table */
+        if ($newRegStatus != "" && $newAccStatus != "") {
+            $sql = "UPDATE users 
+                SET registration_status = :newReg,
+                    account_status = :newAcc
+                WHERE userID = :userID";
+        } elseif ($newRegStatus != "") {
+            $sql = "UPDATE users 
+                SET registration_status = :newReg
+                WHERE userID = :userID";
+        } else {
+            $sql = "UPDATE users 
+                SET account_status = :newAcc
+                WHERE userID = :userID";
+        }
 
-        try {
-            $this->db->beginTransaction();
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(":userID", $userID);
 
-            // 1. Update the Users Table (Status only)
-            $sql = "UPDATE users SET ";
-            $params = [':userID' => $userID];
+        if ($newRegStatus != "")
+            $query->bindParam(":newReg", $newRegStatus);
 
-            if ($newRegStatus != "" && $newAccStatus != "") {
-                $sql .= "registration_status = :newReg, account_status = :newAcc";
-                $params[':newReg'] = $newRegStatus;
-                $params[':newAcc'] = $newAccStatus;
-            } else if ($newRegStatus != "") {
-                $sql .= "registration_status = :newReg";
-                $params[':newReg'] = $newRegStatus;
-            } else {
-                $sql .= "account_status = :newAcc";
-                $params[':newAcc'] = $newAccStatus;
-            }
+        if ($newAccStatus != "")
+            $query->bindParam(":newAcc", $newAccStatus);
 
-            $sql .= " WHERE userID = :userID";
-            $query = $this->db->prepare($sql);
-            foreach ($params as $key => $value)
-                $query->bindValue($key, $value);
-            $query->execute();
+        $result = $query->execute();
 
-            // 2. Insert into History with performed_by
-            $sqlHist = "INSERT INTO user_status_history (userID, action_type, additional_remarks, performed_by) VALUES (:uid, :action, :remarks, :adminID)";
-            $queryHist = $this->db->prepare($sqlHist);
-            $queryHist->execute([
-                ':uid' => $userID,
-                ':action' => $actionType,
-                ':remarks' => $remarks,
-                ':adminID' => $adminID
-            ]);
-            $historyID = $this->db->lastInsertId();
+        /* 2. Insert user status history */
+        if ($result) {
+            $sqlHist = "INSERT INTO user_status_history
+                    (userID, action_type, additional_remarks, performed_by)
+                    VALUES (:uid, :action, :remarks, :adminID)";
 
-            // 3. Insert Reasons (Loop through IDs)
+            $queryHist = $this->connect()->prepare($sqlHist);
+            $queryHist->bindParam(":uid", $userID);
+            $queryHist->bindParam(":action", $actionType);
+            $queryHist->bindParam(":remarks", $remarks);
+            $queryHist->bindParam(":adminID", $adminID);
+            $queryHist->execute();
+
+            $historyID = $this->connect()->lastInsertId();
+
+            /* 3. Insert reasons */
             if (!empty($reasonIDs)) {
-                $sqlEvent = "INSERT INTO user_status_event_reasons (historyID, reasonID) VALUES (:hid, :rid)";
-                $queryEvent = $this->db->prepare($sqlEvent);
+                $sqlEvent = "INSERT INTO user_status_event_reasons
+                         (userHistoryID, reasonID)
+                         VALUES (:hid, :rid)";
+
+                $queryEvent = $this->connect()->prepare($sqlEvent);
+
                 foreach ($reasonIDs as $rid) {
-                    $queryEvent->execute([':hid' => $historyID, ':rid' => $rid]);
+                    $queryEvent->bindParam(":hid", $historyID);
+                    $queryEvent->bindParam(":rid", $rid);
+                    $queryEvent->execute();
                 }
             }
-
-            $this->db->commit();
-            return true;
-
-        } catch (Exception $e) {
-            $this->db->rollBack();
-            return false;
         }
+
+        return $result;
     }
 
-    // --- 3NF METHODS END ---
 
     public function deleteUser($userID)
     {
@@ -302,13 +288,11 @@ class User extends Database
         $checkQuery = $this->connect()->prepare($checkSql);
         $checkQuery->bindParam(":userID", $userID);
         $checkQuery->execute();
-        $targetUser = $checkQuery->fetch(PDO::FETCH_ASSOC);
+        $targetUser = $checkQuery->fetch();
 
         if ($targetUser && $targetUser['role'] === 'Admin') {
             return false;
         }
-
-        // Changed DELETE to UPDATE is_removed
         $sql = "UPDATE users SET is_removed = 1 WHERE userID = :userID";
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":userID", $userID);
@@ -317,31 +301,28 @@ class User extends Database
 
     public function countTotalActiveBorrowers()
     {
-        // Added is_removed filter
         $sql = "SELECT COUNT(u.userID) AS total_borrowers FROM users u JOIN user_roles ur ON u.roleID = ur.roleID WHERE ur.role_name = 'Borrower' AND u.account_status = 'Active' AND u.is_removed = 0";
         $query = $this->connect()->prepare($sql);
         $query->execute();
-        $result = $query->fetch(PDO::FETCH_ASSOC);
+        $result = $query->fetch();
         return $result['total_borrowers'] ?? 0;
     }
 
     public function countPendingUsers()
     {
-        // Added is_removed filter
         $sql = "SELECT COUNT(u.userID) AS total_pending FROM users u JOIN user_roles ur ON u.roleID = ur.roleID WHERE u.registration_status = 'Pending' AND ur.role_name = 'Borrower' AND u.is_removed = 0";
         $query = $this->connect()->prepare($sql);
         $query->execute();
-        $result = $query->fetch(PDO::FETCH_ASSOC);
+        $result = $query->fetch();
         return $result['total_pending'] ?? 0;
     }
 
     public function getUserRegistrationTrend()
     {
-        // Optional: filter removed users from statistics? Usually yes.
         $sql = "SELECT DATE(date_registered) AS reg_date, COUNT(userID) AS new_users FROM users WHERE date_registered >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND is_removed = 0 GROUP BY DATE(date_registered) ORDER BY reg_date ASC";
         $query = $this->connect()->prepare($sql);
         $query->execute();
-        return $query->fetchAll(PDO::FETCH_ASSOC);
+        return $query->fetchAll();
     }
 
     public function fetchDepartments()
