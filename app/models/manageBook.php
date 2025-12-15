@@ -39,7 +39,7 @@ class Book extends Database
         $pdo = $this->connect();
         try {
             $pdo->beginTransaction();
-            $pubID = $this->getOrCreatePublisher($publisherName);
+            $pubID = $this->getOrCreatePublisher($publisherName, $pdo);
 
             $sql = "INSERT INTO books (book_title, publisherID, categoryID, publication_year, ISBN, book_copies, book_condition, date_added, book_cover_name, book_cover_dir, replacement_cost) 
                     VALUES (:book_title, :publisherID, :categoryID, :publication_year, :ISBN, :book_copies, :book_condition, :date_added, :book_cover_name, :book_cover_dir, :replacement_cost)";
@@ -65,7 +65,7 @@ class Book extends Database
 
             foreach ($authorsArray as $authorName) {
                 if (!empty(trim($authorName))) {
-                    $authID = $this->getOrCreateAuthor($authorName);
+                    $authID = $this->getOrCreateAuthor($authorName, $pdo);
                     $stmtAuthor->execute([':bookID' => $newBookID, ':authorID' => $authID]);
                 }
             }
@@ -82,7 +82,7 @@ class Book extends Database
         $pdo = $this->connect();
         try {
             $pdo->beginTransaction();
-            $pubID = $this->getOrCreatePublisher($this->publication_name);
+            $pubID = $this->getOrCreatePublisher($this->publication_name, $pdo);
 
             $sql = "UPDATE books SET 
                     book_title = :book_title, 
@@ -125,7 +125,7 @@ class Book extends Database
 
             foreach ($authorsArray as $authorName) {
                 if (!empty(trim($authorName))) {
-                    $authID = $this->getOrCreateAuthor($authorName);
+                    $authID = $this->getOrCreateAuthor($authorName, $pdo);
                     $stmtAuthor->execute([':bookID' => $pid, ':authorID' => $authID]);
                 }
             }
@@ -236,32 +236,34 @@ class Book extends Database
         return $query->fetchAll(PDO::FETCH_COLUMN);
     }
 
-    public function getOrCreatePublisher($name)
+    public function getOrCreatePublisher($name, $pdo = null)
     {
+        $conn = $pdo ?? $this->connect();
         $name = trim($name);
-        $query = $this->connect()->prepare("SELECT publisherID FROM publishers WHERE publisher_name = :name");
+        $query = $conn->prepare("SELECT publisherID FROM publishers WHERE publisher_name = :name");
         $query->execute([':name' => $name]);
         $row = $query->fetch(PDO::FETCH_ASSOC);
         if ($row)
             return $row['publisherID'];
 
-        $query = $this->connect()->prepare("INSERT INTO publishers (publisher_name) VALUES (:name)");
+        $query = $conn->prepare("INSERT INTO publishers (publisher_name) VALUES (:name)");
         $query->execute([':name' => $name]);
-        return $this->connect()->lastInsertId();
+        return $conn->lastInsertId();
     }
 
-    public function getOrCreateAuthor($name)
+    public function getOrCreateAuthor($name, $pdo = null)
     {
+        $conn = $pdo ?? $this->connect();
         $name = trim($name);
-        $query = $this->connect()->prepare("SELECT authorID FROM authors WHERE author_name = :name");
+        $query = $conn->prepare("SELECT authorID FROM authors WHERE author_name = :name");
         $query->execute([':name' => $name]);
         $row = $query->fetch(PDO::FETCH_ASSOC);
         if ($row)
             return $row['authorID'];
 
-        $query = $this->connect()->prepare("INSERT INTO authors (author_name) VALUES (:name)");
+        $query = $conn->prepare("INSERT INTO authors (author_name) VALUES (:name)");
         $query->execute([':name' => $name]);
-        return $this->connect()->lastInsertId();
+        return $conn->lastInsertId();
     }
 
     public function countTotalDistinctBooks()
@@ -334,6 +336,24 @@ class Book extends Database
         }
         $query = $this->connect()->prepare($sql);
         $query->bindParam(":book_title", $book_title);
+        if ($bookID)
+            $query->bindParam(":bookID", $bookID);
+        if ($query->execute()) {
+            $record = $query->fetch();
+            return ($record["total_books"] > 0);
+        }
+        return false;
+    }
+
+    public function isISBNExist($isbn, $bookID = "")
+    {
+        if ($bookID) {
+            $sql = "SELECT COUNT(bookID) as total_books FROM books WHERE ISBN = :isbn AND bookID <> :bookID AND is_removed = 0";
+        } else {
+            $sql = "SELECT COUNT(bookID) as total_books FROM books WHERE ISBN = :isbn AND is_removed = 0";
+        }
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(":isbn", $isbn);
         if ($bookID)
             $query->bindParam(":bookID", $bookID);
         if ($query->execute()) {

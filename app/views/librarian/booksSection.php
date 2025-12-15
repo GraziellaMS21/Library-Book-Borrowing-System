@@ -93,10 +93,30 @@ $books = $bookObj->viewBook($search, $categoryID);
     <title>Librarian Dashboard</title>
     <script src="../../../public/assets/js/tailwind.3.4.17.js"></script>
     <link rel="stylesheet" href="../../../public/assets/css/admin.css" />
-        <style>
-        .modal { display: none; position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-        .modal.open { display: block; }
-        .modal-content { background-color: #fefefe; padding: 20px; border: 1px solid #888; width: 80%; border-radius: 8px; }
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal.open {
+            display: block;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            border-radius: 8px;
+        }
     </style>
 </head>
 
@@ -187,6 +207,12 @@ $books = $bookObj->viewBook($search, $categoryID);
         <h2>Add New Book</h2>
         <form action="../../../app/controllers/bookController.php?action=add" method="POST"
             enctype="multipart/form-data">
+
+            <?php if (!empty($errors["general"])): ?>
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <span class="block sm:inline"><?= $errors["general"] ?></span>
+                </div>
+            <?php endif; ?>
 
             <div class="input" id="book_cover">
                 <label for="book_cover">Upload Book Cover<span>*</span> : </label>
@@ -455,19 +481,20 @@ $books = $bookObj->viewBook($search, $categoryID);
                     $modal_book_cover_url = !empty($modal_book['book_cover_dir']) ? "../../../" . $modal_book['book_cover_dir'] : null;
 
                     if ($modal_book_cover_url) { ?>
-                        <div class="w-full max-w-xs aspect-[3/4] bg-gray-100 rounded-lg border-2 border-gray-300 border-dashed flex items-center justify-center overflow-hidden shadow-inner group relative mx-auto">
-                            <img 
-                                src="<?= $modal_book_cover_url ?>" 
-                                alt="Book Cover Image"
+                        <div
+                            class="w-full max-w-xs aspect-[3/4] bg-gray-100 rounded-lg border-2 border-gray-300 border-dashed flex items-center justify-center overflow-hidden shadow-inner group relative mx-auto">
+                            <img src="<?= $modal_book_cover_url ?>" alt="Book Cover Image"
                                 class="w-full h-full object-contain cursor-zoom-in hover:scale-105 transition-transform duration-300"
-                                onclick="openImageModal(this.src)"
-                            >
-                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                <span class="bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">Click to Zoom</span>
+                                onclick="openImageModal(this.src)">
+                            <div
+                                class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <span class="bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">Click to
+                                    Zoom</span>
                             </div>
                         </div>
                     <?php } else { ?>
-                        <div class="w-full max-w-xs h-32 bg-gray-100 rounded-lg border border-gray-300 flex items-center justify-center mx-auto">
+                        <div
+                            class="w-full max-w-xs h-32 bg-gray-100 rounded-lg border border-gray-300 flex items-center justify-center mx-auto">
                             <p class="text-gray-500">No Book Cover Uploaded</p>
                         </div>
                     <?php } ?>
@@ -536,7 +563,8 @@ $books = $bookObj->viewBook($search, $categoryID);
     </div>
 </div>
 
-<div id="imageModal" class="fixed inset-0 z-[60] hidden bg-black bg-opacity-95 flex items-center justify-center p-4" onclick="closeImageModal()">
+<div id="imageModal" class="fixed inset-0 z-[60] hidden bg-black bg-opacity-95 flex items-center justify-center p-4"
+    onclick="closeImageModal()">
     <span class="absolute top-6 right-6 text-white text-5xl cursor-pointer hover:text-gray-300 font-bold">&times;</span>
     <img id="expandedImg" class="max-w-full max-h-full rounded-md shadow-2xl object-contain" src="">
 </div>

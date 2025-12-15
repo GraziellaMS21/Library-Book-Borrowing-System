@@ -16,7 +16,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $authorsInput = $_POST["authors"] ?? [];
     // Remove empty strings
     $authorsInput = array_filter($authorsInput, function ($a) {
-        return !empty(trim($a)); });
+        return !empty(trim($a));
+    });
 
     // Save to book array for session persistence if error occurs
     $book["authors"] = $authorsInput;
@@ -74,6 +75,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $errors["book_title"] = "Book Title already exist";
         }
 
+        if (empty($book["ISBN"])) {
+            // Already validated above
+        } else if ($bookObj->isISBNExist($book["ISBN"], null)) {
+            $errors["ISBN"] = "ISBN already exist";
+        } // End of ISBN check
+
         if (empty($book["book_cover_name"]) || $_FILES["book_cover"]["error"] == UPLOAD_ERR_NO_FILE) {
             $errors["book_cover"] = "Upload Book Cover is required";
         } elseif ($_FILES["book_cover"]["error"] !== UPLOAD_ERR_OK) {
@@ -102,7 +109,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     if (file_exists($book_cover_full_path)) {
                         unlink($book_cover_full_path);
                     }
-                    $_SESSION["errors"] = ["general" => "Failed to add book due to a database error."];
+                    $_SESSION["errors"] = ["general" => "Failed to add book due to a database error. Check for duplicates or invalid data."];
                     $_SESSION["old"] = $book;
                     header("Location: ../../app/views/librarian/booksSection.php?modal=add");
                     exit;
@@ -123,6 +130,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $errors["book_title"] = "Book Title is required";
         } else if ($bookObj->isTitleExist($book["book_title"], $bookID)) {
             $errors["book_title"] = "Book Title already exist";
+        }
+
+        if (empty($book["ISBN"])) {
+            // Already validated
+        } else if ($bookObj->isISBNExist($book["ISBN"], $bookID)) {
+            $errors["ISBN"] = "ISBN already exist";
         }
 
         $existing_cover_name = trim(htmlspecialchars($_POST["existing_cover_name"] ?? ''));
