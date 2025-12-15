@@ -110,28 +110,51 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         // --- EDIT ACTION ---
+        // --- EDIT ACTION ---
         if ($action === 'edit' && $borrowID) {
             if (!isset($current_detail) || !$current_detail) {
                 $current_detail = $borrowObj->fetchBorrowDetail($borrowID);
             }
-            $comparison_date = $borrowObj->return_date ?: date("Y-m-d");
-            if ($borrowObj->fine_amount <= 0.01 && $borrowObj->expected_return_date) {
-                $fine_results = $borrowObj->calculateFinalFine($borrowObj->expected_return_date, $comparison_date, $bookObj, $detail['bookID']);
-                $borrowObj->fine_amount = $fine_results['fine_amount'];
-                $borrowObj->fine_reason = $fine_results['fine_reason'];
-                $borrowObj->fine_status = ($fine_results['fine_amount'] > 0) ? 'Unpaid' : ($borrowObj->fine_status ?: NULL);
+
+            // DETERMINE COMPARISON DATE
+            // If the book is already returned (has a return_date), calculate based on that date.
+            // If it is NOT returned yet, calculate based on TODAY.
+            $comparison_date = !empty($borrowObj->return_date) ? $borrowObj->return_date : date("Y-m-d");
+
+            // AUTOMATIC RECALCULATION LOGIC
+            // Only run this if the submitted fine is 0. 
+            // This allows you to manually set a fine if you want, but if you leave it 0 and it's late, it fixes it.
+            if ($borrowObj->fine_amount <= 0.00 && $borrowObj->expected_return_date) {
+
+                // Calculate what the fine SHOULD be
+                $fine_results = $borrowObj->calculateFinalFine(
+                    $borrowObj->expected_return_date,
+                    $comparison_date,
+                    $bookObj,
+                    $detail['bookID']
+                );
+
+                // If the calculation found a fine, override the 0.00 value
+                if ($fine_results['fine_amount'] > 0) {
+                    $borrowObj->fine_amount = $fine_results['fine_amount'];
+                    $borrowObj->fine_reason = $fine_results['fine_reason'];
+                    $borrowObj->fine_status = 'Unpaid';
+                }
             }
+
+            // Ensure fine status/reason are NULL if amount is 0 (Clean up)
             if ($borrowObj->fine_amount <= 0.00) {
                 $borrowObj->fine_reason = NULL;
                 $borrowObj->fine_status = NULL;
             }
+
+            // Save to Database (Updates both Borrowing Details and Fines tables)
             if ($borrowObj->editBorrowDetail($borrowID)) {
                 header("Location: ../../app/views/librarian/borrowDetailsSection.php?tab={$current_tab}&success=edit");
                 exit;
             } else {
                 $errors["general"] = "Failed to edit detail due to a database error.";
             }
-
             // --- RETURN ACTION ---
         } elseif ($action === 'return' && $borrowID) {
             if (!isset($current_detail) || !$current_detail) {

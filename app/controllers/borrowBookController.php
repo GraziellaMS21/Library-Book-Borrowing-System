@@ -24,6 +24,7 @@ $borrowID = $_POST["borrowID"] ?? $_GET["id"] ?? null;
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
+    // --- VALIDATE BORROW (Used by JS/AJAX before submission) ---
     if ($action === 'validate_borrow') {
         header('Content-Type: application/json');
         $input = json_decode(file_get_contents('php://input'), true);
@@ -59,13 +60,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($user['account_status'] !== 'Active') {
             $response['success'] = false;
             $response['errors'][] = "Your account is currently {$user['account_status']}. You cannot borrow books.";
-            // If blocked, we can stop here
             echo json_encode($response);
             exit;
         }
 
-        // STRICT UNPAID FINES CHECK
-        // checkAndApplyFines returns true if there are unpaid fines
+        // STRICT UNPAID FINES CHECK (Calculates fines on the fly)
         if ($borrowObj->checkAndApplyFines($userID)) {
             $response['success'] = false;
             $response['errors'][] = "You have unpaid fines. Please settle them before borrowing.";
@@ -107,12 +106,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             $is_borrowed = $borrowObj->isBookBorrowed($userID, $bookID);
 
-            // Use the new Model method
+            // Use the Model method for limits
             $max_allowed_per_book = $borrowObj->calculateMaxCopiesAllowed(
                 $userTypeID,
                 $borrow_limit,
-                $current_borrowed_count, // Passed for context, though slots check is separate
-                $real_available, // Check against real availability
+                $current_borrowed_count, 
+                $real_available, 
                 $is_borrowed
             );
 
@@ -145,6 +144,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     }
 
+    // --- ADD MULTIPLE (Checkout from List) ---
     if ($action === 'add_multiple') {
         $userID = trim(htmlspecialchars($_POST["userID"] ?? ''));
         $pickup_date = trim(htmlspecialchars($_POST["pickup_date"] ?? ''));
@@ -214,6 +214,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $errors["general"] = "Failed to process any loan request from the list.";
             }
         }
+    
+    // --- ADD SINGLE (Direct Borrow) ---
     } elseif ($action === 'add') {
         $detail['userID'] = trim(htmlspecialchars($_POST["userID"] ?? ''));
         $detail['bookID'] = trim(htmlspecialchars($_POST["bookID"] ?? ''));
@@ -266,6 +268,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $errors["general"] = "Failed to add the loan request to the database.";
             }
         }
+
+    // --- EDIT (Admin Side) ---
     } elseif ($action === 'edit' && $borrowID) {
         $detail['userID'] = trim(htmlspecialchars($_POST["userID"] ?? ''));
         $detail['bookID'] = trim(htmlspecialchars($_POST["bookID"] ?? ''));
@@ -280,7 +284,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $detail['fine_amount'] = (float) trim(htmlspecialchars($_POST["fine_amount"] ?? 0.00));
         $detail['fine_reason'] = trim(htmlspecialchars($_POST["fine_reason"] ?? NULL));
         $detail['fine_status'] = trim(htmlspecialchars($_POST["fine_status"] ?? NULL));
-
 
         if (empty($detail['userID']))
             $errors['userID'] = "User ID is required.";
@@ -308,7 +311,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $borrowObj->fine_status = $detail['fine_status'];
 
             if ($borrowObj->borrow_status === 'Returned' && $borrowObj->return_date) {
-
                 $fine_results = $borrowObj->calculateFinalFine(
                     $borrowObj->expected_return_date,
                     $borrowObj->return_date,
@@ -334,6 +336,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $errors["general"] = "Failed to edit detail due to a database error.";
             }
         }
+    
+    // --- CANCEL (User Side) ---
     } elseif ($action === 'cancel' && $borrowID) {
         $detail = $borrowObj->fetchBorrowDetail($borrowID);
         $current_tab = $_GET['tab'] ?? 'pending';

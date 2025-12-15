@@ -35,7 +35,6 @@ class BorrowDetails extends Database
 
     public function addBorrowStatusHistory($borrowID, $actionType, $remarks, $reasonIDs = [], $adminID = null)
     {
-        // Insert into borrowing_status_history
         $sqlHist = "INSERT INTO borrowing_status_history 
                 (borrowID, action_type, additional_remarks, performed_by)
                 VALUES (:bid, :action, :remarks, :adminID)";
@@ -131,36 +130,55 @@ class BorrowDetails extends Database
 
     public function editBorrowDetail($borrowID)
     {
-        $sql = "UPDATE borrowing_details 
-                SET 
-                    userID = :userID,
-                    bookID = :bookID,
-                    no_of_copies = :no_of_copies,
-                    request_date = :request_date,
-                    pickup_date = :pickup_date,
-                    return_date = :return_date,
-                    expected_return_date = :expected_return_date,
-                    returned_condition = :returned_condition,
-                    borrow_request_status = :borrow_request_status,
-                    borrow_status = :borrow_status
-                WHERE borrowID = :borrowID";
+        try {
+            // 1. Update the main Borrowing Details Table
+            $sql = "UPDATE borrowing_details 
+                    SET 
+                        userID = :userID,
+                        bookID = :bookID,
+                        no_of_copies = :no_of_copies,
+                        request_date = :request_date,
+                        pickup_date = :pickup_date,
+                        return_date = :return_date,
+                        expected_return_date = :expected_return_date,
+                        returned_condition = :returned_condition,
+                        borrow_request_status = :borrow_request_status,
+                        borrow_status = :borrow_status
+                    WHERE borrowID = :borrowID";
 
-        $query = $this->connect()->prepare($sql);
+            $query = $this->connect()->prepare($sql);
 
-        $query->bindParam(":borrowID", $borrowID);
-        $query->bindParam(":userID", $this->userID);
-        $query->bindParam(":bookID", $this->bookID);
-        $query->bindParam(":no_of_copies", $this->no_of_copies);
-        $query->bindParam(":request_date", $this->request_date);
-        $query->bindParam(":pickup_date", $this->pickup_date);
-        $query->bindParam(":return_date", $this->return_date);
-        $query->bindParam(":expected_return_date", $this->expected_return_date);
-        $query->bindParam(":returned_condition", $this->returned_condition);
-        $query->bindParam(":borrow_request_status", $this->borrow_request_status);
-        $query->bindParam(":borrow_status", $this->borrow_status);
+            $query->bindParam(":borrowID", $borrowID);
+            $query->bindParam(":userID", $this->userID);
+            $query->bindParam(":bookID", $this->bookID);
+            $query->bindParam(":no_of_copies", $this->no_of_copies);
+            $query->bindParam(":request_date", $this->request_date);
+            $query->bindParam(":pickup_date", $this->pickup_date);
+            $query->bindParam(":return_date", $this->return_date);
+            $query->bindParam(":expected_return_date", $this->expected_return_date);
+            $query->bindParam(":returned_condition", $this->returned_condition);
+            $query->bindParam(":borrow_request_status", $this->borrow_request_status);
+            $query->bindParam(":borrow_status", $this->borrow_status);
 
-        return $query->execute();
+            $updateMain = $query->execute();
+
+            // 2. Update the Fines Table (3NF)
+            // This ensures manual edits to fines in the modal are saved to the correct table
+            $updateFines = $this->updateFineDetails(
+                $borrowID,
+                $this->fine_amount,
+                $this->fine_reason,
+                $this->fine_status
+            );
+
+            return $updateMain && $updateFines;
+
+        } catch (PDOException $e) {
+            return false;
+        }
     }
+
+    // --- AUTOMATIC FINE & LOST BOOK LOGIC START ---
 
     public function checkAndApplyFines($userID)
     {
@@ -180,8 +198,10 @@ class BorrowDetails extends Database
 
         foreach ($records as $detail) {
 
+            // Only apply fine calculation if the book is currently borrowed (not returned)
             if ($detail['borrow_status'] === 'Borrowed' && $detail['return_date'] === null) {
 
+                // Calculate fine based on Today vs Expected Date
                 $fine_results = $this->calculateFinalFine(
                     $detail['expected_return_date'],
                     date("Y-m-d"),
@@ -189,6 +209,7 @@ class BorrowDetails extends Database
                     $detail['bookID']
                 );
 
+                // If calculated fine is different/new, update the DB
                 if ($fine_results['fine_amount'] > $detail['fine_amount']) {
                     $this->updateFineDetails(
                         $detail['borrowID'],
@@ -197,11 +218,18 @@ class BorrowDetails extends Database
                         $fine_results['fine_status']
                     );
 
+                    // Update local loop variables
                     $detail['fine_status'] = $fine_results['fine_status'];
                     $detail['fine_amount'] = $fine_results['fine_amount'];
+
+                    // *** IF LOST: Update Book Condition in Books Table ***
+                    if ($fine_results['is_lost'] === true) {
+                        $this->updateBookConditionLost($detail['bookID']);
+                    }
                 }
             }
 
+            // Check if user should be blocked (Any unpaid fine > 0)
             if ($detail['fine_status'] === 'Unpaid' && $detail['fine_amount'] > 0) {
                 $hasUnpaid = true;
             }
@@ -214,12 +242,68 @@ class BorrowDetails extends Database
                 "",
                 "Blocked",
                 "Block",
-                "System Blocked: Unpaid Fines Detected"
+                "System Blocked: Unpaid Fines / Lost Books"
             );
         }
 
         return $hasUnpaid;
     }
+
+    // Helper: Mark book as lost in inventory
+    public function updateBookConditionLost($bookID)
+    {
+        $sql = "UPDATE books SET book_condition = 'Lost' WHERE bookID = :bookID";
+        $query = $this->connect()->prepare($sql);
+        $query->bindParam(':bookID', $bookID);
+        return $query->execute();
+    }
+
+    public function calculateFinalFine($expected_return_date, $comparison_date_string, Book $bookObj, $bookID)
+    {
+        $comparison_date_string = $comparison_date_string ?: date("Y-m-d");
+        $comparison = new DateTime($comparison_date_string);
+        $expected = new DateTime($expected_return_date);
+
+        $results = [
+            'is_lost' => false,
+            'fine_amount' => 0.00,
+            'fine_reason' => null,
+            'fine_status' => null
+        ];
+
+        if ($comparison > $expected) {
+            $interval = $expected->diff($comparison);
+            $days_late = $interval->days;
+
+            // CONFIGURATION
+            $MAX_LATE_WEEKS = 10;
+            $MAX_LATE_DAYS = $MAX_LATE_WEEKS * 7; // 70 Days
+            $DAILY_FINE = 5.00;
+
+            if ($days_late >= $MAX_LATE_DAYS) {
+                // --- LOST LOGIC ---
+                $results['is_lost'] = true;
+
+                $max_accumulated_fine = $MAX_LATE_DAYS * $DAILY_FINE; // 70 * 5 = 350
+                $replacement_cost = $bookObj->fetchBookReplacementCost($bookID);
+
+                $results['fine_amount'] = $max_accumulated_fine + $replacement_cost;
+                $results['fine_reason'] = 'Lost';
+                $results['fine_status'] = 'Unpaid';
+            } else {
+                // --- LATE LOGIC ---
+                $late_fine_amount = $days_late * $DAILY_FINE;
+
+                $results['fine_amount'] = $late_fine_amount;
+                $results['fine_reason'] = 'Late';
+                $results['fine_status'] = 'Unpaid';
+            }
+        }
+
+        return $results;
+    }
+
+    // --- AUTOMATIC FINE & LOST BOOK LOGIC END ---
 
     public function fetchUserBorrowDetails($userID, $status_filter)
     {
@@ -234,7 +318,7 @@ class BorrowDetails extends Database
                 (
                     SELECT GROUP_CONCAT(COALESCE(rs.reason_text, '') SEPARATOR '; ')
                     FROM borrowing_status_history bsh
-                    LEFT JOIN borrowing_status_event_reasons bser ON bsh.borrowHistoryID = bser.historyID
+                    LEFT JOIN borrowing_status_event_reasons bser ON bsh.borrowHistoryID = bser.borrowHistoryID
                     LEFT JOIN ref_status_reasons rs ON bser.reasonID = rs.reasonID
                     WHERE bsh.borrowID = bd.borrowID
                     ORDER BY bsh.created_at DESC
@@ -421,7 +505,7 @@ class BorrowDetails extends Database
                 (
                     SELECT GROUP_CONCAT(COALESCE(rs.reason_text, '') SEPARATOR '; ')
                     FROM borrowing_status_history bsh
-                    LEFT JOIN borrowing_status_event_reasons bser ON bsh.borrowHistoryID = bser.historyID
+                    LEFT JOIN borrowing_status_event_reasons bser ON bsh.borrowHistoryID = bser.borrowHistoryID
                     LEFT JOIN ref_status_reasons rs ON bser.reasonID = rs.reasonID
                     WHERE bsh.borrowID = bd.borrowID
                     ORDER BY bsh.created_at DESC LIMIT 1
@@ -456,84 +540,39 @@ class BorrowDetails extends Database
 
     public function updateFineDetails($borrowID, $fine_amount, $fine_reason, $fine_status)
     {
-        // UPSERT: Update if exists, insert if not
-        $sql = "INSERT INTO fines (borrowID, fine_amount, fine_reason, fine_status) 
-                VALUES (:borrowID, :fine_amount, :fine_reason, :fine_status)
-                ON DUPLICATE KEY UPDATE 
-                fine_amount = VALUES(fine_amount), 
-                fine_reason = VALUES(fine_reason), 
-                fine_status = VALUES(fine_status)";
+        try {
+            // 1. Check if a fine record already exists for this specific borrowID
+            $checkSql = "SELECT COUNT(*) FROM fines WHERE borrowID = :borrowID";
+            $checkQuery = $this->connect()->prepare($checkSql);
+            $checkQuery->bindParam(":borrowID", $borrowID);
+            $checkQuery->execute();
+            $exists = $checkQuery->fetchColumn() > 0;
 
-        $query = $this->connect()->prepare($sql);
-        $query->bindParam(":fine_amount", $fine_amount);
-        $query->bindParam(":fine_reason", $fine_reason);
-        $query->bindParam(":fine_status", $fine_status);
-        $query->bindParam(":borrowID", $borrowID);
-        return $query->execute();
-    }
-
-    public function calculateFinalFine($expected_return_date, $comparison_date_string, Book $bookObj, $bookID)
-    {
-        // If no comparison date is provided, use today's date
-        $comparison_date_string = $comparison_date_string ?: date("Y-m-d");
-
-        // Convert date strings into DateTime objects for comparison
-        $comparison = new DateTime($comparison_date_string);
-        $expected = new DateTime($expected_return_date);
-
-        // Default result structure (assume no fine at first)
-        $results = [
-            'is_lost' => false,
-            'fine_amount' => 0.00,
-            'fine_reason' => null,
-            'fine_status' => null
-        ];
-
-        // Check if the book was returned AFTER the expected return date
-        if ($comparison > $expected) {
-
-            // Get the difference between expected date and actual return date
-            $interval = $expected->diff($comparison);
-            $days_late = $interval->days;
-
-            // Fine rules and limits
-            $MAX_LATE_WEEKS = 10;                // Maximum late period before book is considered lost
-            $MAX_LATE_DAYS = $MAX_LATE_WEEKS * 7;
-            $DAILY_FINE = 5.00;              // Fine per day
-
-            // If the book is late for 10 weeks or more, treat it as LOST
-            if ($days_late >= $MAX_LATE_DAYS) {
-
-                $results['is_lost'] = true;
-
-                // Maximum late fine accumulated before the book is marked lost
-                $max_accumulated_fine = $MAX_LATE_DAYS * $DAILY_FINE;
-
-                // Get the replacement cost of the book from the Book object
-                $replacement_cost = $bookObj->fetchBookReplacementCost($bookID);
-
-                // Total fine = max late fine + replacement cost
-                $results['fine_amount'] = $max_accumulated_fine + $replacement_cost;
-                $results['fine_reason'] = 'Lost';
-                $results['fine_status'] = 'Unpaid';
-
+            if ($exists) {
+                // 2. If it exists, UPDATE the existing record
+                $sql = "UPDATE fines 
+                        SET fine_amount = :fine_amount, 
+                            fine_reason = :fine_reason, 
+                            fine_status = :fine_status 
+                        WHERE borrowID = :borrowID";
+            } else {
+                // 3. If it does NOT exist, INSERT a new record
+                $sql = "INSERT INTO fines (borrowID, fine_amount, fine_reason, fine_status) 
+                        VALUES (:borrowID, :fine_amount, :fine_reason, :fine_status)";
             }
-            // Otherwise, the book is just LATE
-            else {
 
-                // Late fine is computed based on number of days late
-                $late_fine_amount = $days_late * $DAILY_FINE;
+            $query = $this->connect()->prepare($sql);
+            $query->bindParam(":borrowID", $borrowID);
+            $query->bindParam(":fine_amount", $fine_amount);
+            $query->bindParam(":fine_reason", $fine_reason);
+            $query->bindParam(":fine_status", $fine_status);
 
-                $results['fine_amount'] = $late_fine_amount;
-                $results['fine_reason'] = 'Late';
-                $results['fine_status'] = 'Unpaid';
-            }
+            return $query->execute();
+
+        } catch (PDOException $e) {
+            return false;
         }
-
-        // Return the final fine computation results
-        return $results;
     }
-
 
     public function countTotalBorrowedBooks()
     {
@@ -751,6 +790,24 @@ class BorrowDetails extends Database
         }
 
         return 0;
+    }
+
+    public function updateAllUsersFines()
+    {
+        // Get all users who have active borrows or unpaid fines
+        $sql = "SELECT DISTINCT bd.userID 
+            FROM borrowing_details bd
+            LEFT JOIN fines f ON bd.borrowID = f.borrowID
+            WHERE bd.borrow_status = 'Borrowed' 
+            OR f.fine_status = 'Unpaid'";
+
+        $query = $this->connect()->prepare($sql);
+        $query->execute();
+        $users = $query->fetchAll(PDO::FETCH_COLUMN);
+
+        foreach ($users as $uid) {
+            $this->checkAndApplyFines($uid);
+        }
     }
 }
 ?>

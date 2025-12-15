@@ -94,7 +94,7 @@ switch ($currentFile) {
             <div class="mt-auto">
                 <li class="links">
                     <a href="../../../app/views/borrower/catalogue.php">
-                        <i class="fa-solid fa-book"></i> <span class="text-white pl-4">Brose Catalogue</span>
+                        <i class="fa-solid fa-book"></i> <span class="text-white pl-4">Browse Catalogue</span>
                     </a>
                 </li>
                 <li class="links">

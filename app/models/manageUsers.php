@@ -203,9 +203,12 @@ class User extends Database
         if (!$history)
             return ['remarks' => '', 'reasons' => [], 'admin_name' => 'System', 'date' => ''];
 
+        // --- UPDATE THIS SECTION ---
+        // Changed 'WHERE e.historyID' to 'WHERE e.userHistoryID' to match your database change
         $sqlReasons = "SELECT r.reason_text FROM user_status_event_reasons e 
                        JOIN ref_status_reasons r ON e.reasonID = r.reasonID 
-                       WHERE e.historyID = :historyID";
+                       WHERE e.userHistoryID = :historyID";
+
         $queryReasons = $this->connect()->prepare($sqlReasons);
         $queryReasons->bindParam(':historyID', $history['userHistoryID']);
         $queryReasons->execute();
@@ -217,9 +220,11 @@ class User extends Database
             'date' => $history['created_at']
         ];
     }
-
     public function updateUserStatus($userID, $newRegStatus, $newAccStatus, $actionType, $remarks = "", $reasonIDs = [], $adminID = null)
     {
+        // ✅ ONE connection only
+        $conn = $this->connect();
+
         /* 1. Update users table */
         if ($newRegStatus != "" && $newAccStatus != "") {
             $sql = "UPDATE users 
@@ -236,7 +241,7 @@ class User extends Database
                 WHERE userID = :userID";
         }
 
-        $query = $this->connect()->prepare($sql);
+        $query = $conn->prepare($sql);
         $query->bindParam(":userID", $userID);
 
         if ($newRegStatus != "")
@@ -253,14 +258,20 @@ class User extends Database
                     (userID, action_type, additional_remarks, performed_by)
                     VALUES (:uid, :action, :remarks, :adminID)";
 
-            $queryHist = $this->connect()->prepare($sqlHist);
+            $queryHist = $conn->prepare($sqlHist);
             $queryHist->bindParam(":uid", $userID);
             $queryHist->bindParam(":action", $actionType);
             $queryHist->bindParam(":remarks", $remarks);
             $queryHist->bindParam(":adminID", $adminID);
             $queryHist->execute();
 
-            $historyID = $this->connect()->lastInsertId();
+            // ✅ NOW this is correct
+            $historyID = $conn->lastInsertId();
+
+            // 🚨 safety guard
+            if (!$historyID) {
+                return $result;
+            }
 
             /* 3. Insert reasons */
             if (!empty($reasonIDs)) {
@@ -268,7 +279,7 @@ class User extends Database
                          (userHistoryID, reasonID)
                          VALUES (:hid, :rid)";
 
-                $queryEvent = $this->connect()->prepare($sqlEvent);
+                $queryEvent = $conn->prepare($sqlEvent);
 
                 foreach ($reasonIDs as $rid) {
                     $queryEvent->bindParam(":hid", $historyID);
